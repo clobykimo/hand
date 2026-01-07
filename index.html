@@ -19,7 +19,7 @@
         .control-panel, .card { background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--bronze); margin-bottom: 20px; }
         .control-panel { height: fit-content; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: sticky; top: 20px; }
         label { display: block; margin-bottom: 5px; color: var(--cyan); font-size: 0.9em; }
-        input, select { width: 100%; padding: 10px; margin-bottom: 15px; background: #151b24; border: 1px solid #4a5568; color: white; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
+        input, select, textarea { width: 100%; padding: 10px; margin-bottom: 15px; background: #151b24; border: 1px solid #4a5568; color: white; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
         button.btn-main { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--bronze), var(--gold)); border: none; font-weight: bold; font-size: 1.2em; border-radius: 4px; cursor: pointer; color: #1a2634; margin-top: 15px; box-shadow: 0 4px 15px rgba(212,175,55,0.3); }
         button.btn-main:hover { filter: brightness(1.15); transform: translateY(-2px); }
         .ctrl-btn { background: #333; color: #ddd; border: 1px solid #555; padding: 4px 12px; border-radius: 4px; cursor: pointer; margin-left: 8px; }
@@ -31,15 +31,14 @@
         .arrow-icon.collapsed { transform: rotate(-90deg); }
         .card-body { overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), opacity 0.4s ease-in-out, margin-top 0.4s; max-height: 2000px; opacity: 1; margin-top: 15px; }
         .card-body.collapsed { max-height: 0; opacity: 0; margin-top: 0; }
+        
+        /* Grid Map */
         .twelve-palaces-map { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 130px); gap: 12px; padding: 15px; margin-top: 0; background: rgba(0,0,0,0.2); border: 1px solid #444; border-radius: 8px; grid-template-areas: "si wu wei shen" "chen . . you" "mao . . xu" "yin chou zi hai"; }
         .grid-cell { position: relative; background: #2a3544; border: 1px solid #3f4a5a; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
-        .aspect-row { border-bottom: 1px solid #333; padding: 14px 8px; display: grid; grid-template-columns: 2fr 4fr 1fr; align-items: center; gap: 10px; transition: background 0.2s; }
-        .aspect-row.clickable { cursor: pointer; border-left: 3px solid transparent; }
-        .aspect-row.clickable:hover { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
-        .aspect-row.active-aspect { background: rgba(79, 209, 197, 0.15); border-left: 3px solid var(--cyan); }
-        .aspect-info { display: flex; align-items: center; gap: 8px; }
-        .aspect-advice { font-size: 0.95em; color: #ddd; border-left: 2px solid #444; padding-left: 10px; }
-        .aspect-tag { padding: 4px 10px; border-radius: 4px; font-size: 0.9em; text-align: center; min-width: 50px; color: #1a2634; font-weight:bold; }
+        .grid-cell.active { border-color: var(--gold); background: #3a4555; }
+        .grid-cell.target { box-shadow: 0 0 25px var(--cyan) !important; border-color: #fff !important; }
+        .grid-cell.roulette-active { background: #fff !important; border-color: var(--gold); transform: scale(1.05); z-index: 100; }
+        .grid-cell.roulette-active .cell-star { color: #000 !important; }
         .cell-zhi { position: absolute; top: 5px; left: 8px; font-size: 1em; color: #555; font-weight: bold; }
         .cell-star { font-size: 1.7em; font-weight: bold; color: #ddd; z-index: 1; }
         .cell-aspect-name { font-size: 0.95em; color: var(--cyan); font-weight: bold; border-top: 1px solid rgba(255,255,255,0.1); width: 85%; text-align: center; margin-top: 4px; }
@@ -48,42 +47,49 @@
         .pillar-badges-container { position: absolute; top: 25px; left: 4px; display: flex; flex-direction: column; gap: 3px; }
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
-        .cell-badge { position: absolute; top: -10px; right: -5px; font-size: 0.8em; padding: 3px 8px; border-radius: 4px; color: #1a2634; font-weight: bold; background: var(--gold); display:none; }
-        .badge-flow { display:block; animation: dropIn 0.5s; }
-        .grid-cell.active { border-color: var(--gold); background: #3a4555; }
-        .grid-cell.target { box-shadow: 0 0 25px var(--cyan) !important; border-color: #fff !important; }
-        .grid-cell.roulette-active { background: #fff !important; border-color: var(--gold); transform: scale(1.05); z-index: 100; }
-        .grid-cell.roulette-active .cell-star { color: #000 !important; }
         
-        /* 戰略儀表板相關樣式 */
+        /* List & AI */
+        .aspect-row { border-bottom: 1px solid #333; padding: 14px 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: background 0.2s; }
+        .aspect-row.clickable { cursor: pointer; border-left: 3px solid transparent; }
+        .aspect-row.clickable:hover { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
+        .aspect-row.active-aspect { background: rgba(79, 209, 197, 0.15); border-left: 3px solid var(--cyan); }
+        .aspect-tag { padding: 4px 10px; border-radius: 4px; font-size: 0.9em; text-align: center; min-width: 50px; color: #1a2634; font-weight:bold; }
         .checkbox-wrapper { margin-bottom: 10px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--gold); font-weight: bold; user-select: none; }
         .checkbox-wrapper input { width: 18px; height: 18px; cursor: pointer; margin: 0; }
         .ai-controls { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 15px; }
         .ai-shortcut-btn { flex: 1; background: #2d3748; border: 1px solid #4a5568; color: #cbd5e0; padding: 8px 5px; border-radius: 4px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .ai-shortcut-btn:hover { background: #4a5568; color: white; border-color: var(--gpt-color); transform: translateY(-2px); }
+        .mini-ai-btn { background: transparent; border: 1px solid var(--gpt-color); color: var(--gpt-color); border-radius: 4px; width: 26px; height: 26px; font-size: 0.9em; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 8px; transition: all 0.2s; }
+        .mini-ai-btn:hover { background: var(--gpt-color); color: white; transform: scale(1.1); box-shadow: 0 0 10px rgba(16, 163, 127, 0.4); }
         
+        /* 進度條與趨勢 */
         .progress-container { flex: 1; height: 6px; background: #333; border-radius: 3px; margin: 0 8px; overflow: hidden; position: relative; }
         .progress-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
-        
         .trend-icon { font-weight: bold; margin-left: 5px; font-size: 1.1em; }
         .trend-icon.up { color: #ff4d4d; animation: pulse 2s infinite; }
         .trend-icon.down { color: #4fd1c5; }
         .trend-icon.flat { color: #666; font-size: 0.8em; }
-        
-        .mini-ai-btn { background: transparent; border: 1px solid var(--gpt-color); color: var(--gpt-color); border-radius: 4px; width: 26px; height: 26px; font-size: 0.9em; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 8px; transition: all 0.2s; }
-        .mini-ai-btn:hover { background: var(--gpt-color); color: white; transform: scale(1.1); box-shadow: 0 0 10px rgba(16, 163, 127, 0.4); }
-        
         .score-composition { font-size: 0.7em; color: #888; margin-left: 4px; font-weight: normal; }
         .score-bonus { color: #ffd700; }
         .score-penalty { color: #ff4d4d; }
-        
+
+        /* CRM Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        .modal-content { background-color: #1e2732; border: 1px solid var(--gold); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        .modal h3 { color: var(--gold); margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { color: #aaa; font-size: 0.9em; margin-bottom: 4px; display:block; }
+        .tag-container { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+        .tag-chip { font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: #333; cursor: pointer; border: 1px solid #555; user-select: none; color: #ddd; }
+        .tag-chip.selected { background: var(--cyan); color: #000; border-color: var(--cyan); }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
         @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
         @media (max-width: 950px) { .dashboard { grid-template-columns: 1fr; } .control-panel { position: static; } }
         #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; }
         .spinner { border: 4px solid #333; border-top: 4px solid var(--gold); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes dropIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .info-panel { opacity: 1; }
         .show-content { opacity: 1 !important; }
         .input-group { display: none; }
         .input-group.show { display: block; }
@@ -136,6 +142,15 @@
             </select>
         </div>
         <button class="btn-main" onclick="calculate()">啟動全時空推演</button>
+
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #444;">
+            <h3 style="color:var(--cyan); font-size:1em;">📂 客戶紀錄管理</h3>
+            <div style="display:flex; gap:10px;">
+                <button class="ctrl-btn active" style="flex:1; padding:8px;" onclick="openSaveModal()">💾 存檔</button>
+                <button class="ctrl-btn" style="flex:1; padding:8px;" onclick="loadHistory()">📜 讀取歷史</button>
+            </div>
+            <div id="historyList" style="margin-top:10px; max-height:200px; overflow-y:auto; font-size:0.9em; color:#aaa;"></div>
+        </div>
     </div>
 
     <div class="info-panel" id="resultArea">
@@ -222,6 +237,27 @@
     </div>
 </div>
 
+<div id="saveModal" class="modal">
+    <div class="modal-content">
+        <h3>💾 建立客戶檔案</h3>
+        <div class="form-group"><label>客戶姓名</label><input type="text" id="crmName" placeholder="例如：陳大發"></div>
+        <div class="form-group"><label>聯絡電話 / Line</label><input type="text" id="crmPhone" placeholder="09xx-xxx-xxx"></div>
+        <div class="form-group">
+            <label>客戶標籤</label>
+            <div class="tag-container" id="tagList">
+                <span class="tag-chip" onclick="toggleTag(this)">VIP</span><span class="tag-chip" onclick="toggleTag(this)">企業諮詢</span>
+                <span class="tag-chip" onclick="toggleTag(this)">感情困擾</span><span class="tag-chip" onclick="toggleTag(this)">已付款</span>
+                <span class="tag-chip" onclick="toggleTag(this)">需追蹤</span>
+            </div>
+        </div>
+        <div class="form-group"><label>諮詢筆記</label><textarea id="crmNote" rows="3" placeholder="紀錄重點..."></textarea></div>
+        <div class="modal-footer">
+            <button class="ctrl-btn" onclick="closeSaveModal()">取消</button>
+            <button class="ctrl-btn active" onclick="confirmSave()">確認儲存</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
     const STAR_TRAITS = { '天貴': { type: '吉', keyword: '貴人/顯赫' }, '天厄': { type: '凶', keyword: '勞碌/疾厄' }, '天權': { type: '平', keyword: '權力/社交' }, '天破': { type: '凶', keyword: '消耗/破損' }, '天奸': { type: '平', keyword: '機智/變動' }, '天文': { type: '吉', keyword: '智慧/文采' }, '天福': { type: '吉', keyword: '福氣/財祿' }, '天驛': { type: '平', keyword: '奔波/變動' }, '天孤': { type: '凶', keyword: '孤獨/獨立' }, '天刃': { type: '凶', keyword: '剛強/血光' }, '天藝': { type: '平', keyword: '才藝/技術' }, '天壽': { type: '吉', keyword: '長壽/圓融' } };
@@ -233,7 +269,6 @@
     function toggleCard(bodyId) { const body = document.getElementById(bodyId); const arrow = body.previousElementSibling.querySelector('.arrow-icon'); if (body.classList.contains('collapsed')) { body.classList.remove('collapsed'); if(arrow) arrow.classList.remove('collapsed'); } else { body.classList.add('collapsed'); if(arrow) arrow.classList.add('collapsed'); } }
     function getRealmColor(realm) { if(realm.includes('佛')) return '#ffd700'; if(realm.includes('仙')) return '#4fd1c5'; if(realm.includes('修羅')) return '#ff9f43'; if(realm.includes('鬼')) return '#a0aec0'; if(realm.includes('畜')) return '#8c7853'; return '#e0e0e0'; }
     function getStatusColor(relation) { if(relation==='生我'||relation==='比旺') return 'var(--status-best)'; if(relation==='我生') return 'var(--status-good)'; if(relation==='我剋') return 'var(--status-growth)'; if(relation==='剋我') return 'var(--status-bad)'; return '#888'; }
-    
     function getStrategicAdvice(aspect, relation, star) {
         const starInfo = STAR_TRAITS[star] || { type: '平', keyword: '未知' };
         let context = aspect.includes('總命運') ? '整體運勢' : aspect.includes('錢財') ? '財務佈局' : '應對策略';
@@ -286,11 +321,10 @@
         const pointBackgroundColors = labels.map((_, i) => i === targetIndex || labels[i] === "D+0" ? '#ff4d4d' : '#fff');
         const pointBorderColors = labels.map((_, i) => i === targetIndex || labels[i] === "D+0" ? '#fff' : '#d4af37');
         const pointRadii = labels.map((_, i) => i === targetIndex || labels[i] === "D+0" ? 8 : 4);
-        const pointHoverRadii = labels.map((_, i) => i === targetIndex || labels[i] === "D+0" ? 12 : 7);
-
+        
         trendChartInstance = new Chart(ctx, {
             type: 'line',
-            data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointBackgroundColors, pointBorderColor: pointBorderColors, pointRadius: pointRadii, pointHoverRadius: pointHoverRadii, pointBorderWidth: 2, fill: true, tension: 0.4 }] },
+            data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointBackgroundColors, pointBorderColor: pointBorderColors, pointRadius: pointRadii, pointBorderWidth: 2, fill: true, tension: 0.4 }] },
             options: { 
                 maintainAspectRatio: false, 
                 scales: { y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, x: { grid: {color:'#333'}, ticks: {color:'#e0e0e0'} } }, 
@@ -336,30 +370,6 @@
         document.querySelectorAll('.aspect-row').forEach(row => row.classList.remove('active-aspect'));
         const activeRow = document.getElementById(`row-${aspectName}`);
         if(activeRow) activeRow.classList.add('active-aspect');
-    }
-
-    function renderFullView(result) {
-        initMap();
-        const h = result.hierarchy;
-        const pillars = [ { k:'年', c:'var(--p-year)', z:result.base_chart.年柱.zhi, n:result.base_chart.年柱.name }, { k:'月', c:'var(--p-month)', z:result.base_chart.月柱.zhi, n:result.base_chart.月柱.name }, { k:'日', c:'var(--p-day)', z:result.base_chart.日柱.zhi, n:result.base_chart.日柱.name }, { k:'命', c:'var(--p-hour)', z:result.base_chart.時柱.zhi, n:result.base_chart.時柱.name } ];
-        let pillarsHtml = '';
-        pillars.forEach(p => { addBadgeToCell(p.z, p.k, p.c, true); pillarsHtml += `<div class="pillar-box active" style="border-color:${p.c};"><div style="color:${p.c}; font-weight:bold;">${p.n}</div><div style="font-size:0.8em;">${p.z}</div></div>`; });
-        setHTML('pillarsArea', pillarsHtml);
-        if(h.big_luck) addBadgeToCell(h.big_luck.zhi, '大運', 'var(--p-luck)', true);
-        if(h.year) addBadgeToCell(h.year.zhi, '流年', 'var(--p-year)', true);
-        const targetScope = document.getElementById('targetScope').value;
-        if(['month','day','hour'].includes(targetScope) && h.month) addBadgeToCell(h.month.zhi, '流月', 'var(--p-month)', true);
-        if(['day','hour'].includes(targetScope) && h.day) addBadgeToCell(h.day.zhi, '流日', 'var(--p-day)', true);
-        if(targetScope==='hour' && h.hour) addBadgeToCell(h.hour.zhi, '流時', 'var(--p-hour)', true);
-        
-        result.aspects.forEach(a => {
-            const cell = document.getElementById('cell-'+a.zhi);
-            if(cell && !cell.querySelector('.cell-aspect-name')) {
-                cell.innerHTML += `<div class="cell-aspect-name show-content">${a.name}</div><div class="cell-relation-tag" style="background:${getStatusColor(a.relation)}; color:#1a2634;">${a.relation}</div>`;
-                if(a.is_alert) cell.classList.add('alert');
-            }
-        });
-        fillLists(result, h);
     }
 
     function fillLists(result, h) {
@@ -450,7 +460,114 @@
         });
         setHTML('aspectsList', aHtml);
         setText('aiPrompt', result.ai_prompt);
-        if(result.trend_data) { globalTrendData = result.trend_data; updateTrendChart('總命運'); }
+        if(result.trend_data) { 
+            globalTrendData = result.trend_data; 
+            updateTrendChart('總命運'); 
+        }
+    }
+
+    // CRM 相關功能
+    function openSaveModal() { document.getElementById('saveModal').style.display = 'flex'; }
+    function closeSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
+    function toggleTag(el) { el.classList.toggle('selected'); }
+
+    async function confirmSave() {
+        const name = document.getElementById('crmName').value || "未命名";
+        const phone = document.getElementById('crmPhone').value;
+        const note = document.getElementById('crmNote').value;
+        const tags = [];
+        document.querySelectorAll('.tag-chip.selected').forEach(el => tags.push(el.innerText));
+
+        let maxClickedAspect = "無", maxCount = 0;
+        for (const [key, count] of Object.entries(aspectClickCounts)) {
+            if (count > maxCount) { maxCount = count; maxClickedAspect = key; }
+        }
+        
+        const aiLog = {
+            advice: document.getElementById('aiResponseArea').innerText.substring(0, 200) + "...", 
+            most_focused: `${maxClickedAspect} (${maxCount}次)`,
+            last_focused: lastActiveAspect
+        };
+
+        const data = {
+            solar_date: document.getElementById('solarDate').value,
+            gender: parseInt(document.getElementById('gender').value),
+            hour: document.getElementById('hour').value,
+            target_year: parseInt(document.getElementById('tYear').value),
+            client_name: name, phone: phone, tags: tags, note: note, ai_log: aiLog
+        };
+
+        const btn = document.querySelector('.modal-footer .active');
+        const originalText = btn.innerText;
+        btn.innerText = "儲存中...";
+        try {
+            const res = await fetch('/api/save_record', {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if(result.status === 'success') {
+                alert(`✅ ${name} 的檔案已建立！\n系統已自動紀錄其最關注：${aiLog.most_focused}`);
+                closeSaveModal(); loadHistory();
+            } else { alert("❌ 儲存失敗：" + result.message); }
+        } catch(e) { alert("連線錯誤：" + e.message); } finally { btn.innerText = originalText; }
+    }
+
+    async function loadHistory() {
+        const listDiv = document.getElementById('historyList');
+        listDiv.innerHTML = "載入中...";
+        try {
+            const res = await fetch('/api/get_history'); 
+            const history = await res.json();
+            let html = '<ul style="padding-left:10px; margin:0; list-style:none;">';
+            history.forEach(item => {
+                const jsonStr = JSON.stringify(item).replace(/"/g, '&quot;');
+                let tagsHtml = item.tags ? item.tags.map(t => `<span style="background:#333; padding:1px 4px; font-size:0.7em; border-radius:3px; margin-right:3px;">${t}</span>`).join('') : '';
+                html += `
+                <li style="margin-bottom:12px; cursor:pointer; border-bottom:1px solid #333; padding-bottom:8px;" onclick="restoreFromHistory(${jsonStr})">
+                    <div style="display:flex; justify-content:space-between;">
+                        <b style="color:var(--gold); font-size:1.1em;">${item.client_name}</b>
+                        <span style="color:#666; font-size:0.8em;">${item.created_at.split(' ')[0]}</span>
+                    </div>
+                    <div style="color:#aaa; font-size:0.9em; margin:2px 0;">${item.note || "無備註"}</div>
+                    <div style="margin-top:4px;">${tagsHtml}</div>
+                </li>`;
+            });
+            html += '</ul>';
+            listDiv.innerHTML = history.length > 0 ? html : "尚無紀錄";
+        } catch(e) { listDiv.innerHTML = "讀取失敗"; }
+    }
+
+    function restoreFromHistory(item) {
+        document.getElementById('solarDate').value = item.solar_date;
+        document.getElementById('gender').value = item.gender;
+        document.getElementById('hour').value = item.hour;
+        document.getElementById('tYear').value = item.target_year;
+        alert(`已載入：${item.client_name} 的資料，即將開始推演...`);
+        calculate();
+    }
+
+    function renderFullView(result) {
+        initMap();
+        const h = result.hierarchy;
+        const pillars = [ { k:'年', c:'var(--p-year)', z:result.base_chart.年柱.zhi, n:result.base_chart.年柱.name }, { k:'月', c:'var(--p-month)', z:result.base_chart.月柱.zhi, n:result.base_chart.月柱.name }, { k:'日', c:'var(--p-day)', z:result.base_chart.日柱.zhi, n:result.base_chart.日柱.name }, { k:'命', c:'var(--p-hour)', z:result.base_chart.時柱.zhi, n:result.base_chart.時柱.name } ];
+        let pillarsHtml = '';
+        pillars.forEach(p => { addBadgeToCell(p.z, p.k, p.c, true); pillarsHtml += `<div class="pillar-box active" style="border-color:${p.c};"><div style="color:${p.c}; font-weight:bold;">${p.n}</div><div style="font-size:0.8em;">${p.z}</div></div>`; });
+        setHTML('pillarsArea', pillarsHtml);
+        if(h.big_luck) addBadgeToCell(h.big_luck.zhi, '大運', 'var(--p-luck)', true);
+        if(h.year) addBadgeToCell(h.year.zhi, '流年', 'var(--p-year)', true);
+        const targetScope = document.getElementById('targetScope').value;
+        if(['month','day','hour'].includes(targetScope) && h.month) addBadgeToCell(h.month.zhi, '流月', 'var(--p-month)', true);
+        if(['day','hour'].includes(targetScope) && h.day) addBadgeToCell(h.day.zhi, '流日', 'var(--p-day)', true);
+        if(targetScope==='hour' && h.hour) addBadgeToCell(h.hour.zhi, '流時', 'var(--p-hour)', true);
+        
+        result.aspects.forEach(a => {
+            const cell = document.getElementById('cell-'+a.zhi);
+            if(cell && !cell.querySelector('.cell-aspect-name')) {
+                cell.innerHTML += `<div class="cell-aspect-name show-content">${a.name}</div><div class="cell-relation-tag" style="background:${getStatusColor(a.relation)}; color:#1a2634;">${a.relation}</div>`;
+                if(a.is_alert) cell.classList.add('alert');
+            }
+        });
+        fillLists(result, h);
     }
 
     function togglePause() { globalIsPaused = !globalIsPaused; }
@@ -502,7 +619,7 @@
         for (const [key, count] of Object.entries(aspectClickCounts)) { totalClicks += count; if (count > maxCount) { maxCount = count; maxClickedAspect = key; } }
         let behaviorInsight = "";
         if (totalClicks >= 3 && maxClickedAspect !== aspectName) {
-            behaviorInsight = `⚠️ 潛在焦慮偵測：案主目前停留在【${aspectName}】，但數據顯示他查看【${maxClickedAspect}】次數最多（${maxCount}次）。請分析這兩者的連動關係（例如：是否因${maxClickedAspect}的問題導致了${aspectName}的困境？）。`;
+            behaviorInsight = `⚠️ 潛在焦慮偵測：案主目前停留在【${aspectName}】，但數據顯示他查看【${maxClickedAspect}】次數最多（${maxCount}次）。請分析這兩者的連動關係。`;
         }
 
         let specificPrompt = "", loadingText = "";
@@ -511,17 +628,17 @@
             specificPrompt = `請進行全盤戰略推演。重點分析【${aspectName}】目前的處境 (${currentAspectData.score}分, ${currentAspectData.relation})。並指出【${weakest.name}】(${weakest.score}分) 是否為潛在風險，以及如何利用【${strongest.name}】(${strongest.score}分) 來借力使力。${behaviorInsight} 輸出格式：【局勢總覽】、【關鍵戰術(3點)】、【連鎖反應預警】、【成功率預估】。`;
         } else if (mode === 'weakest') {
             loadingText = `💔 正在掃描全盤最弱環節與病灶...`;
-            specificPrompt = `請專注分析案主的【致命弱點/病灶】。全盤最弱的宮位是【${weakest.name}】，分數僅 ${weakest.score} 分，坐 ${weakest.star}。1. 請解釋為什麼 ${weakest.name} 會崩盤？(結合星宿特性) 2. 這個弱點會如何拖累案主最在意的【${aspectName}】？3. 請給出「止血療傷」的具體方案，如何將傷害降到最低？輸出格式：【病灶診斷】、【連帶傷害分析】、【止血急救方案】。`;
+            specificPrompt = `請專注分析案主的【致命弱點/病灶】。全盤最弱的宮位是【${weakest.name}】，分數僅 ${weakest.score} 分，坐 ${weakest.star}。1. 請解釋為什麼 ${weakest.name} 會崩盤？2. 這個弱點會如何拖累案主最在意的【${aspectName}】？3. 請給出「止血療傷」的具體方案。輸出格式：【病灶診斷】、【連帶傷害分析】、【止血急救方案】。`;
         } else if (mode === 'timing') {
             loadingText = `📅 正在為【${aspectName}】計算最佳進攻窗口...`;
             const scores = globalTrendData.datasets[aspectName];
             const labels = globalTrendData.axis_labels;
             let maxVal = -1, maxIdx = -1, minVal = 999, minIdx = -1;
             scores.forEach((s, i) => { if (s > maxVal) { maxVal = s; maxIdx = i; } if (s < minVal) { minVal = s; minIdx = i; } });
-            specificPrompt = `案主想知道【${aspectName}】的行動時機。根據波形圖數據：- 最佳時機 (進攻)：在【${labels[maxIdx]}】，能量高達 ${maxVal} 分。- 最差時機 (避險)：在【${labels[minIdx]}】，能量跌至 ${minVal} 分。請給出時間戰略：1. 在最佳時機適合做什麼大事？2. 在最差時機應該如何避險？3. 針對目前的目標時間點 (${targetLabel})，是該進還是該退？輸出格式：【黃金進攻期】、【紅色警戒期】、【當下行動建議】。`;
+            specificPrompt = `案主想知道【${aspectName}】的行動時機。根據波形圖數據：最佳時機在【${labels[maxIdx]}】(${maxVal}分)，最差時機在【${labels[minIdx]}】(${minVal}分)。請給出時間戰略：1. 在最佳時機適合做什麼大事？2. 在最差時機應該如何避險？3. 針對目前目標時間點(${targetLabel})是該進還是該退？輸出格式：【黃金進攻期】、【紅色警戒期】、【當下行動建議】。`;
         } else if (mode === 'script') {
             loadingText = `🗣️ 正在為您生成針對【${aspectName}】的談判劇本...`;
-            specificPrompt = `案主需要針對【${aspectName}】的實戰話術/劇本。當前情境：分數 ${currentAspectData.score} 分，關係為 ${currentAspectData.relation}，對方/環境帶有 ${currentAspectData.star} 的特性。請設計 3 組對話劇本或自我對話心法：1. **【進攻型劇本】**：如果要爭取資源或談判，該怎麼說？(利用 ${currentAspectData.star} 的弱點) 2. **【防守型劇本】**：如果面臨質疑或壓力，該如何圓滑回應？3. **【心理建設】**：一句話的座右銘，用來穩定軍心。`;
+            specificPrompt = `案主需要針對【${aspectName}】的實戰話術/劇本。當前情境：分數 ${currentAspectData.score} 分，關係為 ${currentAspectData.relation}，對方/環境帶有 ${currentAspectData.star} 的特性。請設計：1.【進攻型劇本】(爭取資源)。2.【防守型劇本】(回應質疑)。3.【心理建設】(一句話座右銘)。`;
         }
 
         const aiBody = document.getElementById('aiBody');
@@ -530,7 +647,7 @@
 
         const finalPrompt = `你是一位精通《達摩一掌經》的戰略顧問。依據資料：${specificPrompt}`;
         try {
-            const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:finalPrompt})});
+            const res = await fetch('/api/ask_ai', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:finalPrompt})});
             const d = await res.json();
             setHTML('aiResponseArea', d.reply.replace(/\n/g, '<br>') || d.error);
         } catch(e) { setHTML('aiResponseArea', '連線失敗：'+e.message); }
