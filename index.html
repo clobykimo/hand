@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>達摩一掌經．全時空戰略中台</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #121820; --panel-bg: #1e2732; --gold: #d4af37;
+            --bronze: #8c7853; --cyan: #4fd1c5; --danger: #ff4d4d;
+            --text-main: #e0e0e0; --text-sub: #a0a0a0; --gpt-color: #10a37f;
+            --p-year: #d4af37; --p-month: #4fd1c5; --p-day: #ff9f43; --p-hour: #a3a3ff; --p-luck: #2ecc71;
+            --status-best: #ffd700; --status-good: #ADD8E6; --status-growth: #90EE90; --status-bad: #ff4d4d;
+        }
+        body { background-color: var(--bg-color); color: var(--text-main); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        h1 { color: var(--gold); letter-spacing: 5px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(212,175,55,0.4); }
+        .dashboard { display: grid; grid-template-columns: 380px 1fr; gap: 25px; width: 100%; max-width: 1400px; }
+        .control-panel, .card { background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--bronze); margin-bottom: 20px; }
+        .control-panel { height: fit-content; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: sticky; top: 20px; }
+        label { display: block; margin-bottom: 5px; color: var(--cyan); font-size: 0.9em; }
+        input, select { width: 100%; padding: 10px; margin-bottom: 15px; background: #151b24; border: 1px solid #4a5568; color: white; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
+        button.btn-main { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--bronze), var(--gold)); border: none; font-weight: bold; font-size: 1.2em; border-radius: 4px; cursor: pointer; color: #1a2634; margin-top: 15px; box-shadow: 0 4px 15px rgba(212,175,55,0.3); }
+        button.btn-main:hover { filter: brightness(1.15); transform: translateY(-2px); }
+        .ctrl-btn { background: #333; color: #ddd; border: 1px solid #555; padding: 4px 12px; border-radius: 4px; cursor: pointer; margin-left: 8px; }
+        .ctrl-btn.active { background: var(--gold); color: #1a2634; }
+        .ctrl-btn.finish { border-color: var(--cyan); color: var(--cyan); }
+        .card-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; transition: opacity 0.2s; }
+        .card-header:hover { opacity: 0.8; }
+        .arrow-icon { transition: transform 0.3s ease; font-size: 0.8em; color: var(--cyan); }
+        .arrow-icon.collapsed { transform: rotate(-90deg); }
+        .card-body { overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), opacity 0.4s ease-in-out, margin-top 0.4s; max-height: 2000px; opacity: 1; margin-top: 15px; }
+        .card-body.collapsed { max-height: 0; opacity: 0; margin-top: 0; }
+        .twelve-palaces-map { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 130px); gap: 12px; padding: 15px; margin-top: 0; background: rgba(0,0,0,0.2); border: 1px solid #444; border-radius: 8px; grid-template-areas: "si wu wei shen" "chen . . you" "mao . . xu" "yin chou zi hai"; }
+        .grid-cell { position: relative; background: #2a3544; border: 1px solid #3f4a5a; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
+        .aspect-row { border-bottom: 1px solid #333; padding: 14px 8px; display: grid; grid-template-columns: 2fr 4fr 1fr; align-items: center; gap: 10px; transition: background 0.2s; }
+        .aspect-row.clickable { cursor: pointer; border-left: 3px solid transparent; }
+        .aspect-row.clickable:hover { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
+        .aspect-row.active-aspect { background: rgba(79, 209, 197, 0.15); border-left: 3px solid var(--cyan); }
+        .aspect-info { display: flex; align-items: center; gap: 8px; }
+        .aspect-advice { font-size: 0.95em; color: #ddd; border-left: 2px solid #444; padding-left: 10px; }
+        .aspect-tag { padding: 4px 10px; border-radius: 4px; font-size: 0.9em; text-align: center; min-width: 50px; color: #1a2634; font-weight:bold; }
+        .cell-zhi { position: absolute; top: 5px; left: 8px; font-size: 1em; color: #555; font-weight: bold; }
+        .cell-star { font-size: 1.7em; font-weight: bold; color: #ddd; z-index: 1; }
+        .cell-aspect-name { font-size: 0.95em; color: var(--cyan); font-weight: bold; border-top: 1px solid rgba(255,255,255,0.1); width: 85%; text-align: center; margin-top: 4px; }
+        .cell-realm { font-size: 0.7em; color: #555; position:absolute; bottom: 3px; right: 5px; }
+        .cell-relation-tag { position: absolute; top: 5px; right: 5px; font-size: 0.75em; padding: 2px 6px; border-radius: 3px; font-weight: bold; color: #1a2634; }
+        .pillar-badges-container { position: absolute; top: 25px; left: 4px; display: flex; flex-direction: column; gap: 3px; }
+        .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
+        .pillar-badge.show { opacity: 1; }
+        .cell-badge { position: absolute; top: -10px; right: -5px; font-size: 0.8em; padding: 3px 8px; border-radius: 4px; color: #1a2634; font-weight: bold; background: var(--gold); display:none; }
+        .badge-flow { display:block; animation: dropIn 0.5s; }
+        .grid-cell.active { border-color: var(--gold); background: #3a4555; }
+        .grid-cell.target { box-shadow: 0 0 25px var(--cyan) !important; border-color: #fff !important; }
+        .grid-cell.roulette-active { background: #fff !important; border-color: var(--gold); transform: scale(1.05); z-index: 100; }
+        .grid-cell.roulette-active .cell-star { color: #000 !important; }
+        
+        /* 戰略儀表板相關樣式 */
+        .checkbox-wrapper { margin-bottom: 10px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--gold); font-weight: bold; user-select: none; }
+        .checkbox-wrapper input { width: 18px; height: 18px; cursor: pointer; margin: 0; }
+        .ai-controls { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .ai-shortcut-btn { flex: 1; background: #2d3748; border: 1px solid #4a5568; color: #cbd5e0; padding: 8px 5px; border-radius: 4px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .ai-shortcut-btn:hover { background: #4a5568; color: white; border-color: var(--gpt-color); transform: translateY(-2px); }
+        
+        .progress-container { flex: 1; height: 6px; background: #333; border-radius: 3px; margin: 0 8px; overflow: hidden; position: relative; }
+        .progress-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+        
+        .trend-icon { font-weight: bold; margin-left: 5px; font-size: 1.1em; }
+        .trend-icon.up { color: #ff4d4d; animation: pulse 2s infinite; }
+        .trend-icon.down { color: #4fd1c5; }
+        .trend-icon.flat { color: #666; font-size: 0.8em; }
+        
+        .mini-ai-btn { background: transparent; border: 1px solid var(--gpt-color); color: var(--gpt-color); border-radius: 4px; width: 26px; height: 26px; font-size: 0.9em; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 8px; transition: all 0.2s; }
+        .mini-ai-btn:hover { background: var(--gpt-color); color: white; transform: scale(1.1); box-shadow: 0 0 10px rgba(16, 163, 127, 0.4); }
+        
+        .score-composition { font-size: 0.7em; color: #888; margin-left: 4px; font-weight: normal; }
+        .score-bonus { color: #ffd700; }
+        .score-penalty { color: #ff4d4d; }
+        
+        @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+        @media (max-width: 950px) { .dashboard { grid-template-columns: 1fr; } .control-panel { position: static; } }
+        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; }
+        .spinner { border: 4px solid #333; border-top: 4px solid var(--gold); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes dropIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .info-panel { opacity: 1; }
+        .show-content { opacity: 1 !important; }
+        .input-group { display: none; }
+        .input-group.show { display: block; }
+        .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .pillar-box { background: #252f3a; padding: 10px; text-align: center; border: 1px solid #444; border-radius: 6px; opacity: 0.3; }
+        .pillar-box.active { opacity: 1; border-color: var(--gold); }
+        .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; opacity: 0.3; pointer-events: none; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
+        .ai-btn { background: var(--gpt-color); color: white; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight:bold; }
+    </style>
+</head>
+<body>
+<div id="loadingOverlay"><div class="spinner"></div></div>
+<h1>達摩一掌經．全時空戰略中台</h1>
+<div class="dashboard">
+    <div class="control-panel">
+        <h3 style="color:var(--cyan); border-bottom:1px solid #444;">1. 設定案主本命</h3>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div><label>性別</label><select id="gender"><option value="1">男 (順行)</option><option value="0">女 (逆行)</option></select></div>
+            <div>
+                <label>出生時辰</label>
+                <select id="hour">
+                    <option value="子">子時 (23:00-01:00)</option><option value="丑">丑時 (01:00-03:00)</option><option value="寅">寅時 (03:00-05:00)</option>
+                    <option value="卯">卯時 (05:00-07:00)</option><option value="辰">辰時 (07:00-09:00)</option><option value="巳">巳時 (09:00-11:00)</option>
+                    <option value="午">午時 (11:00-13:00)</option><option value="未">未時 (13:00-15:00)</option><option value="申">申時 (15:00-17:00)</option>
+                    <option value="酉">酉時 (17:00-19:00)</option><option value="戌">戌時 (19:00-21:00)</option><option value="亥">亥時 (21:00-23:00)</option>
+                </select>
+            </div>
+        </div>
+        <label>國曆出生日期</label><input type="date" id="solarDate" value="1985-03-27">
+        <h3 style="color:var(--gold); border-bottom:1px solid #444; margin-top:20px;">2. 設定戰略目標</h3>
+        <div style="display:flex; gap:20px; margin-bottom:10px;">
+            <label style="color:white; cursor:pointer;"><input type="radio" name="calendarType" value="lunar" checked onchange="updateFormUI()"> 農曆</label>
+            <label style="color:white; cursor:pointer;"><input type="radio" name="calendarType" value="solar" onchange="updateFormUI()"> 西元曆</label>
+        </div>
+        <label>推演層級</label>
+        <select id="targetScope" onchange="updateFormUI()">
+            <option value="year">流年 (只看年)</option><option value="month">流月 (年+月)</option>
+            <option value="day">流日 (年+月+日)</option><option value="hour">流時 (年+月+日+時)</option>
+        </select>
+        <div id="yearInput" class="input-group show"><label>年份</label><input type="number" id="tYear" value="2026"></div>
+        <div id="monthInput" class="input-group"><label>月份</label><input type="number" id="tMonth" value="1" min="1" max="12"></div>
+        <div id="dayInput" class="input-group"><label>日期</label><input type="number" id="tDay" value="1" min="1" max="31"></div>
+        <div id="hourInput" class="input-group">
+            <label>時辰</label>
+            <select id="tHour">
+                <option value="子">子時 (23:00-01:00)</option><option value="丑">丑時 (01:00-03:00)</option><option value="寅">寅時 (03:00-05:00)</option>
+                <option value="卯">卯時 (05:00-07:00)</option><option value="辰">辰時 (07:00-09:00)</option><option value="巳">巳時 (09:00-11:00)</option>
+                <option value="午">午時 (11:00-13:00)</option><option value="未">未時 (13:00-15:00)</option><option value="申">申時 (15:00-17:00)</option>
+                <option value="酉">酉時 (17:00-19:00)</option><option value="戌">戌時 (19:00-21:00)</option><option value="亥">亥時 (21:00-23:00)</option>
+            </select>
+        </div>
+        <button class="btn-main" onclick="calculate()">啟動全時空推演</button>
+    </div>
+
+    <div class="info-panel" id="resultArea">
+        <div class="card" style="border-left:5px solid var(--gold); overflow:hidden;">
+            <h3 class="card-header" style="color:var(--gold);">
+                <div style="display:flex; justify-content:space-between; width:100%">
+                    <div>戰略儀表板 <span id="lunarInfo" style="font-size:0.8em; color:#a0a0a0;"></span></div>
+                    <div id="animControls" style="display:none; font-size:0.8em;">
+                        <button class="ctrl-btn" id="pauseBtn" onclick="togglePause(); event.stopPropagation();">⏯</button>
+                        <button class="ctrl-btn finish" onclick="skipToComplete(); event.stopPropagation();">⏩</button>
+                        <button class="ctrl-btn" onclick="replayAnimation(); event.stopPropagation();">🔄</button>
+                    </div>
+                </div>
+            </h3>
+            <div class="twelve-palaces-map">
+                <div class="grid-cell" id="cell-巳"><div class="pillar-badges-container"></div><span class="cell-zhi">巳</span><span class="cell-star">天文</span><span class="cell-realm">仙道</span></div>
+                <div class="grid-cell" id="cell-午"><div class="pillar-badges-container"></div><span class="cell-zhi">午</span><span class="cell-star">天福</span><span class="cell-realm">佛道</span></div>
+                <div class="grid-cell" id="cell-未"><div class="pillar-badges-container"></div><span class="cell-zhi">未</span><span class="cell-star">天驛</span><span class="cell-realm">鬼道</span></div>
+                <div class="grid-cell" id="cell-申"><div class="pillar-badges-container"></div><span class="cell-zhi">申</span><span class="cell-star">天孤</span><span class="cell-realm">人道</span></div>
+                <div class="grid-cell" id="cell-辰"><div class="pillar-badges-container"></div><span class="cell-zhi">辰</span><span class="cell-star">天奸</span><span class="cell-realm">修羅</span></div>
+                <div class="center-decoration"><span style="font-size:3em; color:var(--gold);">☯</span></div>
+                <div class="grid-cell" id="cell-酉"><div class="pillar-badges-container"></div><span class="cell-zhi">酉</span><span class="cell-star">天刃</span><span class="cell-realm">畜道</span></div>
+                <div class="grid-cell" id="cell-卯"><div class="pillar-badges-container"></div><span class="cell-zhi">卯</span><span class="cell-star">天破</span><span class="cell-realm">畜道</span></div>
+                <div class="grid-cell" id="cell-戌"><div class="pillar-badges-container"></div><span class="cell-zhi">戌</span><span class="cell-star">天藝</span><span class="cell-realm">修羅</span></div>
+                <div class="grid-cell" id="cell-寅"><div class="pillar-badges-container"></div><span class="cell-zhi">寅</span><span class="cell-star">天權</span><span class="cell-realm">人道</span></div>
+                <div class="grid-cell" id="cell-丑"><div class="pillar-badges-container"></div><span class="cell-zhi">丑</span><span class="cell-star">天厄</span><span class="cell-realm">鬼道</span></div>
+                <div class="grid-cell" id="cell-子"><div class="pillar-badges-container"></div><span class="cell-zhi">子</span><span class="cell-star">天貴</span><span class="cell-realm">佛道</span></div>
+                <div class="grid-cell" id="cell-亥"><div class="pillar-badges-container"></div><span class="cell-zhi">亥</span><span class="cell-star">天壽</span><span class="cell-realm">仙道</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 class="card-header" onclick="toggleCard('pillarsBody')">本命根基 <span class="arrow-icon collapsed">▼</span></h3>
+            <div id="pillarsBody" class="card-body collapsed"><div class="four-pillars" id="pillarsArea"></div></div>
+        </div>
+
+        <div class="card" style="border-left:5px solid var(--cyan);">
+            <h3 class="card-header" onclick="toggleCard('hierarchyBody')">
+                時空戰略定位 <span id="targetDisplayInfo" style="font-size:0.7em; color:#888; font-weight:normal;"></span> 
+                <span class="arrow-icon collapsed">▼</span>
+            </h3>
+            <div id="hierarchyBody" class="card-body collapsed"><div id="hierarchyArea"></div></div>
+        </div>
+        
+        <div class="card" style="border-left: 5px solid var(--gold);">
+            <h3 class="card-header" onclick="toggleCard('trendBody')">
+                <span id="trendTitle">時空運勢波形圖 <span style="font-size:0.7em; color:#888;">(預設: 總命運)</span></span>
+                <span class="arrow-icon">▼</span>
+            </h3>
+            <div id="trendBody" class="card-body">
+                <div style="margin-bottom:10px; display:flex; justify-content:flex-end;">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" id="gradeCheckbox" onchange="updateTrendChart(lastActiveAspect)">
+                        ☑ 十二宮三品格 (啟用星宿加權)
+                    </label>
+                </div>
+                <div style="height: 250px; width: 100%;"><canvas id="trendChart"></canvas></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 class="card-header" onclick="toggleCard('aspectsBody')">
+                十二運程戰略指導 <span style="font-size:0.7em; color:var(--cyan);">(點擊項目切換波形)</span>
+                <span class="arrow-icon">▼</span>
+            </h3>
+            <div id="aspectsBody" class="card-body"><div id="aspectsList"></div></div>
+        </div>
+
+        <div class="card" style="background:#161625; border-color:var(--gpt-color);">
+            <h3 class="card-header" onclick="toggleCard('aiBody')" style="color:var(--gpt-color);">
+                🤖 AI 戰略顧問 <button class="ai-btn" onclick="event.stopPropagation(); callAIWithMode('general');">🔮 綜合分析</button>
+                <span class="arrow-icon collapsed">▼</span>
+            </h3>
+            <div id="aiBody" class="card-body collapsed">
+                <div class="ai-controls">
+                    <button class="ai-shortcut-btn" onclick="callAIWithMode('weakest')">💔 找病灶</button>
+                    <button class="ai-shortcut-btn" onclick="callAIWithMode('timing')">📅 定時機</button>
+                    <button class="ai-shortcut-btn" onclick="callAIWithMode('script')">🗣️ 求話術</button>
+                </div>
+                <div id="aiPrompt" style="display:none;"></div>
+                <div id="aiResponseArea" style="min-height:100px; padding:10px; color:#ddd;">(請點擊上方按鈕，啟動戰略分析...)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
+    const STAR_TRAITS = { '天貴': { type: '吉', keyword: '貴人/顯赫' }, '天厄': { type: '凶', keyword: '勞碌/疾厄' }, '天權': { type: '平', keyword: '權力/社交' }, '天破': { type: '凶', keyword: '消耗/破損' }, '天奸': { type: '平', keyword: '機智/變動' }, '天文': { type: '吉', keyword: '智慧/文采' }, '天福': { type: '吉', keyword: '福氣/財祿' }, '天驛': { type: '平', keyword: '奔波/變動' }, '天孤': { type: '凶', keyword: '孤獨/獨立' }, '天刃': { type: '凶', keyword: '剛強/血光' }, '天藝': { type: '平', keyword: '才藝/技術' }, '天壽': { type: '吉', keyword: '長壽/圓融' } };
+    const ROULETTE_PATH = ['巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰'];
+    let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
+
+    function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
+    function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
+    function toggleCard(bodyId) { const body = document.getElementById(bodyId); const arrow = body.previousElementSibling.querySelector('.arrow-icon'); if (body.classList.contains('collapsed')) { body.classList.remove('collapsed'); if(arrow) arrow.classList.remove('collapsed'); } else { body.classList.add('collapsed'); if(arrow) arrow.classList.add('collapsed'); } }
+    function getRealmColor(realm) { if(realm.includes('佛')) return '#ffd700'; if(realm.includes('仙')) return '#4fd1c5'; if(realm.includes('修羅')) return '#ff9f43'; if(realm.includes('鬼')) return '#a0aec0'; if(realm.includes('畜')) return '#8c7853'; return '#e0e0e0'; }
+    function getStatusColor(relation) { if(relation==='生我'||relation==='比旺') return 'var(--status-best)'; if(relation==='我生') return 'var(--status-good)'; if(relation==='我剋') return 'var(--status-growth)'; if(relation==='剋我') return 'var(--status-bad)'; return '#888'; }
+    
+    function getStrategicAdvice(aspect, relation, star) {
+        const starInfo = STAR_TRAITS[star] || { type: '平', keyword: '未知' };
+        let context = aspect.includes('總命運') ? '整體運勢' : aspect.includes('錢財') ? '財務佈局' : '應對策略';
+        if (relation === '比旺') return `🤝 ${context}：順勢而為，擴大${starInfo.keyword}優勢。`;
+        else if (relation === '生我') return `🎁 ${context}：貴人相助，獲得${starInfo.keyword}支持。`;
+        else if (relation === '我生') return `💡 ${context}：展現${starInfo.keyword}，以才華換成果。`;
+        else if (relation === '剋我') return `🛡️ ${context}：壓力巨大，防${starInfo.keyword}，宜保守。`;
+        else if (relation === '我剋') return `💰 ${context}：積極掌控，雖${starInfo.keyword}辛苦但可期。`;
+        return `🔍 ${context}：靜觀其變。`;
+    }
+
+    function updateFormUI() {
+        const scope = document.getElementById('targetScope').value;
+        document.getElementById('monthInput').className = (scope !== 'year') ? 'input-group show' : 'input-group';
+        document.getElementById('dayInput').className = (scope === 'day' || scope === 'hour') ? 'input-group show' : 'input-group';
+        document.getElementById('hourInput').className = (scope === 'hour') ? 'input-group show' : 'input-group';
+    }
+
+    function initMap() {
+        for(let zhi in DEFAULT_STARS) {
+            const cell = document.getElementById('cell-'+zhi);
+            if(cell) {
+                const info = DEFAULT_STARS[zhi];
+                const color = getRealmColor(info.realm);
+                cell.innerHTML = `<div class="pillar-badges-container"></div><span class="cell-zhi">${zhi}</span><span class="cell-star" style="color:${color}">${info.name}</span><span class="cell-realm" style="color:${color}; opacity:0.7;">${info.realm}</span>`;
+                cell.className = 'grid-cell'; cell.style.boxShadow = 'none';
+            }
+        }
+    }
+
+    function getTargetLabel() {
+        const scope = document.getElementById('targetScope').value;
+        if (scope === 'year') return document.getElementById('tYear').value;
+        if (scope === 'month') return document.getElementById('tMonth').value + "月";
+        if (scope === 'day') return document.getElementById('tDay').value + "日";
+        if (scope === 'hour') { const hVal = document.getElementById('tHour').value; return hVal + "時"; }
+        return "";
+    }
+
+    function renderTrendChart(labels, scores, tooltips, title) {
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        if (trendChartInstance) trendChartInstance.destroy();
+        document.getElementById('trendTitle').innerHTML = `時空運勢波形圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>`;
+        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+        gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)');
+        gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+        
+        const targetLabelStr = getTargetLabel();
+        const targetIndex = labels.indexOf(targetLabelStr);
+        const pointBackgroundColors = labels.map((_, i) => i === targetIndex || labels[i] === "D+0" ? '#ff4d4d' : '#fff');
+        const pointBorderColors = labels.map((_, i) => i === targetIndex || labels[i] === "D+0" ? '#fff' : '#d4af37');
+        const pointRadii = labels.map((_, i) => i === targetIndex || labels[i] === "D+0" ? 8 : 4);
+        const pointHoverRadii = labels.map((_, i) => i === targetIndex || labels[i] === "D+0" ? 12 : 7);
+
+        trendChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointBackgroundColors, pointBorderColor: pointBorderColors, pointRadius: pointRadii, pointHoverRadius: pointHoverRadii, pointBorderWidth: 2, fill: true, tension: 0.4 }] },
+            options: { 
+                maintainAspectRatio: false, 
+                scales: { y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, x: { grid: {color:'#333'}, ticks: {color:'#e0e0e0'} } }, 
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: { 
+                        callbacks: { 
+                            label: function(context) {
+                                const aspectName = lastActiveAspect;
+                                const index = context.dataIndex;
+                                const baseScore = globalTrendData.datasets[aspectName][index];
+                                const adjustment = (globalTrendData.adjustments[aspectName] || [])[index] || 0;
+                                const finalScore = context.raw;
+                                const sign = adjustment > 0 ? '+' : '';
+                                return `總分 ${finalScore} = 基礎 ${baseScore} ${adjustment !== 0 ? `(星宿${sign}${adjustment})` : ''}`;
+                            },
+                            afterLabel: function(ctx) { return tooltips[ctx.dataIndex]; } 
+                        }, 
+                        backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37' 
+                    } 
+                } 
+            }
+        });
+    }
+
+    function updateTrendChart(aspectName) {
+        if (!globalTrendData || !globalTrendData.datasets[aspectName]) return;
+        lastActiveAspect = aspectName;
+        if (!aspectClickCounts[aspectName]) aspectClickCounts[aspectName] = 0;
+        aspectClickCounts[aspectName]++;
+
+        const isAdjusted = document.getElementById('gradeCheckbox').checked;
+        const baseScores = globalTrendData.datasets[aspectName];
+        const adjustments = (globalTrendData.adjustments && globalTrendData.adjustments[aspectName]) ? globalTrendData.adjustments[aspectName] : new Array(baseScores.length).fill(0);
+
+        const finalScores = baseScores.map((score, i) => {
+            if (!isAdjusted) return score;
+            let val = score + adjustments[i];
+            return Math.max(5, Math.min(95, val));
+        });
+
+        renderTrendChart(globalTrendData.axis_labels, finalScores, globalTrendData.tooltips[aspectName], aspectName + (isAdjusted ? " + 加權" : ""));
+        document.querySelectorAll('.aspect-row').forEach(row => row.classList.remove('active-aspect'));
+        const activeRow = document.getElementById(`row-${aspectName}`);
+        if(activeRow) activeRow.classList.add('active-aspect');
+    }
+
+    function renderFullView(result) {
+        initMap();
+        const h = result.hierarchy;
+        const pillars = [ { k:'年', c:'var(--p-year)', z:result.base_chart.年柱.zhi, n:result.base_chart.年柱.name }, { k:'月', c:'var(--p-month)', z:result.base_chart.月柱.zhi, n:result.base_chart.月柱.name }, { k:'日', c:'var(--p-day)', z:result.base_chart.日柱.zhi, n:result.base_chart.日柱.name }, { k:'命', c:'var(--p-hour)', z:result.base_chart.時柱.zhi, n:result.base_chart.時柱.name } ];
+        let pillarsHtml = '';
+        pillars.forEach(p => { addBadgeToCell(p.z, p.k, p.c, true); pillarsHtml += `<div class="pillar-box active" style="border-color:${p.c};"><div style="color:${p.c}; font-weight:bold;">${p.n}</div><div style="font-size:0.8em;">${p.z}</div></div>`; });
+        setHTML('pillarsArea', pillarsHtml);
+        if(h.big_luck) addBadgeToCell(h.big_luck.zhi, '大運', 'var(--p-luck)', true);
+        if(h.year) addBadgeToCell(h.year.zhi, '流年', 'var(--p-year)', true);
+        const targetScope = document.getElementById('targetScope').value;
+        if(['month','day','hour'].includes(targetScope) && h.month) addBadgeToCell(h.month.zhi, '流月', 'var(--p-month)', true);
+        if(['day','hour'].includes(targetScope) && h.day) addBadgeToCell(h.day.zhi, '流日', 'var(--p-day)', true);
+        if(targetScope==='hour' && h.hour) addBadgeToCell(h.hour.zhi, '流時', 'var(--p-hour)', true);
+        
+        result.aspects.forEach(a => {
+            const cell = document.getElementById('cell-'+a.zhi);
+            if(cell && !cell.querySelector('.cell-aspect-name')) {
+                cell.innerHTML += `<div class="cell-aspect-name show-content">${a.name}</div><div class="cell-relation-tag" style="background:${getStatusColor(a.relation)}; color:#1a2634;">${a.relation}</div>`;
+                if(a.is_alert) cell.classList.add('alert');
+            }
+        });
+        fillLists(result, h);
+    }
+
+    function fillLists(result, h) {
+        let hHtml = `<div class="hierarchy-step"><span class="step-label">大運</span><span class="step-value">${h.big_luck.zhi}宮 ${h.big_luck.name}</span></div><div class="hierarchy-step"><span class="step-label">流年</span><span class="step-value">${h.year.zhi}宮 ${h.year.name}</span></div>`;
+        if(h.month) hHtml += `<div class="hierarchy-step"><span class="step-label">流月</span><span class="step-value">${h.month.zhi}宮 ${h.month.name}</span></div>`;
+        setHTML('hierarchyArea', hHtml);
+
+        let aHtml = '';
+        const targetLabel = getTargetLabel();
+        let dataIndex = globalTrendData ? globalTrendData.axis_labels.indexOf(targetLabel) : -1;
+        if (dataIndex === -1 && globalTrendData) dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
+
+        result.aspects.forEach(a => {
+            let score = 50; 
+            let baseScore = 50; 
+            let adjScore = 0;   
+            let trendHtml = '<span class="trend-icon flat">-</span>';
+            
+            if (dataIndex !== -1 && globalTrendData.datasets[a.name]) {
+                const baseScores = globalTrendData.datasets[a.name];
+                const adjustments = globalTrendData.adjustments[a.name] || [];
+                const isAdjusted = document.getElementById('gradeCheckbox').checked;
+
+                baseScore = baseScores[dataIndex];
+                adjScore = adjustments[dataIndex] || 0;
+
+                let rawScore = baseScore;
+                if (isAdjusted) rawScore += adjScore;
+                score = Math.max(5, Math.min(95, rawScore));
+
+                if (dataIndex < baseScores.length - 1) {
+                    let rawNext = baseScores[dataIndex + 1];
+                    if (isAdjusted) rawNext += (adjustments[dataIndex + 1] || 0);
+                    let nextScore = Math.max(5, Math.min(95, rawNext));
+                    
+                    let diff = nextScore - score;
+                    if (diff > 25) trendHtml = '<span class="trend-icon up" title="運勢飆升">↗↗↗</span>';
+                    else if (diff > 15) trendHtml = '<span class="trend-icon up" title="運勢大漲">↗↗</span>';
+                    else if (diff > 5) trendHtml = '<span class="trend-icon up" title="運勢微升">↗</span>';
+                    else if (diff < -25) trendHtml = '<span class="trend-icon down" title="運勢崩跌">↘↘↘</span>';
+                    else if (diff < -15) trendHtml = '<span class="trend-icon down" title="運勢大跌">↘↘</span>';
+                    else if (diff < -5) trendHtml = '<span class="trend-icon down" title="運勢微跌">↘</span>';
+                }
+            }
+
+            let barColor = '#888';
+            if (score >= 80) barColor = 'var(--status-best)'; 
+            else if (score >= 65) barColor = 'var(--status-good)';
+            else if (score >= 40) barColor = 'var(--status-growth)';
+            else barColor = 'var(--status-bad)';
+
+            const isAdjusted = document.getElementById('gradeCheckbox').checked;
+            let compHtml = '';
+            if (isAdjusted && adjScore !== 0) {
+                const sign = adjScore > 0 ? '+' : '';
+                const styleClass = adjScore > 0 ? 'score-bonus' : 'score-penalty';
+                compHtml = `<span class="score-composition">(${baseScore}<span class="${styleClass}">${sign}${adjScore}</span>)</span>`;
+            }
+
+            aHtml += `
+            <div id="row-${a.name}" class="aspect-row clickable" onclick="updateTrendChart('${a.name}')">
+                <div style="width: 110px; flex-shrink:0;">
+                    <div style="display:flex; align-items:center;">
+                        <span style="color:var(--cyan); font-weight:bold; font-size:1em;">${a.name}</span>
+                        ${trendHtml}
+                    </div>
+                    <div style="font-size:0.75em; color:#888; margin-top:2px;">${a.zhi} | <b style="color:#ddd;">${a.star}</b></div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:center; padding:0 5px;">
+                    <div style="display:flex; align-items:center; margin-bottom:3px;">
+                        <div style="width:70px; text-align:right; margin-right:6px; white-space:nowrap;">
+                            <span style="font-size:0.9em; color:${barColor}; font-weight:bold;">${score}</span>
+                            ${compHtml}
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width:${score}%; background:${barColor}; box-shadow: 0 0 8px ${barColor};"></div>
+                        </div>
+                    </div>
+                    <div class="aspect-advice" style="font-size:0.8em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0.8;">
+                        ${getStrategicAdvice(a.name, a.relation, a.star)}
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:5px; width:85px; justify-content:flex-end;">
+                    <div class="aspect-tag" style="background:${getStatusColor(a.relation)}; font-size:0.7em; padding:2px 4px; min-width:40px;">${a.relation}</div>
+                    <button class="mini-ai-btn" onclick="event.stopPropagation(); lastActiveAspect='${a.name}'; callAIWithMode('script');">🤖</button>
+                </div>
+            </div>`;
+        });
+        setHTML('aspectsList', aHtml);
+        setText('aiPrompt', result.ai_prompt);
+        if(result.trend_data) { globalTrendData = result.trend_data; updateTrendChart('總命運'); }
+    }
+
+    function togglePause() { globalIsPaused = !globalIsPaused; }
+    function skipToComplete() { if(globalLastResult) { globalSkipAnimation=true; renderFullView(globalLastResult); } }
+    function replayAnimation() { if(globalLastResult) startAnimationSequence(globalLastResult); }
+    function addBadgeToCell(zhi, text, color, instant) { const cell = document.getElementById('cell-'+zhi); if(cell) { cell.classList.add('active'); const c = cell.querySelector('.pillar-badges-container'); if(c && !Array.from(c.children).some(e=>e.innerText===text)) { const b = document.createElement('span'); b.className='pillar-badge'; b.style.background=color; b.innerText=text; c.appendChild(b); if(instant) b.classList.add('show'); else setTimeout(()=>b.classList.add('show'),50); } } }
+    function runRoulette(targetZhi, isMale) { return new Promise(resolve => { let rounds=0, maxRounds=1, speed=80; const targetIndex = ROULETTE_PATH.indexOf(targetZhi); const step = isMale ? 1 : -1; function nextStep() { if(globalSkipAnimation) { resolve(); return; } if(globalIsPaused) { setTimeout(nextStep, 100); return; } const prev = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(prev) prev.classList.remove('roulette-active'); currentLightIndex = (currentLightIndex + step + 12) % 12; const curr = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(curr) curr.classList.add('roulette-active'); if(rounds>=maxRounds && currentLightIndex===targetIndex) { if(curr) curr.classList.add('flash-stop'); setTimeout(()=>{ if(curr){curr.classList.remove('roulette-active'); curr.classList.remove('flash-stop');} resolve(); }, 1500); return; } if(currentLightIndex===0) rounds++; if(rounds>=maxRounds) speed+=40; setTimeout(nextStep, speed); } nextStep(); }); }
+
+    async function startAnimationSequence(result) {
+        document.getElementById('loadingOverlay').style.display='none'; document.getElementById('animControls').style.display='flex';
+        globalSkipAnimation=false; globalIsPaused=false; initMap(); setHTML('pillarsArea','');
+        const isMale = (parseInt(document.getElementById('gender').value)===1);
+        setText('lunarInfo', `| 虛歲 ${result.age} | ${result.lunar_info}`);
+        setText('targetDisplayInfo', result.target_display);
+        const p = result.base_chart;
+        const list = [{z:p.年柱.zhi, n:p.年柱.name, c:'var(--p-year)', k:'年'}, {z:p.月柱.zhi, n:p.月柱.name, c:'var(--p-month)', k:'月'}, {z:p.日柱.zhi, n:p.日柱.name, c:'var(--p-day)', k:'日'}, {z:p.時柱.zhi, n:p.時柱.name, c:'var(--p-hour)', k:'命'}];
+        for(let item of list) { if(globalSkipAnimation) break; await runRoulette(item.z, isMale); addBadgeToCell(item.z, item.k, item.c); document.getElementById('pillarsArea').innerHTML += `<div class="pillar-box active" style="border-color:${item.c}"><div style="color:${item.c}">${item.n}</div><div>${item.z}</div></div>`; }
+        renderFullView(result);
+    }
+
+    async function calculate() {
+        document.getElementById('loadingOverlay').style.display='flex';
+        const data = { gender: parseInt(document.getElementById('gender').value), solar_date: document.getElementById('solarDate').value, hour: document.getElementById('hour').value, target_calendar: document.querySelector('input[name="calendarType"]:checked').value, target_scope: document.getElementById('targetScope').value, target_year: parseInt(document.getElementById('tYear').value)||2026, target_month: parseInt(document.getElementById('tMonth').value)||1, target_day: parseInt(document.getElementById('tDay').value)||1, target_hour: document.getElementById('tHour').value };
+        try { const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); if(!res.ok) throw new Error((await res.json()).detail); globalLastResult = await res.json(); startAnimationSequence(globalLastResult); } catch(e) { alert("❌ 排盤失敗：\n"+e.message); document.getElementById('loadingOverlay').style.display='none'; }
+    }
+
+    async function callAIWithMode(mode) {
+        const aspectName = lastActiveAspect || '總命運'; 
+        const targetLabel = getTargetLabel();
+        const dataIndex = globalTrendData.axis_labels.indexOf(targetLabel);
+        
+        if (!globalTrendData || dataIndex === -1) { alert("請先完成排盤！"); return; }
+
+        let strongest = { name: '', score: -1, star: '' };
+        let weakest = { name: '', score: 999, star: '' };
+        let currentAspectData = { score: 0, relation: '', star: '' };
+
+        for (const key in globalTrendData.datasets) {
+            const score = globalTrendData.datasets[key][dataIndex];
+            const tooltipRaw = globalTrendData.tooltips[key][dataIndex] || ""; 
+            const starName = tooltipRaw.split('坐')[1]?.split(' ')[0] || "未知";
+            const relationName = tooltipRaw.split('(')[1]?.split(')')[0] || "未知";
+            if (key === aspectName) currentAspectData = { score, relation: relationName, star: starName };
+            if (score > strongest.score) strongest = { name: key, score, star: starName };
+            if (score < weakest.score) weakest = { name: key, score, star: starName };
+        }
+
+        let maxClickedAspect = aspectName, maxCount = 0, totalClicks = 0;
+        for (const [key, count] of Object.entries(aspectClickCounts)) { totalClicks += count; if (count > maxCount) { maxCount = count; maxClickedAspect = key; } }
+        let behaviorInsight = "";
+        if (totalClicks >= 3 && maxClickedAspect !== aspectName) {
+            behaviorInsight = `⚠️ 潛在焦慮偵測：案主目前停留在【${aspectName}】，但數據顯示他查看【${maxClickedAspect}】次數最多（${maxCount}次）。請分析這兩者的連動關係（例如：是否因${maxClickedAspect}的問題導致了${aspectName}的困境？）。`;
+        }
+
+        let specificPrompt = "", loadingText = "";
+        if (mode === 'general') {
+            loadingText = `🔮 戰略顧問正在進行【${aspectName}】全盤交叉比對...`;
+            specificPrompt = `請進行全盤戰略推演。重點分析【${aspectName}】目前的處境 (${currentAspectData.score}分, ${currentAspectData.relation})。並指出【${weakest.name}】(${weakest.score}分) 是否為潛在風險，以及如何利用【${strongest.name}】(${strongest.score}分) 來借力使力。${behaviorInsight} 輸出格式：【局勢總覽】、【關鍵戰術(3點)】、【連鎖反應預警】、【成功率預估】。`;
+        } else if (mode === 'weakest') {
+            loadingText = `💔 正在掃描全盤最弱環節與病灶...`;
+            specificPrompt = `請專注分析案主的【致命弱點/病灶】。全盤最弱的宮位是【${weakest.name}】，分數僅 ${weakest.score} 分，坐 ${weakest.star}。1. 請解釋為什麼 ${weakest.name} 會崩盤？(結合星宿特性) 2. 這個弱點會如何拖累案主最在意的【${aspectName}】？3. 請給出「止血療傷」的具體方案，如何將傷害降到最低？輸出格式：【病灶診斷】、【連帶傷害分析】、【止血急救方案】。`;
+        } else if (mode === 'timing') {
+            loadingText = `📅 正在為【${aspectName}】計算最佳進攻窗口...`;
+            const scores = globalTrendData.datasets[aspectName];
+            const labels = globalTrendData.axis_labels;
+            let maxVal = -1, maxIdx = -1, minVal = 999, minIdx = -1;
+            scores.forEach((s, i) => { if (s > maxVal) { maxVal = s; maxIdx = i; } if (s < minVal) { minVal = s; minIdx = i; } });
+            specificPrompt = `案主想知道【${aspectName}】的行動時機。根據波形圖數據：- 最佳時機 (進攻)：在【${labels[maxIdx]}】，能量高達 ${maxVal} 分。- 最差時機 (避險)：在【${labels[minIdx]}】，能量跌至 ${minVal} 分。請給出時間戰略：1. 在最佳時機適合做什麼大事？2. 在最差時機應該如何避險？3. 針對目前的目標時間點 (${targetLabel})，是該進還是該退？輸出格式：【黃金進攻期】、【紅色警戒期】、【當下行動建議】。`;
+        } else if (mode === 'script') {
+            loadingText = `🗣️ 正在為您生成針對【${aspectName}】的談判劇本...`;
+            specificPrompt = `案主需要針對【${aspectName}】的實戰話術/劇本。當前情境：分數 ${currentAspectData.score} 分，關係為 ${currentAspectData.relation}，對方/環境帶有 ${currentAspectData.star} 的特性。請設計 3 組對話劇本或自我對話心法：1. **【進攻型劇本】**：如果要爭取資源或談判，該怎麼說？(利用 ${currentAspectData.star} 的弱點) 2. **【防守型劇本】**：如果面臨質疑或壓力，該如何圓滑回應？3. **【心理建設】**：一句話的座右銘，用來穩定軍心。`;
+        }
+
+        const aiBody = document.getElementById('aiBody');
+        if(aiBody.classList.contains('collapsed')) toggleCard('aiBody');
+        setHTML('aiResponseArea', loadingText);
+
+        const finalPrompt = `你是一位精通《達摩一掌經》的戰略顧問。依據資料：${specificPrompt}`;
+        try {
+            const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:finalPrompt})});
+            const d = await res.json();
+            setHTML('aiResponseArea', d.reply.replace(/\n/g, '<br>') || d.error);
+        } catch(e) { setHTML('aiResponseArea', '連線失敗：'+e.message); }
+    }
+    
+    initMap(); updateFormUI();
+</script>
+</body>
+</html>
