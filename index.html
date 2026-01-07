@@ -62,7 +62,7 @@
         .mini-ai-btn { background: transparent; border: 1px solid var(--gpt-color); color: var(--gpt-color); border-radius: 4px; width: 26px; height: 26px; font-size: 0.9em; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 8px; transition: all 0.2s; }
         .mini-ai-btn:hover { background: var(--gpt-color); color: white; transform: scale(1.1); box-shadow: 0 0 10px rgba(16, 163, 127, 0.4); }
         
-        /* 進度條與趨勢 */
+        /* 戰略儀表板 */
         .progress-container { flex: 1; height: 6px; background: #333; border-radius: 3px; margin: 0 8px; overflow: hidden; position: relative; }
         .progress-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
         .trend-icon { font-weight: bold; margin-left: 5px; font-size: 1.1em; }
@@ -129,9 +129,20 @@
             <option value="year">流年 (只看年)</option><option value="month">流月 (年+月)</option>
             <option value="day">流日 (年+月+日)</option><option value="hour">流時 (年+月+日+時)</option>
         </select>
-        <div id="yearInput" class="input-group show"><label>年份</label><input type="number" id="tYear" value="2026"></div>
-        <div id="monthInput" class="input-group"><label>月份</label><input type="number" id="tMonth" value="1" min="1" max="12"></div>
-        <div id="dayInput" class="input-group"><label>日期</label><input type="number" id="tDay" value="1" min="1" max="31"></div>
+        
+        <div id="yearInput" class="input-group show">
+            <label id="lblYear">農曆年份</label> 
+            <input type="number" id="tYear" value="2026">
+        </div>
+        <div id="monthInput" class="input-group">
+            <label id="lblMonth">農曆月份</label>
+            <input type="number" id="tMonth" value="1" min="1" max="12">
+        </div>
+        <div id="dayInput" class="input-group">
+            <label id="lblDay">農曆日期</label>
+            <input type="number" id="tDay" value="1" min="1" max="31">
+        </div>
+        
         <div id="hourInput" class="input-group">
             <label>時辰</label>
             <select id="tHour">
@@ -280,8 +291,34 @@
         return `🔍 ${context}：靜觀其變。`;
     }
 
+    // [V9.6 防呆] 依據層級鎖定/解鎖西元曆
     function updateFormUI() {
         const scope = document.getElementById('targetScope').value;
+        const solarRadio = document.querySelector('input[name="calendarType"][value="solar"]');
+        const lunarRadio = document.querySelector('input[name="calendarType"][value="lunar"]');
+        
+        // 1. 強制鎖定邏輯
+        if (scope === 'year') {
+            lunarRadio.checked = true;
+            solarRadio.disabled = true;
+            solarRadio.parentElement.style.opacity = '0.5';
+            solarRadio.parentElement.style.cursor = 'not-allowed';
+            solarRadio.parentElement.title = "流年推演僅支援農曆年份 (避免跨年誤差)";
+        } else {
+            solarRadio.disabled = false;
+            solarRadio.parentElement.style.opacity = '1';
+            solarRadio.parentElement.style.cursor = 'pointer';
+            solarRadio.parentElement.title = "";
+        }
+
+        // 2. 更新標籤文字
+        const calType = document.querySelector('input[name="calendarType"]:checked').value;
+        const prefix = (calType === 'solar') ? '西元' : '農曆';
+        setText('lblYear', `${prefix}年份`);
+        setText('lblMonth', `${prefix}月份`);
+        setText('lblDay', `${prefix}日期`);
+
+        // 3. 欄位顯示
         document.getElementById('monthInput').className = (scope !== 'year') ? 'input-group show' : 'input-group';
         document.getElementById('dayInput').className = (scope === 'day' || scope === 'hour') ? 'input-group show' : 'input-group';
         document.getElementById('hourInput').className = (scope === 'hour') ? 'input-group show' : 'input-group';
@@ -308,49 +345,42 @@
         return "";
     }
 
-function renderTrendChart(labels, scores, tooltips, title) {
+    function renderTrendChart(labels, scores, tooltips, title) {
         const ctx = document.getElementById('trendChart').getContext('2d');
         if (trendChartInstance) trendChartInstance.destroy();
         document.getElementById('trendTitle').innerHTML = `時空運勢波形圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>`;
-        
         const gradient = ctx.createLinearGradient(0, 0, 0, 250);
         gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)');
         gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
         
-        // [V9.4] 目標標記邏輯優化
-        // 因為 label 現在可能是陣列 ["農01月", "(國02/17)"]，我们需要轉成字串來比對
         const targetStr = document.getElementById('tYear').value;
         const targetMonth = parseInt(document.getElementById('tMonth').value);
         const targetDay = parseInt(document.getElementById('tDay').value);
         const scope = document.getElementById('targetScope').value;
 
         const pointBackgroundColors = labels.map((l, i) => {
-            // 簡單比對：如果是當下選擇的時間點，就標紅
             let isTarget = false;
-            let labelStr = Array.isArray(l) ? l.join("") : l; // 轉平字串
-            
+            let labelStr = Array.isArray(l) ? l.join("") : l; 
             if (scope === 'year') isTarget = labelStr.includes(targetStr);
             else if (scope === 'month') isTarget = labelStr.includes(`農${targetMonth.toString().padStart(2,'0')}`);
-            else if (scope === 'day') isTarget = labelStr.includes(`初${targetDay}`); // 簡單判定
-            
+            else if (scope === 'day') isTarget = labelStr.includes(`初${targetDay}`);
             return isTarget ? '#ff4d4d' : '#fff';
         });
         
         const pointBorderColors = pointBackgroundColors.map(c => c === '#ff4d4d' ? '#fff' : '#d4af37');
         const pointRadii = pointBackgroundColors.map(c => c === '#ff4d4d' ? 8 : 4);
-
+        
         trendChartInstance = new Chart(ctx, {
             type: 'line',
             data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointBackgroundColors, pointBorderColor: pointBorderColors, pointRadius: pointRadii, pointBorderWidth: 2, fill: true, tension: 0.4 }] },
             options: { 
                 maintainAspectRatio: false, 
-                scales: { y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, x: { grid: {color:'#333'}, ticks: {color:'#e0e0e0', font: {size: 10}} } }, // 縮小字體以容納雙行
+                scales: { y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, x: { grid: {color:'#333'}, ticks: {color:'#e0e0e0', font:{size:10}} } }, 
                 plugins: { 
                     legend: { display: false },
                     tooltip: { 
                         callbacks: { 
                             title: function(tooltipItems) {
-                                // [V9.4] Tooltip 標題顯示雙曆
                                 let label = tooltipItems[0].label;
                                 if(Array.isArray(label)) label = label.join(" ");
                                 return label;
@@ -366,7 +396,7 @@ function renderTrendChart(labels, scores, tooltips, title) {
                             },
                             afterLabel: function(ctx) { return tooltips[ctx.dataIndex]; } 
                         }, 
-                        backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37', bodyFont: {size: 13}
+                        backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37', bodyFont:{size:13}
                     } 
                 } 
             }
@@ -402,14 +432,27 @@ function renderTrendChart(labels, scores, tooltips, title) {
 
         let aHtml = '';
         const targetLabel = getTargetLabel();
-        let dataIndex = globalTrendData ? globalTrendData.axis_labels.indexOf(targetLabel) : -1;
-        if (dataIndex === -1 && globalTrendData) dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
+        const scope = document.getElementById('targetScope').value;
+        const targetMonth = parseInt(document.getElementById('tMonth').value);
+        const targetDay = parseInt(document.getElementById('tDay').value);
+        const targetStr = document.getElementById('tYear').value;
+
+        // 尋找對應的 Data Index (含雙曆邏輯)
+        let dataIndex = -1;
+        if(globalTrendData) {
+            dataIndex = globalTrendData.axis_labels.findIndex(l => {
+                let labelStr = Array.isArray(l) ? l.join("") : l;
+                if (scope === 'year') return labelStr.includes(targetStr);
+                else if (scope === 'month') return labelStr.includes(`農${targetMonth.toString().padStart(2,'0')}`);
+                else if (scope === 'day') return labelStr.includes(`初${targetDay}`);
+                return false;
+            });
+            // 若找不到則預設中間
+            if (dataIndex === -1) dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
+        }
 
         result.aspects.forEach(a => {
-            let score = 50; 
-            let baseScore = 50; 
-            let adjScore = 0;   
-            let trendHtml = '<span class="trend-icon flat">-</span>';
+            let score = 50, baseScore = 50, adjScore = 0, trendHtml = '<span class="trend-icon flat">-</span>';
             
             if (dataIndex !== -1 && globalTrendData.datasets[a.name]) {
                 const baseScores = globalTrendData.datasets[a.name];
@@ -418,7 +461,6 @@ function renderTrendChart(labels, scores, tooltips, title) {
 
                 baseScore = baseScores[dataIndex];
                 adjScore = adjustments[dataIndex] || 0;
-
                 let rawScore = baseScore;
                 if (isAdjusted) rawScore += adjScore;
                 score = Math.max(5, Math.min(95, rawScore));
@@ -427,7 +469,6 @@ function renderTrendChart(labels, scores, tooltips, title) {
                     let rawNext = baseScores[dataIndex + 1];
                     if (isAdjusted) rawNext += (adjustments[dataIndex + 1] || 0);
                     let nextScore = Math.max(5, Math.min(95, rawNext));
-                    
                     let diff = nextScore - score;
                     if (diff > 25) trendHtml = '<span class="trend-icon up" title="運勢飆升">↗↗↗</span>';
                     else if (diff > 15) trendHtml = '<span class="trend-icon up" title="運勢大漲">↗↗</span>';
@@ -483,10 +524,7 @@ function renderTrendChart(labels, scores, tooltips, title) {
         });
         setHTML('aspectsList', aHtml);
         setText('aiPrompt', result.ai_prompt);
-        if(result.trend_data) { 
-            globalTrendData = result.trend_data; 
-            updateTrendChart('總命運'); 
-        }
+        if(result.trend_data) { globalTrendData = result.trend_data; updateTrendChart('總命運'); }
     }
 
     // CRM 相關功能
@@ -642,7 +680,7 @@ function renderTrendChart(labels, scores, tooltips, title) {
         for (const [key, count] of Object.entries(aspectClickCounts)) { totalClicks += count; if (count > maxCount) { maxCount = count; maxClickedAspect = key; } }
         let behaviorInsight = "";
         if (totalClicks >= 3 && maxClickedAspect !== aspectName) {
-            behaviorInsight = `⚠️ 潛在焦慮偵測：案主目前停留在【${aspectName}】，但數據顯示他查看【${maxClickedAspect}】次數最多（${maxCount}次）。請分析這兩者的連動關係。`;
+            behaviorInsight = `⚠️ 潛在焦慮偵測：案主目前停留在【${aspectName}】，但數據顯示他查看【${maxClickedAspect}】次數最多（${maxCount}次）。請分析這兩者的連動關係（例如：是否因${maxClickedAspect}的問題導致了${aspectName}的困境？）。`;
         }
 
         let specificPrompt = "", loadingText = "";
@@ -651,17 +689,17 @@ function renderTrendChart(labels, scores, tooltips, title) {
             specificPrompt = `請進行全盤戰略推演。重點分析【${aspectName}】目前的處境 (${currentAspectData.score}分, ${currentAspectData.relation})。並指出【${weakest.name}】(${weakest.score}分) 是否為潛在風險，以及如何利用【${strongest.name}】(${strongest.score}分) 來借力使力。${behaviorInsight} 輸出格式：【局勢總覽】、【關鍵戰術(3點)】、【連鎖反應預警】、【成功率預估】。`;
         } else if (mode === 'weakest') {
             loadingText = `💔 正在掃描全盤最弱環節與病灶...`;
-            specificPrompt = `請專注分析案主的【致命弱點/病灶】。全盤最弱的宮位是【${weakest.name}】，分數僅 ${weakest.score} 分，坐 ${weakest.star}。1. 請解釋為什麼 ${weakest.name} 會崩盤？2. 這個弱點會如何拖累案主最在意的【${aspectName}】？3. 請給出「止血療傷」的具體方案。輸出格式：【病灶診斷】、【連帶傷害分析】、【止血急救方案】。`;
+            specificPrompt = `請專注分析案主的【致命弱點/病灶】。全盤最弱的宮位是【${weakest.name}】，分數僅 ${weakest.score} 分，坐 ${weakest.star}。1. 請解釋為什麼 ${weakest.name} 會崩盤？(結合星宿特性) 2. 這個弱點會如何拖累案主最在意的【${aspectName}】？3. 請給出「止血療傷」的具體方案，如何將傷害降到最低？輸出格式：【病灶診斷】、【連帶傷害分析】、【止血急救方案】。`;
         } else if (mode === 'timing') {
             loadingText = `📅 正在為【${aspectName}】計算最佳進攻窗口...`;
             const scores = globalTrendData.datasets[aspectName];
             const labels = globalTrendData.axis_labels;
             let maxVal = -1, maxIdx = -1, minVal = 999, minIdx = -1;
             scores.forEach((s, i) => { if (s > maxVal) { maxVal = s; maxIdx = i; } if (s < minVal) { minVal = s; minIdx = i; } });
-            specificPrompt = `案主想知道【${aspectName}】的行動時機。根據波形圖數據：最佳時機在【${labels[maxIdx]}】(${maxVal}分)，最差時機在【${labels[minIdx]}】(${minVal}分)。請給出時間戰略：1. 在最佳時機適合做什麼大事？2. 在最差時機應該如何避險？3. 針對目前目標時間點(${targetLabel})是該進還是該退？輸出格式：【黃金進攻期】、【紅色警戒期】、【當下行動建議】。`;
+            specificPrompt = `案主想知道【${aspectName}】的行動時機。根據波形圖數據：- 最佳時機 (進攻)：在【${labels[maxIdx]}】，能量高達 ${maxVal} 分。- 最差時機 (避險)：在【${labels[minIdx]}】，能量跌至 ${minVal} 分。請給出時間戰略：1. 在最佳時機適合做什麼大事？2. 在最差時機應該如何避險？3. 針對目前的目標時間點 (${targetLabel})，是該進還是該退？輸出格式：【黃金進攻期】、【紅色警戒期】、【當下行動建議】。`;
         } else if (mode === 'script') {
             loadingText = `🗣️ 正在為您生成針對【${aspectName}】的談判劇本...`;
-            specificPrompt = `案主需要針對【${aspectName}】的實戰話術/劇本。當前情境：分數 ${currentAspectData.score} 分，關係為 ${currentAspectData.relation}，對方/環境帶有 ${currentAspectData.star} 的特性。請設計：1.【進攻型劇本】(爭取資源)。2.【防守型劇本】(回應質疑)。3.【心理建設】(一句話座右銘)。`;
+            specificPrompt = `案主需要針對【${aspectName}】的實戰話術/劇本。當前情境：分數 ${currentAspectData.score} 分，關係為 ${currentAspectData.relation}，對方/環境帶有 ${currentAspectData.star} 的特性。請設計 3 組對話劇本或自我對話心法：1. **【進攻型劇本】**：如果要爭取資源或談判，該怎麼說？(利用 ${currentAspectData.star} 的弱點) 2. **【防守型劇本】**：如果面臨質疑或壓力，該如何圓滑回應？3. **【心理建設】**：一句話的座右銘，用來穩定軍心。`;
         }
 
         const aiBody = document.getElementById('aiBody');
@@ -680,4 +718,3 @@ function renderTrendChart(labels, scores, tooltips, title) {
 </script>
 </body>
 </html>
-
