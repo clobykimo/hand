@@ -156,7 +156,7 @@ class OnePalmSystem:
 
         return hierarchy
 
-    # 針對所有運程計算趨勢
+# [V5.7] 針對所有運程計算趨勢 (含雙曆標註)
     def calculate_full_trend(self, hierarchy, scope, lunar_data, target_data, system_obj):
         trend_response = { 
             "axis_labels": [], "datasets": {}, "adjustments": {}, "tooltips": {} 
@@ -167,25 +167,76 @@ class OnePalmSystem:
             trend_response["tooltips"][name] = []
 
         loop_range = []
+        
+        # --- [關鍵修改] 建立時間軸與雙曆標籤 ---
+        
         if scope == 'year':
+            # 流年：前後 6 年 (共13點) - 年份差異不大，直接顯示數字
             current_target_year = target_data['lunar_year']
             for y in range(current_target_year - 6, current_target_year + 7):
+                # 簡單加上生肖或是西元
+                # 這裡的 y 是農曆年，但通常與西元轉換只差不到一個月，直接顯示西元即可
                 loop_range.append({'type': 'year', 'val': y, 'label': f"{y}"})
+                
         elif scope == 'month':
+            # 流月：顯示 當年12個月 (為了對應清楚，我們先鎖定當年)
+            # 若要跨年太複雜，我們先優化「當年」的顯示
+            # 我們計算當年農曆 1~12 月，每個月初一對應的國曆日期
+            
+            # 取得當前農曆年
+            curr_lunar_year = target_data['lunar_year']
+            
             for m in range(1, 13):
-                loop_range.append({'type': 'month', 'val': m, 'label': f"{m}月"})
-        elif scope == 'day':
-            for d in range(1, 31):
-                loop_range.append({'type': 'day', 'val': d, 'label': f"{d}日"})
-        else: 
-            for h_idx in range(12):
-                loop_range.append({'type': 'hour', 'val': h_idx, 'label': f"{ZHI[h_idx]}時"})
+                # 將 農曆年/月/1日 轉為 國曆
+                try:
+                    # borax 的 LunarDate
+                    ld = LunarDate(curr_lunar_year, m, 1)
+                    sd = ld.to_solar_date() # 轉回國曆
+                    # 格式：農01 (國02/17)
+                    label_str = [f"農{m:02d}月", f"(國{sd.month}/{sd.day})"] # 陣列會讓 Chart.js 換行
+                except:
+                    label_str = f"{m}月"
+                
+                loop_range.append({'type': 'month', 'val': m, 'label': label_str})
 
+        elif scope == 'day':
+            # 流日：當月 1~30 日 (或29日)
+            curr_lunar_year = target_data['lunar_year']
+            curr_lunar_month = target_data['lunar_month']
+            
+            # 判斷該月有幾天 (29 或 30)
+            days_in_month = 30 # 簡單預設，borax 其實可以算，但為求穩健先跑30
+            try:
+                # 嘗試建立第30天，若失敗代表只有29天
+                LunarDate(curr_lunar_year, curr_lunar_month, 30)
+            except:
+                days_in_month = 29
+
+            for d in range(1, days_in_month + 1):
+                try:
+                    ld = LunarDate(curr_lunar_year, curr_lunar_month, d)
+                    sd = ld.to_solar_date()
+                    # 格式：初一 (02/17)
+                    label_str = [f"初{d}", f"({sd.month}/{sd.day})"]
+                except:
+                    label_str = f"{d}日"
+                
+                loop_range.append({'type': 'day', 'val': d, 'label': label_str})
+
+        else: 
+            # 流時
+            for h_idx in range(12):
+                # 流時對應的現代時間 (概略)
+                times = ["23-01", "01-03", "03-05", "05-07", "07-09", "09-11", 
+                         "11-13", "13-15", "15-17", "17-19", "19-21", "21-23"]
+                label_str = [f"{ZHI[h_idx]}時", f"({times[h_idx]})"]
+                loop_range.append({'type': 'hour', 'val': h_idx, 'label': label_str})
+
+        # --- 以下維持原有的運算邏輯 ---
         for point in loop_range:
             trend_response["axis_labels"].append(point['label'])
             me_el = None; target_el = None; target_name = ""; current_anchor_idx = 0 
 
-            # 動態計算：主 vs 客
             if scope == 'year':
                 y_age = point['val'] - lunar_data['lunar_year_num'] + 1
                 luck_stg = (y_age - 1) // 7
@@ -214,7 +265,7 @@ class OnePalmSystem:
                 me_el = STARS_INFO[ZHI[fd_idx]]['element']
                 current_anchor_idx = fd_idx
 
-            else: 
+            else: # hour
                 fd_idx = get_zhi_index(hierarchy['day']['zhi'])
                 target_el = STARS_INFO[ZHI[fd_idx]]['element']
                 target_name = "流日" + STARS_INFO[ZHI[fd_idx]]['name']
@@ -380,3 +431,4 @@ async def get_history():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
+
