@@ -308,30 +308,53 @@
         return "";
     }
 
-    function renderTrendChart(labels, scores, tooltips, title) {
+function renderTrendChart(labels, scores, tooltips, title) {
         const ctx = document.getElementById('trendChart').getContext('2d');
         if (trendChartInstance) trendChartInstance.destroy();
         document.getElementById('trendTitle').innerHTML = `時空運勢波形圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>`;
+        
         const gradient = ctx.createLinearGradient(0, 0, 0, 250);
         gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)');
         gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
         
-        const targetLabelStr = getTargetLabel();
-        const targetIndex = labels.indexOf(targetLabelStr);
-        const pointBackgroundColors = labels.map((_, i) => i === targetIndex || labels[i] === "D+0" ? '#ff4d4d' : '#fff');
-        const pointBorderColors = labels.map((_, i) => i === targetIndex || labels[i] === "D+0" ? '#fff' : '#d4af37');
-        const pointRadii = labels.map((_, i) => i === targetIndex || labels[i] === "D+0" ? 8 : 4);
+        // [V9.4] 目標標記邏輯優化
+        // 因為 label 現在可能是陣列 ["農01月", "(國02/17)"]，我们需要轉成字串來比對
+        const targetStr = document.getElementById('tYear').value;
+        const targetMonth = parseInt(document.getElementById('tMonth').value);
+        const targetDay = parseInt(document.getElementById('tDay').value);
+        const scope = document.getElementById('targetScope').value;
+
+        const pointBackgroundColors = labels.map((l, i) => {
+            // 簡單比對：如果是當下選擇的時間點，就標紅
+            let isTarget = false;
+            let labelStr = Array.isArray(l) ? l.join("") : l; // 轉平字串
+            
+            if (scope === 'year') isTarget = labelStr.includes(targetStr);
+            else if (scope === 'month') isTarget = labelStr.includes(`農${targetMonth.toString().padStart(2,'0')}`);
+            else if (scope === 'day') isTarget = labelStr.includes(`初${targetDay}`); // 簡單判定
+            
+            return isTarget ? '#ff4d4d' : '#fff';
+        });
         
+        const pointBorderColors = pointBackgroundColors.map(c => c === '#ff4d4d' ? '#fff' : '#d4af37');
+        const pointRadii = pointBackgroundColors.map(c => c === '#ff4d4d' ? 8 : 4);
+
         trendChartInstance = new Chart(ctx, {
             type: 'line',
             data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointBackgroundColors, pointBorderColor: pointBorderColors, pointRadius: pointRadii, pointBorderWidth: 2, fill: true, tension: 0.4 }] },
             options: { 
                 maintainAspectRatio: false, 
-                scales: { y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, x: { grid: {color:'#333'}, ticks: {color:'#e0e0e0'} } }, 
+                scales: { y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, x: { grid: {color:'#333'}, ticks: {color:'#e0e0e0', font: {size: 10}} } }, // 縮小字體以容納雙行
                 plugins: { 
                     legend: { display: false },
                     tooltip: { 
                         callbacks: { 
+                            title: function(tooltipItems) {
+                                // [V9.4] Tooltip 標題顯示雙曆
+                                let label = tooltipItems[0].label;
+                                if(Array.isArray(label)) label = label.join(" ");
+                                return label;
+                            },
                             label: function(context) {
                                 const aspectName = lastActiveAspect;
                                 const index = context.dataIndex;
@@ -343,7 +366,7 @@
                             },
                             afterLabel: function(ctx) { return tooltips[ctx.dataIndex]; } 
                         }, 
-                        backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37' 
+                        backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37', bodyFont: {size: 13}
                     } 
                 } 
             }
@@ -657,3 +680,4 @@
 </script>
 </body>
 </html>
+
