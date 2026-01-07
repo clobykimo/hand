@@ -84,6 +84,14 @@
         .tag-chip.selected { background: var(--cyan); color: #000; border-color: var(--cyan); }
         .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
+        /* AI 歷史紀錄區塊 */
+        .ai-history-block { background: rgba(16, 163, 127, 0.1); border-left: 3px solid var(--gpt-color); padding: 8px; margin-top: 5px; font-size: 0.85em; color: #cfd8dc; white-space: pre-wrap; display: none; }
+        .toggle-ai-btn { background: none; border: none; color: var(--gpt-color); cursor: pointer; font-size: 0.8em; text-decoration: underline; margin-left: 5px; }
+        
+        /* 行為熱點 */
+        .heatmap-tag { font-size: 0.75em; padding: 1px 5px; border-radius: 4px; background: #2d3748; color: #a0aec0; margin-right: 4px; border: 1px solid #4a5568; }
+        .heatmap-tag.hot { border-color: #ff4d4d; color: #ff4d4d; background: rgba(255, 77, 77, 0.1); font-weight: bold; }
+
         @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
         @media (max-width: 950px) { .dashboard { grid-template-columns: 1fr; } .control-panel { position: static; } }
         #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; }
@@ -261,7 +269,13 @@
                 <span class="tag-chip" onclick="toggleTag(this)">需追蹤</span>
             </div>
         </div>
-        <div class="form-group"><label>諮詢筆記</label><textarea id="crmNote" rows="3" placeholder="紀錄重點..."></textarea></div>
+        <div class="form-group"><label>諮詢筆記</label><textarea id="crmNote" rows="2" placeholder="紀錄重點..."></textarea></div>
+        
+        <div class="form-group">
+            <label style="color:var(--gpt-color);">🤖 AI 戰略建議 (自動帶入/可編輯)</label>
+            <textarea id="crmAiContent" rows="4" style="border-color:var(--gpt-color); color:#cfd8dc; font-size:0.9em;"></textarea>
+        </div>
+
         <div class="modal-footer">
             <button class="ctrl-btn" onclick="closeSaveModal()">取消</button>
             <button class="ctrl-btn active" onclick="confirmSave()">確認儲存</button>
@@ -291,13 +305,12 @@
         return `🔍 ${context}：靜觀其變。`;
     }
 
-    // [V9.6 防呆] 依據層級鎖定/解鎖西元曆
+    // 防呆鎖定曆法
     function updateFormUI() {
         const scope = document.getElementById('targetScope').value;
         const solarRadio = document.querySelector('input[name="calendarType"][value="solar"]');
         const lunarRadio = document.querySelector('input[name="calendarType"][value="lunar"]');
         
-        // 1. 強制鎖定邏輯
         if (scope === 'year') {
             lunarRadio.checked = true;
             solarRadio.disabled = true;
@@ -311,14 +324,12 @@
             solarRadio.parentElement.title = "";
         }
 
-        // 2. 更新標籤文字
         const calType = document.querySelector('input[name="calendarType"]:checked').value;
         const prefix = (calType === 'solar') ? '西元' : '農曆';
         setText('lblYear', `${prefix}年份`);
         setText('lblMonth', `${prefix}月份`);
         setText('lblDay', `${prefix}日期`);
 
-        // 3. 欄位顯示
         document.getElementById('monthInput').className = (scope !== 'year') ? 'input-group show' : 'input-group';
         document.getElementById('dayInput').className = (scope === 'day' || scope === 'hour') ? 'input-group show' : 'input-group';
         document.getElementById('hourInput').className = (scope === 'hour') ? 'input-group show' : 'input-group';
@@ -437,7 +448,6 @@
         const targetDay = parseInt(document.getElementById('tDay').value);
         const targetStr = document.getElementById('tYear').value;
 
-        // 尋找對應的 Data Index (含雙曆邏輯)
         let dataIndex = -1;
         if(globalTrendData) {
             dataIndex = globalTrendData.axis_labels.findIndex(l => {
@@ -447,7 +457,6 @@
                 else if (scope === 'day') return labelStr.includes(`初${targetDay}`);
                 return false;
             });
-            // 若找不到則預設中間
             if (dataIndex === -1) dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
         }
 
@@ -527,8 +536,17 @@
         if(result.trend_data) { globalTrendData = result.trend_data; updateTrendChart('總命運'); }
     }
 
-    // CRM 相關功能
-    function openSaveModal() { document.getElementById('saveModal').style.display = 'flex'; }
+    // CRM 功能
+    function openSaveModal() { 
+        document.getElementById('saveModal').style.display = 'flex'; 
+        const aiText = document.getElementById('aiResponseArea').innerText;
+        const aiInput = document.getElementById('crmAiContent');
+        if (aiText && !aiText.includes('請點擊') && !aiText.includes('正在')) {
+            aiInput.value = aiText;
+        } else {
+            aiInput.value = ""; aiInput.placeholder = "本次尚未進行 AI 分析，或可手動輸入建議...";
+        }
+    }
     function closeSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
     function toggleTag(el) { el.classList.toggle('selected'); }
 
@@ -536,6 +554,7 @@
         const name = document.getElementById('crmName').value || "未命名";
         const phone = document.getElementById('crmPhone').value;
         const note = document.getElementById('crmNote').value;
+        const aiContent = document.getElementById('crmAiContent').value;
         const tags = [];
         document.querySelectorAll('.tag-chip.selected').forEach(el => tags.push(el.innerText));
 
@@ -545,9 +564,10 @@
         }
         
         const aiLog = {
-            advice: document.getElementById('aiResponseArea').innerText.substring(0, 200) + "...", 
+            saved_content: aiContent,
             most_focused: `${maxClickedAspect} (${maxCount}次)`,
-            last_focused: lastActiveAspect
+            last_focused: lastActiveAspect,
+            click_heatmap: aspectClickCounts
         };
 
         const data = {
@@ -567,7 +587,7 @@
             });
             const result = await res.json();
             if(result.status === 'success') {
-                alert(`✅ ${name} 的檔案已建立！\n系統已自動紀錄其最關注：${aiLog.most_focused}`);
+                alert(`✅ ${name} 的檔案已建立！`);
                 closeSaveModal(); loadHistory();
             } else { alert("❌ 儲存失敗：" + result.message); }
         } catch(e) { alert("連線錯誤：" + e.message); } finally { btn.innerText = originalText; }
@@ -580,22 +600,51 @@
             const res = await fetch('/api/get_history'); 
             const history = await res.json();
             let html = '<ul style="padding-left:10px; margin:0; list-style:none;">';
-            history.forEach(item => {
+            history.forEach((item, index) => {
                 const jsonStr = JSON.stringify(item).replace(/"/g, '&quot;');
                 let tagsHtml = item.tags ? item.tags.map(t => `<span style="background:#333; padding:1px 4px; font-size:0.7em; border-radius:3px; margin-right:3px;">${t}</span>`).join('') : '';
+                
+                let heatmapHtml = '';
+                if (item.ai_log && item.ai_log.click_heatmap) {
+                    const sortedClicks = Object.entries(item.ai_log.click_heatmap).sort((a, b) => b[1] - a[1]).slice(0, 3);
+                    if (sortedClicks.length > 0) {
+                        heatmapHtml = '<div style="margin-top:4px; display:flex; align-items:center;"><span style="font-size:0.75em; color:#666; margin-right:5px;">🔥 關注:</span>';
+                        sortedClicks.forEach(([key, count], i) => {
+                            const hotClass = i === 0 ? 'hot' : '';
+                            heatmapHtml += `<span class="heatmap-tag ${hotClass}">${key} ${count}</span>`;
+                        });
+                        heatmapHtml += '</div>';
+                    }
+                }
+
+                let aiHtml = '', aiBtn = '';
+                if (item.ai_log && item.ai_log.saved_content && item.ai_log.saved_content.length > 5) {
+                    aiBtn = `<button class="toggle-ai-btn" onclick="event.stopPropagation(); toggleAiHistory(${index})">查看 AI 建議 ▼</button>`;
+                    aiHtml = `<div id="ai-hist-${index}" class="ai-history-block">${item.ai_log.saved_content}</div>`;
+                }
+
                 html += `
-                <li style="margin-bottom:12px; cursor:pointer; border-bottom:1px solid #333; padding-bottom:8px;" onclick="restoreFromHistory(${jsonStr})">
-                    <div style="display:flex; justify-content:space-between;">
-                        <b style="color:var(--gold); font-size:1.1em;">${item.client_name}</b>
-                        <span style="color:#666; font-size:0.8em;">${item.created_at.split(' ')[0]}</span>
+                <li style="margin-bottom:12px; border-bottom:1px solid #333; padding-bottom:8px;">
+                    <div style="cursor:pointer;" onclick="restoreFromHistory(${jsonStr})">
+                        <div style="display:flex; justify-content:space-between;">
+                            <b style="color:var(--gold); font-size:1.1em;">${item.client_name}</b>
+                            <span style="color:#666; font-size:0.8em;">${item.created_at.split(' ')[0]}</span>
+                        </div>
+                        <div style="color:#aaa; font-size:0.9em; margin:2px 0;">${item.note || "無備註"}</div>
+                        <div style="margin-top:4px;">${tagsHtml} ${aiBtn}</div>
+                        ${heatmapHtml}
                     </div>
-                    <div style="color:#aaa; font-size:0.9em; margin:2px 0;">${item.note || "無備註"}</div>
-                    <div style="margin-top:4px;">${tagsHtml}</div>
+                    ${aiHtml}
                 </li>`;
             });
             html += '</ul>';
             listDiv.innerHTML = history.length > 0 ? html : "尚無紀錄";
         } catch(e) { listDiv.innerHTML = "讀取失敗"; }
+    }
+
+    function toggleAiHistory(index) {
+        const el = document.getElementById(`ai-hist-${index}`);
+        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
     }
 
     function restoreFromHistory(item) {
