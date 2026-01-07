@@ -1,22 +1,25 @@
 import logging
 import os
 import sys
+from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from borax.calendars.lunardate import LunarDate 
+from borax.calendars.lunardate import LunarDate
+from google.cloud import firestore
+import datetime
 
 # 設定日誌
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("DamoSystem")
 
 # ==========================================
-# 請在此填入您的 OpenAI API Key
+# 請在此填入您的 OpenAI API Key (或設定環境變數)
 # ==========================================
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API_Key"
 
-app = FastAPI(title="達摩一掌經命理戰略中台 - V5.4 完整版")
+app = FastAPI(title="達摩一掌經命理戰略中台 - V5.6 CRM旗艦版")
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,6 +27,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------------- 資料庫初始化 ----------------
+db = None
+try:
+    db = firestore.Client()
+    logger.info("✅ Firestore 連線成功")
+except Exception as e:
+    logger.warning(f"⚠️ Firestore 連線失敗 (若是本地測試請忽略): {e}")
 
 # ---------------- 知識庫 ----------------
 ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
@@ -61,7 +72,7 @@ def get_element_relation(me, target):
     if PRODUCING.get(target) == me: return {"type": "生我", "score": 80, "alert": False} 
     if PRODUCING.get(me) == target: return {"type": "我生", "score": 75, "alert": False}  
     if CONTROLING.get(me) == target: return {"type": "我剋", "score": 55, "alert": True}  
-    if CONTROLING.get(target) == me: return {"type": "剋我", "score": 5, "alert": True} # 最低分 5
+    if CONTROLING.get(target) == me: return {"type": "剋我", "score": 5, "alert": True} # 風險極值
     return {"type": "未知", "score": 50, "alert": False}
 
 def solar_to_one_palm_lunar(solar_date_str):
@@ -172,10 +183,7 @@ class OnePalmSystem:
 
         for point in loop_range:
             trend_response["axis_labels"].append(point['label'])
-            me_el = None # 主 (主動)
-            target_el = None # 客 (被動)
-            target_name = "" 
-            current_anchor_idx = 0 
+            me_el = None; target_el = None; target_name = ""; current_anchor_idx = 0 
 
             # 動態計算：主 vs 客
             if scope == 'year':
@@ -183,52 +191,46 @@ class OnePalmSystem:
                 luck_stg = (y_age - 1) // 7
                 start_luck = get_next_position(system_obj.hour_idx, 1, system_obj.direction)
                 bl_idx = get_next_position(start_luck, luck_stg, system_obj.direction)
-                target_el = STARS_INFO[ZHI[bl_idx]]['element'] # 客=大運
+                target_el = STARS_INFO[ZHI[bl_idx]]['element']
                 target_name = "大運" + STARS_INFO[ZHI[bl_idx]]['name']
-
                 y_zhi_idx = (point['val'] - 4) % 12
                 fy_idx = get_next_position(bl_idx, y_zhi_idx, system_obj.direction)
-                me_el = STARS_INFO[ZHI[fy_idx]]['element'] # 主=流年
+                me_el = STARS_INFO[ZHI[fy_idx]]['element']
                 current_anchor_idx = fy_idx 
 
             elif scope == 'month':
                 fy_idx = get_zhi_index(hierarchy['year']['zhi'])
-                target_el = STARS_INFO[ZHI[fy_idx]]['element'] # 客=流年
+                target_el = STARS_INFO[ZHI[fy_idx]]['element']
                 target_name = "流年" + STARS_INFO[ZHI[fy_idx]]['name']
                 fm_idx = get_next_position(fy_idx, point['val'] - 1, system_obj.direction)
-                me_el = STARS_INFO[ZHI[fm_idx]]['element'] # 主=流月
+                me_el = STARS_INFO[ZHI[fm_idx]]['element']
                 current_anchor_idx = fm_idx
 
             elif scope == 'day':
                 fm_idx = get_zhi_index(hierarchy['month']['zhi'])
-                target_el = STARS_INFO[ZHI[fm_idx]]['element'] # 客=流月
+                target_el = STARS_INFO[ZHI[fm_idx]]['element']
                 target_name = "流月" + STARS_INFO[ZHI[fm_idx]]['name']
                 fd_idx = get_next_position(fm_idx, point['val'] - 1, system_obj.direction)
-                me_el = STARS_INFO[ZHI[fd_idx]]['element'] # 主=流日
+                me_el = STARS_INFO[ZHI[fd_idx]]['element']
                 current_anchor_idx = fd_idx
 
             else: 
                 fd_idx = get_zhi_index(hierarchy['day']['zhi'])
-                target_el = STARS_INFO[ZHI[fd_idx]]['element'] # 客=流日
+                target_el = STARS_INFO[ZHI[fd_idx]]['element']
                 target_name = "流日" + STARS_INFO[ZHI[fd_idx]]['name']
                 fh_idx = get_next_position(fd_idx, point['val'], system_obj.direction)
-                me_el = STARS_INFO[ZHI[fh_idx]]['element'] # 主=流時
+                me_el = STARS_INFO[ZHI[fh_idx]]['element']
                 current_anchor_idx = fh_idx
 
-            # 計算各宮位
             for i, name in enumerate(ASPECTS_ORDER):
                 aspect_zhi_idx = (current_anchor_idx + i) % 12
                 aspect_star_name = STARS_INFO[ZHI[aspect_zhi_idx]]['name']
                 aspect_el = STARS_INFO[ZHI[aspect_zhi_idx]]['element']
                 
                 rel = get_element_relation(aspect_el, target_el)
-                
                 trend_response["datasets"][name].append(rel["score"])
-                
-                # 計算加權分
                 mod_score = STAR_MODIFIERS.get(aspect_star_name, 0)
                 trend_response["adjustments"][name].append(mod_score)
-                
                 trend_response["tooltips"][name].append(f"對{target_name} ({rel['type']})<br>坐{aspect_star_name} ({'+' if mod_score>0 else ''}{mod_score})")
 
         return trend_response
@@ -248,12 +250,28 @@ class UserRequest(BaseModel):
 class AIRequest(BaseModel):
     prompt: str
 
-# ---------------- API 路由 ----------------
+# [V5.6] CRM 資料模型
+class SaveRequest(BaseModel):
+    # 基礎還原
+    solar_date: str
+    gender: int
+    hour: str
+    target_year: int
+    # CRM
+    client_name: str = "未命名客戶"
+    phone: str = ""
+    tags: List[str] = []
+    note: str = ""
+    # AI 洞察
+    ai_log: Dict[str, Any] = {} 
 
+# ---------------- API 路由 ----------------
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
-    with open("index.html", "r", encoding="utf-8") as f:
-        return f.read()
+    if os.path.exists("index.html"):
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h1>系統啟動中，請確認 index.html 存在</h1>"
 
 @app.post("/api/calculate")
 async def calculate(req: UserRequest):
@@ -324,6 +342,40 @@ async def ask_ai(req: AIRequest):
         return {"reply": res.choices[0].message.content}
     except Exception as e:
         return {"error": str(e)}
+
+# [API] 儲存紀錄 (CRM + AI Insight)
+@app.post("/api/save_record")
+async def save_record(req: SaveRequest):
+    if not db:
+        return {"status": "error", "message": "資料庫未連接"}
+    try:
+        doc_ref = db.collection('consultations').document()
+        data = req.dict()
+        data['created_at'] = firestore.SERVER_TIMESTAMP
+        doc_ref.set(data)
+        return {"status": "success", "id": doc_ref.id}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# [API] 讀取歷史
+@app.get("/api/get_history")
+async def get_history():
+    if not db: return []
+    try:
+        docs = db.collection('consultations').order_by('created_at', direction=firestore.Query.DESCENDING).limit(15).stream()
+        history = []
+        for doc in docs:
+            data = doc.to_dict()
+            if data.get('created_at'):
+                # 轉為本地時間字串
+                dt = data['created_at']
+                if hasattr(dt, 'timestamp'): 
+                    data['created_at'] = datetime.datetime.fromtimestamp(dt.timestamp()).strftime("%Y-%m-%d %H:%M")
+            history.append(data)
+        return history
+    except Exception as e:
+        logger.error(str(e))
+        return []
 
 if __name__ == "__main__":
     import uvicorn
