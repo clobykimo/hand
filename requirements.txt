@@ -3,3 +3,4 @@ uvicorn
 pydantic
 borax
 openai
+google-cloud-firestore
