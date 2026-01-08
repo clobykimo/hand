@@ -32,7 +32,6 @@
         .card-body { overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), opacity 0.4s ease-in-out, margin-top 0.4s; max-height: 2000px; opacity: 1; margin-top: 15px; }
         .card-body.collapsed { max-height: 0; opacity: 0; margin-top: 0; }
         
-        /* Grid Map */
         .twelve-palaces-map { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 130px); gap: 12px; padding: 15px; margin-top: 0; background: rgba(0,0,0,0.2); border: 1px solid #444; border-radius: 8px; grid-template-areas: "si wu wei shen" "chen . . you" "mao . . xu" "yin chou zi hai"; }
         .grid-cell { position: relative; background: #2a3544; border: 1px solid #3f4a5a; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
         .grid-cell.active { border-color: var(--gold); background: #3a4555; }
@@ -48,7 +47,6 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
-        /* List & AI */
         .aspect-row { border-bottom: 1px solid #333; padding: 14px 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: background 0.2s; }
         .aspect-row.clickable { cursor: pointer; border-left: 3px solid transparent; }
         .aspect-row.clickable:hover { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
@@ -62,7 +60,6 @@
         .mini-ai-btn { background: transparent; border: 1px solid var(--gpt-color); color: var(--gpt-color); border-radius: 4px; width: 26px; height: 26px; font-size: 0.9em; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 8px; transition: all 0.2s; }
         .mini-ai-btn:hover { background: var(--gpt-color); color: white; transform: scale(1.1); box-shadow: 0 0 10px rgba(16, 163, 127, 0.4); }
         
-        /* 戰略儀表板 */
         .progress-container { flex: 1; height: 6px; background: #333; border-radius: 3px; margin: 0 8px; overflow: hidden; position: relative; }
         .progress-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
         .trend-icon { font-weight: bold; margin-left: 5px; font-size: 1.1em; }
@@ -73,7 +70,6 @@
         .score-bonus { color: #ffd700; }
         .score-penalty { color: #ff4d4d; }
 
-        /* CRM Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
         .modal-content { background-color: #1e2732; border: 1px solid var(--gold); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
         .modal h3 { color: var(--gold); margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
@@ -83,14 +79,6 @@
         .tag-chip { font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: #333; cursor: pointer; border: 1px solid #555; user-select: none; color: #ddd; }
         .tag-chip.selected { background: var(--cyan); color: #000; border-color: var(--cyan); }
         .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-
-        /* AI 歷史紀錄區塊 */
-        .ai-history-block { background: rgba(16, 163, 127, 0.1); border-left: 3px solid var(--gpt-color); padding: 8px; margin-top: 5px; font-size: 0.85em; color: #cfd8dc; white-space: pre-wrap; display: none; }
-        .toggle-ai-btn { background: none; border: none; color: var(--gpt-color); cursor: pointer; font-size: 0.8em; text-decoration: underline; margin-left: 5px; }
-        
-        /* 行為熱點 */
-        .heatmap-tag { font-size: 0.75em; padding: 1px 5px; border-radius: 4px; background: #2d3748; color: #a0aec0; margin-right: 4px; border: 1px solid #4a5568; }
-        .heatmap-tag.hot { border-color: #ff4d4d; color: #ff4d4d; background: rgba(255, 77, 77, 0.1); font-weight: bold; }
 
         @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
         @media (max-width: 950px) { .dashboard { grid-template-columns: 1fr; } .control-panel { position: static; } }
@@ -138,19 +126,9 @@
             <option value="day">流日 (年+月+日)</option><option value="hour">流時 (年+月+日+時)</option>
         </select>
         
-        <div id="yearInput" class="input-group show">
-            <label id="lblYear">農曆年份</label> 
-            <input type="number" id="tYear" value="2026">
-        </div>
-        <div id="monthInput" class="input-group">
-            <label id="lblMonth">農曆月份</label>
-            <input type="number" id="tMonth" value="1" min="1" max="12">
-        </div>
-        <div id="dayInput" class="input-group">
-            <label id="lblDay">農曆日期</label>
-            <input type="number" id="tDay" value="1" min="1" max="31">
-        </div>
-        
+        <div id="yearInput" class="input-group show"><label id="lblYear">農曆年份</label><input type="number" id="tYear" value="2026"></div>
+        <div id="monthInput" class="input-group"><label id="lblMonth">農曆月份</label><input type="number" id="tMonth" value="1" min="1" max="12"></div>
+        <div id="dayInput" class="input-group"><label id="lblDay">農曆日期</label><input type="number" id="tDay" value="1" min="1" max="31"></div>
         <div id="hourInput" class="input-group">
             <label>時辰</label>
             <select id="tHour">
@@ -161,15 +139,7 @@
             </select>
         </div>
         <button class="btn-main" onclick="calculate()">啟動全時空推演</button>
-
-        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #444;">
-            <h3 style="color:var(--cyan); font-size:1em;">📂 客戶紀錄管理</h3>
-            <div style="display:flex; gap:10px;">
-                <button class="ctrl-btn active" style="flex:1; padding:8px;" onclick="openSaveModal()">💾 存檔</button>
-                <button class="ctrl-btn" style="flex:1; padding:8px;" onclick="loadHistory()">📜 讀取歷史</button>
-            </div>
-            <div id="historyList" style="margin-top:10px; max-height:200px; overflow-y:auto; font-size:0.9em; color:#aaa;"></div>
-        </div>
+        <button class="btn-main" style="background: #2d3748; border: 1px solid #4a5568; margin-top:15px; color:var(--cyan);" onclick="window.location.href='/crm'">📂 進入客戶戰情室 (CRM)</button>
     </div>
 
     <div class="info-panel" id="resultArea">
@@ -270,12 +240,10 @@
             </div>
         </div>
         <div class="form-group"><label>諮詢筆記</label><textarea id="crmNote" rows="2" placeholder="紀錄重點..."></textarea></div>
-        
         <div class="form-group">
             <label style="color:var(--gpt-color);">🤖 AI 戰略建議 (自動帶入/可編輯)</label>
             <textarea id="crmAiContent" rows="4" style="border-color:var(--gpt-color); color:#cfd8dc; font-size:0.9em;"></textarea>
         </div>
-
         <div class="modal-footer">
             <button class="ctrl-btn" onclick="closeSaveModal()">取消</button>
             <button class="ctrl-btn active" onclick="confirmSave()">確認儲存</button>
@@ -305,31 +273,20 @@
         return `🔍 ${context}：靜觀其變。`;
     }
 
-    // 防呆鎖定曆法
     function updateFormUI() {
         const scope = document.getElementById('targetScope').value;
         const solarRadio = document.querySelector('input[name="calendarType"][value="solar"]');
         const lunarRadio = document.querySelector('input[name="calendarType"][value="lunar"]');
-        
         if (scope === 'year') {
-            lunarRadio.checked = true;
-            solarRadio.disabled = true;
-            solarRadio.parentElement.style.opacity = '0.5';
-            solarRadio.parentElement.style.cursor = 'not-allowed';
+            lunarRadio.checked = true; solarRadio.disabled = true;
+            solarRadio.parentElement.style.opacity = '0.5'; solarRadio.parentElement.style.cursor = 'not-allowed';
             solarRadio.parentElement.title = "流年推演僅支援農曆年份 (避免跨年誤差)";
         } else {
-            solarRadio.disabled = false;
-            solarRadio.parentElement.style.opacity = '1';
-            solarRadio.parentElement.style.cursor = 'pointer';
-            solarRadio.parentElement.title = "";
+            solarRadio.disabled = false; solarRadio.parentElement.style.opacity = '1'; solarRadio.parentElement.style.cursor = 'pointer'; solarRadio.parentElement.title = "";
         }
-
         const calType = document.querySelector('input[name="calendarType"]:checked').value;
         const prefix = (calType === 'solar') ? '西元' : '農曆';
-        setText('lblYear', `${prefix}年份`);
-        setText('lblMonth', `${prefix}月份`);
-        setText('lblDay', `${prefix}日期`);
-
+        setText('lblYear', `${prefix}年份`); setText('lblMonth', `${prefix}月份`); setText('lblDay', `${prefix}日期`);
         document.getElementById('monthInput').className = (scope !== 'year') ? 'input-group show' : 'input-group';
         document.getElementById('dayInput').className = (scope === 'day' || scope === 'hour') ? 'input-group show' : 'input-group';
         document.getElementById('hourInput').className = (scope === 'hour') ? 'input-group show' : 'input-group';
@@ -361,8 +318,7 @@
         if (trendChartInstance) trendChartInstance.destroy();
         document.getElementById('trendTitle').innerHTML = `時空運勢波形圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>`;
         const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-        gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)');
-        gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+        gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
         
         const targetStr = document.getElementById('tYear').value;
         const targetMonth = parseInt(document.getElementById('tMonth').value);
@@ -371,16 +327,15 @@
 
         const pointBackgroundColors = labels.map((l, i) => {
             let isTarget = false;
-            let labelStr = Array.isArray(l) ? l.join("") : l; 
+            let labelStr = Array.isArray(l) ? l.join("") : l;
             if (scope === 'year') isTarget = labelStr.includes(targetStr);
             else if (scope === 'month') isTarget = labelStr.includes(`農${targetMonth.toString().padStart(2,'0')}`);
             else if (scope === 'day') isTarget = labelStr.includes(`初${targetDay}`);
             return isTarget ? '#ff4d4d' : '#fff';
         });
-        
         const pointBorderColors = pointBackgroundColors.map(c => c === '#ff4d4d' ? '#fff' : '#d4af37');
         const pointRadii = pointBackgroundColors.map(c => c === '#ff4d4d' ? 8 : 4);
-        
+
         trendChartInstance = new Chart(ctx, {
             type: 'line',
             data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointBackgroundColors, pointBorderColor: pointBorderColors, pointRadius: pointRadii, pointBorderWidth: 2, fill: true, tension: 0.4 }] },
@@ -391,11 +346,7 @@
                     legend: { display: false },
                     tooltip: { 
                         callbacks: { 
-                            title: function(tooltipItems) {
-                                let label = tooltipItems[0].label;
-                                if(Array.isArray(label)) label = label.join(" ");
-                                return label;
-                            },
+                            title: function(tooltipItems) { let label = tooltipItems[0].label; if(Array.isArray(label)) label = label.join(" "); return label; },
                             label: function(context) {
                                 const aspectName = lastActiveAspect;
                                 const index = context.dataIndex;
@@ -406,8 +357,7 @@
                                 return `總分 ${finalScore} = 基礎 ${baseScore} ${adjustment !== 0 ? `(星宿${sign}${adjustment})` : ''}`;
                             },
                             afterLabel: function(ctx) { return tooltips[ctx.dataIndex]; } 
-                        }, 
-                        backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37', bodyFont:{size:13}
+                        }, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37', bodyFont:{size:13}
                     } 
                 } 
             }
@@ -423,13 +373,11 @@
         const isAdjusted = document.getElementById('gradeCheckbox').checked;
         const baseScores = globalTrendData.datasets[aspectName];
         const adjustments = (globalTrendData.adjustments && globalTrendData.adjustments[aspectName]) ? globalTrendData.adjustments[aspectName] : new Array(baseScores.length).fill(0);
-
         const finalScores = baseScores.map((score, i) => {
             if (!isAdjusted) return score;
             let val = score + adjustments[i];
             return Math.max(5, Math.min(95, val));
         });
-
         renderTrendChart(globalTrendData.axis_labels, finalScores, globalTrendData.tooltips[aspectName], aspectName + (isAdjusted ? " + 加權" : ""));
         document.querySelectorAll('.aspect-row').forEach(row => row.classList.remove('active-aspect'));
         const activeRow = document.getElementById(`row-${aspectName}`);
@@ -462,12 +410,10 @@
 
         result.aspects.forEach(a => {
             let score = 50, baseScore = 50, adjScore = 0, trendHtml = '<span class="trend-icon flat">-</span>';
-            
             if (dataIndex !== -1 && globalTrendData.datasets[a.name]) {
                 const baseScores = globalTrendData.datasets[a.name];
                 const adjustments = globalTrendData.adjustments[a.name] || [];
                 const isAdjusted = document.getElementById('gradeCheckbox').checked;
-
                 baseScore = baseScores[dataIndex];
                 adjScore = adjustments[dataIndex] || 0;
                 let rawScore = baseScore;
@@ -536,7 +482,6 @@
         if(result.trend_data) { globalTrendData = result.trend_data; updateTrendChart('總命運'); }
     }
 
-    // CRM 功能
     function openSaveModal() { 
         document.getElementById('saveModal').style.display = 'flex'; 
         const aiText = document.getElementById('aiResponseArea').innerText;
@@ -588,103 +533,10 @@
             const result = await res.json();
             if(result.status === 'success') {
                 alert(`✅ ${name} 的檔案已建立！`);
-                closeSaveModal(); loadHistory();
+                closeSaveModal(); 
             } else { alert("❌ 儲存失敗：" + result.message); }
         } catch(e) { alert("連線錯誤：" + e.message); } finally { btn.innerText = originalText; }
     }
-
-    async function loadHistory() {
-        const listDiv = document.getElementById('historyList');
-        listDiv.innerHTML = "載入中...";
-        try {
-            const res = await fetch('/api/get_history'); 
-            const history = await res.json();
-            let html = '<ul style="padding-left:10px; margin:0; list-style:none;">';
-            history.forEach((item, index) => {
-                const jsonStr = JSON.stringify(item).replace(/"/g, '&quot;');
-                let tagsHtml = item.tags ? item.tags.map(t => `<span style="background:#333; padding:1px 4px; font-size:0.7em; border-radius:3px; margin-right:3px;">${t}</span>`).join('') : '';
-                
-                let heatmapHtml = '';
-                if (item.ai_log && item.ai_log.click_heatmap) {
-                    const sortedClicks = Object.entries(item.ai_log.click_heatmap).sort((a, b) => b[1] - a[1]).slice(0, 3);
-                    if (sortedClicks.length > 0) {
-                        heatmapHtml = '<div style="margin-top:4px; display:flex; align-items:center;"><span style="font-size:0.75em; color:#666; margin-right:5px;">🔥 關注:</span>';
-                        sortedClicks.forEach(([key, count], i) => {
-                            const hotClass = i === 0 ? 'hot' : '';
-                            heatmapHtml += `<span class="heatmap-tag ${hotClass}">${key} ${count}</span>`;
-                        });
-                        heatmapHtml += '</div>';
-                    }
-                }
-
-                let aiHtml = '', aiBtn = '';
-                if (item.ai_log && item.ai_log.saved_content && item.ai_log.saved_content.length > 5) {
-                    aiBtn = `<button class="toggle-ai-btn" onclick="event.stopPropagation(); toggleAiHistory(${index})">查看 AI 建議 ▼</button>`;
-                    aiHtml = `<div id="ai-hist-${index}" class="ai-history-block">${item.ai_log.saved_content}</div>`;
-                }
-
-                html += `
-                <li style="margin-bottom:12px; border-bottom:1px solid #333; padding-bottom:8px;">
-                    <div style="cursor:pointer;" onclick="restoreFromHistory(${jsonStr})">
-                        <div style="display:flex; justify-content:space-between;">
-                            <b style="color:var(--gold); font-size:1.1em;">${item.client_name}</b>
-                            <span style="color:#666; font-size:0.8em;">${item.created_at.split(' ')[0]}</span>
-                        </div>
-                        <div style="color:#aaa; font-size:0.9em; margin:2px 0;">${item.note || "無備註"}</div>
-                        <div style="margin-top:4px;">${tagsHtml} ${aiBtn}</div>
-                        ${heatmapHtml}
-                    </div>
-                    ${aiHtml}
-                </li>`;
-            });
-            html += '</ul>';
-            listDiv.innerHTML = history.length > 0 ? html : "尚無紀錄";
-        } catch(e) { listDiv.innerHTML = "讀取失敗"; }
-    }
-
-    function toggleAiHistory(index) {
-        const el = document.getElementById(`ai-hist-${index}`);
-        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-    }
-
-    function restoreFromHistory(item) {
-        document.getElementById('solarDate').value = item.solar_date;
-        document.getElementById('gender').value = item.gender;
-        document.getElementById('hour').value = item.hour;
-        document.getElementById('tYear').value = item.target_year;
-        alert(`已載入：${item.client_name} 的資料，即將開始推演...`);
-        calculate();
-    }
-
-    function renderFullView(result) {
-        initMap();
-        const h = result.hierarchy;
-        const pillars = [ { k:'年', c:'var(--p-year)', z:result.base_chart.年柱.zhi, n:result.base_chart.年柱.name }, { k:'月', c:'var(--p-month)', z:result.base_chart.月柱.zhi, n:result.base_chart.月柱.name }, { k:'日', c:'var(--p-day)', z:result.base_chart.日柱.zhi, n:result.base_chart.日柱.name }, { k:'命', c:'var(--p-hour)', z:result.base_chart.時柱.zhi, n:result.base_chart.時柱.name } ];
-        let pillarsHtml = '';
-        pillars.forEach(p => { addBadgeToCell(p.z, p.k, p.c, true); pillarsHtml += `<div class="pillar-box active" style="border-color:${p.c};"><div style="color:${p.c}; font-weight:bold;">${p.n}</div><div style="font-size:0.8em;">${p.z}</div></div>`; });
-        setHTML('pillarsArea', pillarsHtml);
-        if(h.big_luck) addBadgeToCell(h.big_luck.zhi, '大運', 'var(--p-luck)', true);
-        if(h.year) addBadgeToCell(h.year.zhi, '流年', 'var(--p-year)', true);
-        const targetScope = document.getElementById('targetScope').value;
-        if(['month','day','hour'].includes(targetScope) && h.month) addBadgeToCell(h.month.zhi, '流月', 'var(--p-month)', true);
-        if(['day','hour'].includes(targetScope) && h.day) addBadgeToCell(h.day.zhi, '流日', 'var(--p-day)', true);
-        if(targetScope==='hour' && h.hour) addBadgeToCell(h.hour.zhi, '流時', 'var(--p-hour)', true);
-        
-        result.aspects.forEach(a => {
-            const cell = document.getElementById('cell-'+a.zhi);
-            if(cell && !cell.querySelector('.cell-aspect-name')) {
-                cell.innerHTML += `<div class="cell-aspect-name show-content">${a.name}</div><div class="cell-relation-tag" style="background:${getStatusColor(a.relation)}; color:#1a2634;">${a.relation}</div>`;
-                if(a.is_alert) cell.classList.add('alert');
-            }
-        });
-        fillLists(result, h);
-    }
-
-    function togglePause() { globalIsPaused = !globalIsPaused; }
-    function skipToComplete() { if(globalLastResult) { globalSkipAnimation=true; renderFullView(globalLastResult); } }
-    function replayAnimation() { if(globalLastResult) startAnimationSequence(globalLastResult); }
-    function addBadgeToCell(zhi, text, color, instant) { const cell = document.getElementById('cell-'+zhi); if(cell) { cell.classList.add('active'); const c = cell.querySelector('.pillar-badges-container'); if(c && !Array.from(c.children).some(e=>e.innerText===text)) { const b = document.createElement('span'); b.className='pillar-badge'; b.style.background=color; b.innerText=text; c.appendChild(b); if(instant) b.classList.add('show'); else setTimeout(()=>b.classList.add('show'),50); } } }
-    function runRoulette(targetZhi, isMale) { return new Promise(resolve => { let rounds=0, maxRounds=1, speed=80; const targetIndex = ROULETTE_PATH.indexOf(targetZhi); const step = isMale ? 1 : -1; function nextStep() { if(globalSkipAnimation) { resolve(); return; } if(globalIsPaused) { setTimeout(nextStep, 100); return; } const prev = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(prev) prev.classList.remove('roulette-active'); currentLightIndex = (currentLightIndex + step + 12) % 12; const curr = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(curr) curr.classList.add('roulette-active'); if(rounds>=maxRounds && currentLightIndex===targetIndex) { if(curr) curr.classList.add('flash-stop'); setTimeout(()=>{ if(curr){curr.classList.remove('roulette-active'); curr.classList.remove('flash-stop');} resolve(); }, 1500); return; } if(currentLightIndex===0) rounds++; if(rounds>=maxRounds) speed+=40; setTimeout(nextStep, speed); } nextStep(); }); }
 
     async function startAnimationSequence(result) {
         document.getElementById('loadingOverlay').style.display='none'; document.getElementById('animControls').style.display='flex';
@@ -708,7 +560,6 @@
         const aspectName = lastActiveAspect || '總命運'; 
         const targetLabel = getTargetLabel();
         const dataIndex = globalTrendData.axis_labels.indexOf(targetLabel);
-        
         if (!globalTrendData || dataIndex === -1) { alert("請先完成排盤！"); return; }
 
         let strongest = { name: '', score: -1, star: '' };
@@ -729,7 +580,7 @@
         for (const [key, count] of Object.entries(aspectClickCounts)) { totalClicks += count; if (count > maxCount) { maxCount = count; maxClickedAspect = key; } }
         let behaviorInsight = "";
         if (totalClicks >= 3 && maxClickedAspect !== aspectName) {
-            behaviorInsight = `⚠️ 潛在焦慮偵測：案主目前停留在【${aspectName}】，但數據顯示他查看【${maxClickedAspect}】次數最多（${maxCount}次）。請分析這兩者的連動關係（例如：是否因${maxClickedAspect}的問題導致了${aspectName}的困境？）。`;
+            behaviorInsight = `⚠️ 潛在焦慮偵測：案主目前停留在【${aspectName}】，但數據顯示他查看【${maxClickedAspect}】次數最多（${maxCount}次）。請分析這兩者的連動關係。`;
         }
 
         let specificPrompt = "", loadingText = "";
@@ -738,17 +589,17 @@
             specificPrompt = `請進行全盤戰略推演。重點分析【${aspectName}】目前的處境 (${currentAspectData.score}分, ${currentAspectData.relation})。並指出【${weakest.name}】(${weakest.score}分) 是否為潛在風險，以及如何利用【${strongest.name}】(${strongest.score}分) 來借力使力。${behaviorInsight} 輸出格式：【局勢總覽】、【關鍵戰術(3點)】、【連鎖反應預警】、【成功率預估】。`;
         } else if (mode === 'weakest') {
             loadingText = `💔 正在掃描全盤最弱環節與病灶...`;
-            specificPrompt = `請專注分析案主的【致命弱點/病灶】。全盤最弱的宮位是【${weakest.name}】，分數僅 ${weakest.score} 分，坐 ${weakest.star}。1. 請解釋為什麼 ${weakest.name} 會崩盤？(結合星宿特性) 2. 這個弱點會如何拖累案主最在意的【${aspectName}】？3. 請給出「止血療傷」的具體方案，如何將傷害降到最低？輸出格式：【病灶診斷】、【連帶傷害分析】、【止血急救方案】。`;
+            specificPrompt = `請專注分析案主的【致命弱點/病灶】。全盤最弱的宮位是【${weakest.name}】，分數僅 ${weakest.score} 分，坐 ${weakest.star}。1. 請解釋為什麼 ${weakest.name} 會崩盤？2. 這個弱點會如何拖累案主最在意的【${aspectName}】？3. 請給出「止血療傷」的具體方案。`;
         } else if (mode === 'timing') {
             loadingText = `📅 正在為【${aspectName}】計算最佳進攻窗口...`;
             const scores = globalTrendData.datasets[aspectName];
             const labels = globalTrendData.axis_labels;
             let maxVal = -1, maxIdx = -1, minVal = 999, minIdx = -1;
             scores.forEach((s, i) => { if (s > maxVal) { maxVal = s; maxIdx = i; } if (s < minVal) { minVal = s; minIdx = i; } });
-            specificPrompt = `案主想知道【${aspectName}】的行動時機。根據波形圖數據：- 最佳時機 (進攻)：在【${labels[maxIdx]}】，能量高達 ${maxVal} 分。- 最差時機 (避險)：在【${labels[minIdx]}】，能量跌至 ${minVal} 分。請給出時間戰略：1. 在最佳時機適合做什麼大事？2. 在最差時機應該如何避險？3. 針對目前的目標時間點 (${targetLabel})，是該進還是該退？輸出格式：【黃金進攻期】、【紅色警戒期】、【當下行動建議】。`;
+            specificPrompt = `案主想知道【${aspectName}】的行動時機。根據波形圖數據：最佳時機在【${labels[maxIdx]}】(${maxVal}分)，最差時機在【${labels[minIdx]}】(${minVal}分)。請給出時間戰略。`;
         } else if (mode === 'script') {
             loadingText = `🗣️ 正在為您生成針對【${aspectName}】的談判劇本...`;
-            specificPrompt = `案主需要針對【${aspectName}】的實戰話術/劇本。當前情境：分數 ${currentAspectData.score} 分，關係為 ${currentAspectData.relation}，對方/環境帶有 ${currentAspectData.star} 的特性。請設計 3 組對話劇本或自我對話心法：1. **【進攻型劇本】**：如果要爭取資源或談判，該怎麼說？(利用 ${currentAspectData.star} 的弱點) 2. **【防守型劇本】**：如果面臨質疑或壓力，該如何圓滑回應？3. **【心理建設】**：一句話的座右銘，用來穩定軍心。`;
+            specificPrompt = `案主需要針對【${aspectName}】的實戰話術/劇本。當前情境：分數 ${currentAspectData.score} 分，關係為 ${currentAspectData.relation}，對方/環境帶有 ${currentAspectData.star} 的特性。請設計對話劇本。`;
         }
 
         const aiBody = document.getElementById('aiBody');
@@ -762,8 +613,24 @@
             setHTML('aiResponseArea', d.reply.replace(/\n/g, '<br>') || d.error);
         } catch(e) { setHTML('aiResponseArea', '連線失敗：'+e.message); }
     }
-    
-    initMap(); updateFormUI();
+
+    // 接收 CRM 還原請求
+    window.onload = function() {
+        const restoreDataStr = localStorage.getItem('damo_restore_data');
+        if (restoreDataStr) {
+            const item = JSON.parse(restoreDataStr);
+            document.getElementById('solarDate').value = item.solar_date;
+            document.getElementById('gender').value = item.gender;
+            document.getElementById('hour').value = item.hour;
+            document.getElementById('tYear').value = item.target_year;
+            localStorage.removeItem('damo_restore_data');
+            setTimeout(() => {
+                alert(`已從戰情室載入：${item.client_name}\n備註：${item.note}`);
+                calculate();
+            }, 500);
+        }
+        updateFormUI(); initMap(); 
+    };
 </script>
 </body>
 </html>
