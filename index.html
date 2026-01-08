@@ -32,6 +32,7 @@
         .card-body { overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), opacity 0.4s ease-in-out, margin-top 0.4s; max-height: 2000px; opacity: 1; margin-top: 15px; }
         .card-body.collapsed { max-height: 0; opacity: 0; margin-top: 0; }
         
+        /* Map Styles */
         .twelve-palaces-map { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 130px); gap: 12px; padding: 15px; margin-top: 0; background: rgba(0,0,0,0.2); border: 1px solid #444; border-radius: 8px; grid-template-areas: "si wu wei shen" "chen . . you" "mao . . xu" "yin chou zi hai"; }
         .grid-cell { position: relative; background: #2a3544; border: 1px solid #3f4a5a; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
         .grid-cell.active { border-color: var(--gold); background: #3a4555; }
@@ -47,6 +48,7 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
+        /* Dashboard Components */
         .aspect-row { border-bottom: 1px solid #333; padding: 14px 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: background 0.2s; }
         .aspect-row.clickable { cursor: pointer; border-left: 3px solid transparent; }
         .aspect-row.clickable:hover { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
@@ -60,6 +62,7 @@
         .mini-ai-btn { background: transparent; border: 1px solid var(--gpt-color); color: var(--gpt-color); border-radius: 4px; width: 26px; height: 26px; font-size: 0.9em; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 8px; transition: all 0.2s; }
         .mini-ai-btn:hover { background: var(--gpt-color); color: white; transform: scale(1.1); box-shadow: 0 0 10px rgba(16, 163, 127, 0.4); }
         
+        /* Indicators */
         .progress-container { flex: 1; height: 6px; background: #333; border-radius: 3px; margin: 0 8px; overflow: hidden; position: relative; }
         .progress-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
         .trend-icon { font-weight: bold; margin-left: 5px; font-size: 1.1em; }
@@ -70,6 +73,7 @@
         .score-bonus { color: #ffd700; }
         .score-penalty { color: #ff4d4d; }
 
+        /* Modal Styles */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
         .modal-content { background-color: #1e2732; border: 1px solid var(--gold); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
         .modal h3 { color: var(--gold); margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
@@ -129,6 +133,7 @@
         <div id="yearInput" class="input-group show"><label id="lblYear">農曆年份</label><input type="number" id="tYear" value="2026"></div>
         <div id="monthInput" class="input-group"><label id="lblMonth">農曆月份</label><input type="number" id="tMonth" value="1" min="1" max="12"></div>
         <div id="dayInput" class="input-group"><label id="lblDay">農曆日期</label><input type="number" id="tDay" value="1" min="1" max="31"></div>
+        
         <div id="hourInput" class="input-group">
             <label>時辰</label>
             <select id="tHour">
@@ -139,7 +144,11 @@
             </select>
         </div>
         <button class="btn-main" onclick="calculate()">啟動全時空推演</button>
-        <button class="btn-main" style="background: #2d3748; border: 1px solid #4a5568; margin-top:15px; color:var(--cyan);" onclick="window.location.href='/crm'">📂 進入客戶戰情室 (CRM)</button>
+        
+        <button class="btn-main" style="background: #2d3748; border: 1px solid #4a5568; margin-top:15px; color:var(--cyan);" onclick="window.location.href='/crm'">
+            📂 進入客戶戰情室 (CRM)
+        </button>
+        <button class="ctrl-btn active" style="width:100%; margin-top:10px; padding:10px; margin-left:0;" onclick="openSaveModal()">💾 儲存本次諮詢紀錄</button>
     </div>
 
     <div class="info-panel" id="resultArea">
@@ -240,10 +249,12 @@
             </div>
         </div>
         <div class="form-group"><label>諮詢筆記</label><textarea id="crmNote" rows="2" placeholder="紀錄重點..."></textarea></div>
+        
         <div class="form-group">
             <label style="color:var(--gpt-color);">🤖 AI 戰略建議 (自動帶入/可編輯)</label>
             <textarea id="crmAiContent" rows="4" style="border-color:var(--gpt-color); color:#cfd8dc; font-size:0.9em;"></textarea>
         </div>
+
         <div class="modal-footer">
             <button class="ctrl-btn" onclick="closeSaveModal()">取消</button>
             <button class="ctrl-btn active" onclick="confirmSave()">確認儲存</button>
@@ -277,16 +288,27 @@
         const scope = document.getElementById('targetScope').value;
         const solarRadio = document.querySelector('input[name="calendarType"][value="solar"]');
         const lunarRadio = document.querySelector('input[name="calendarType"][value="lunar"]');
+        
+        // 防呆鎖定
         if (scope === 'year') {
-            lunarRadio.checked = true; solarRadio.disabled = true;
-            solarRadio.parentElement.style.opacity = '0.5'; solarRadio.parentElement.style.cursor = 'not-allowed';
+            lunarRadio.checked = true;
+            solarRadio.disabled = true;
+            solarRadio.parentElement.style.opacity = '0.5';
+            solarRadio.parentElement.style.cursor = 'not-allowed';
             solarRadio.parentElement.title = "流年推演僅支援農曆年份 (避免跨年誤差)";
         } else {
-            solarRadio.disabled = false; solarRadio.parentElement.style.opacity = '1'; solarRadio.parentElement.style.cursor = 'pointer'; solarRadio.parentElement.title = "";
+            solarRadio.disabled = false;
+            solarRadio.parentElement.style.opacity = '1';
+            solarRadio.parentElement.style.cursor = 'pointer';
+            solarRadio.parentElement.title = "";
         }
+
         const calType = document.querySelector('input[name="calendarType"]:checked').value;
         const prefix = (calType === 'solar') ? '西元' : '農曆';
-        setText('lblYear', `${prefix}年份`); setText('lblMonth', `${prefix}月份`); setText('lblDay', `${prefix}日期`);
+        setText('lblYear', `${prefix}年份`);
+        setText('lblMonth', `${prefix}月份`);
+        setText('lblDay', `${prefix}日期`);
+
         document.getElementById('monthInput').className = (scope !== 'year') ? 'input-group show' : 'input-group';
         document.getElementById('dayInput').className = (scope === 'day' || scope === 'hour') ? 'input-group show' : 'input-group';
         document.getElementById('hourInput').className = (scope === 'hour') ? 'input-group show' : 'input-group';
@@ -318,7 +340,8 @@
         if (trendChartInstance) trendChartInstance.destroy();
         document.getElementById('trendTitle').innerHTML = `時空運勢波形圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>`;
         const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-        gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+        gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)');
+        gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
         
         const targetStr = document.getElementById('tYear').value;
         const targetMonth = parseInt(document.getElementById('tMonth').value);
@@ -327,15 +350,16 @@
 
         const pointBackgroundColors = labels.map((l, i) => {
             let isTarget = false;
-            let labelStr = Array.isArray(l) ? l.join("") : l;
+            let labelStr = Array.isArray(l) ? l.join("") : l; 
             if (scope === 'year') isTarget = labelStr.includes(targetStr);
             else if (scope === 'month') isTarget = labelStr.includes(`農${targetMonth.toString().padStart(2,'0')}`);
             else if (scope === 'day') isTarget = labelStr.includes(`初${targetDay}`);
             return isTarget ? '#ff4d4d' : '#fff';
         });
+        
         const pointBorderColors = pointBackgroundColors.map(c => c === '#ff4d4d' ? '#fff' : '#d4af37');
         const pointRadii = pointBackgroundColors.map(c => c === '#ff4d4d' ? 8 : 4);
-
+        
         trendChartInstance = new Chart(ctx, {
             type: 'line',
             data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointBackgroundColors, pointBorderColor: pointBorderColors, pointRadius: pointRadii, pointBorderWidth: 2, fill: true, tension: 0.4 }] },
@@ -346,7 +370,11 @@
                     legend: { display: false },
                     tooltip: { 
                         callbacks: { 
-                            title: function(tooltipItems) { let label = tooltipItems[0].label; if(Array.isArray(label)) label = label.join(" "); return label; },
+                            title: function(tooltipItems) {
+                                let label = tooltipItems[0].label;
+                                if(Array.isArray(label)) label = label.join(" ");
+                                return label;
+                            },
                             label: function(context) {
                                 const aspectName = lastActiveAspect;
                                 const index = context.dataIndex;
@@ -357,7 +385,8 @@
                                 return `總分 ${finalScore} = 基礎 ${baseScore} ${adjustment !== 0 ? `(星宿${sign}${adjustment})` : ''}`;
                             },
                             afterLabel: function(ctx) { return tooltips[ctx.dataIndex]; } 
-                        }, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37', bodyFont:{size:13}
+                        }, 
+                        backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37', bodyFont:{size:13}
                     } 
                 } 
             }
@@ -373,11 +402,13 @@
         const isAdjusted = document.getElementById('gradeCheckbox').checked;
         const baseScores = globalTrendData.datasets[aspectName];
         const adjustments = (globalTrendData.adjustments && globalTrendData.adjustments[aspectName]) ? globalTrendData.adjustments[aspectName] : new Array(baseScores.length).fill(0);
+
         const finalScores = baseScores.map((score, i) => {
             if (!isAdjusted) return score;
             let val = score + adjustments[i];
             return Math.max(5, Math.min(95, val));
         });
+
         renderTrendChart(globalTrendData.axis_labels, finalScores, globalTrendData.tooltips[aspectName], aspectName + (isAdjusted ? " + 加權" : ""));
         document.querySelectorAll('.aspect-row').forEach(row => row.classList.remove('active-aspect'));
         const activeRow = document.getElementById(`row-${aspectName}`);
@@ -410,10 +441,12 @@
 
         result.aspects.forEach(a => {
             let score = 50, baseScore = 50, adjScore = 0, trendHtml = '<span class="trend-icon flat">-</span>';
+            
             if (dataIndex !== -1 && globalTrendData.datasets[a.name]) {
                 const baseScores = globalTrendData.datasets[a.name];
                 const adjustments = globalTrendData.adjustments[a.name] || [];
                 const isAdjusted = document.getElementById('gradeCheckbox').checked;
+
                 baseScore = baseScores[dataIndex];
                 adjScore = adjustments[dataIndex] || 0;
                 let rawScore = baseScore;
@@ -482,6 +515,7 @@
         if(result.trend_data) { globalTrendData = result.trend_data; updateTrendChart('總命運'); }
     }
 
+    // CRM 功能
     function openSaveModal() { 
         document.getElementById('saveModal').style.display = 'flex'; 
         const aiText = document.getElementById('aiResponseArea').innerText;
@@ -527,6 +561,7 @@
         const originalText = btn.innerText;
         btn.innerText = "儲存中...";
         try {
+            // [關鍵修正] 使用相對路徑，適配 Cloud Run
             const res = await fetch('/api/save_record', {
                 method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
             });
@@ -553,14 +588,33 @@
     async function calculate() {
         document.getElementById('loadingOverlay').style.display='flex';
         const data = { gender: parseInt(document.getElementById('gender').value), solar_date: document.getElementById('solarDate').value, hour: document.getElementById('hour').value, target_calendar: document.querySelector('input[name="calendarType"]:checked').value, target_scope: document.getElementById('targetScope').value, target_year: parseInt(document.getElementById('tYear').value)||2026, target_month: parseInt(document.getElementById('tMonth').value)||1, target_day: parseInt(document.getElementById('tDay').value)||1, target_hour: document.getElementById('tHour').value };
-        try { const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); if(!res.ok) throw new Error((await res.json()).detail); globalLastResult = await res.json(); startAnimationSequence(globalLastResult); } catch(e) { alert("❌ 排盤失敗：\n"+e.message); document.getElementById('loadingOverlay').style.display='none'; }
+        try { 
+            // [關鍵修正] 使用相對路徑
+            const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); 
+            if(!res.ok) throw new Error((await res.json()).detail); globalLastResult = await res.json(); startAnimationSequence(globalLastResult); 
+        } catch(e) { alert("❌ 排盤失敗：\n"+e.message); document.getElementById('loadingOverlay').style.display='none'; }
     }
 
     async function callAIWithMode(mode) {
         const aspectName = lastActiveAspect || '總命運'; 
         const targetLabel = getTargetLabel();
-        const dataIndex = globalTrendData.axis_labels.indexOf(targetLabel);
-        if (!globalTrendData || dataIndex === -1) { alert("請先完成排盤！"); return; }
+        
+        if (!globalTrendData) { alert("請先完成排盤！"); return; }
+        
+        // 尋找對應的 Data Index
+        const scope = document.getElementById('targetScope').value;
+        const targetMonth = parseInt(document.getElementById('tMonth').value);
+        const targetDay = parseInt(document.getElementById('tDay').value);
+        const targetStr = document.getElementById('tYear').value;
+        
+        let dataIndex = globalTrendData.axis_labels.findIndex(l => {
+            let labelStr = Array.isArray(l) ? l.join("") : l;
+            if (scope === 'year') return labelStr.includes(targetStr);
+            else if (scope === 'month') return labelStr.includes(`農${targetMonth.toString().padStart(2,'0')}`);
+            else if (scope === 'day') return labelStr.includes(`初${targetDay}`);
+            return false;
+        });
+        if (dataIndex === -1) dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
 
         let strongest = { name: '', score: -1, star: '' };
         let weakest = { name: '', score: 999, star: '' };
@@ -596,7 +650,12 @@
             const labels = globalTrendData.axis_labels;
             let maxVal = -1, maxIdx = -1, minVal = 999, minIdx = -1;
             scores.forEach((s, i) => { if (s > maxVal) { maxVal = s; maxIdx = i; } if (s < minVal) { minVal = s; minIdx = i; } });
-            specificPrompt = `案主想知道【${aspectName}】的行動時機。根據波形圖數據：最佳時機在【${labels[maxIdx]}】(${maxVal}分)，最差時機在【${labels[minIdx]}】(${minVal}分)。請給出時間戰略。`;
+            
+            // 處理雙曆 Label
+            const bestTime = Array.isArray(labels[maxIdx]) ? labels[maxIdx].join(" ") : labels[maxIdx];
+            const worstTime = Array.isArray(labels[minIdx]) ? labels[minIdx].join(" ") : labels[minIdx];
+            
+            specificPrompt = `案主想知道【${aspectName}】的行動時機。根據波形圖數據：- 最佳時機 (進攻)：在【${bestTime}】，能量高達 ${maxVal} 分。- 最差時機 (避險)：在【${worstTime}】，能量跌至 ${minVal} 分。請給出時間戰略。`;
         } else if (mode === 'script') {
             loadingText = `🗣️ 正在為您生成針對【${aspectName}】的談判劇本...`;
             specificPrompt = `案主需要針對【${aspectName}】的實戰話術/劇本。當前情境：分數 ${currentAspectData.score} 分，關係為 ${currentAspectData.relation}，對方/環境帶有 ${currentAspectData.star} 的特性。請設計對話劇本。`;
@@ -608,6 +667,7 @@
 
         const finalPrompt = `你是一位精通《達摩一掌經》的戰略顧問。依據資料：${specificPrompt}`;
         try {
+            // [關鍵修正] 使用相對路徑
             const res = await fetch('/api/ask_ai', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:finalPrompt})});
             const d = await res.json();
             setHTML('aiResponseArea', d.reply.replace(/\n/g, '<br>') || d.error);
