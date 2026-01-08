@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>達摩戰略情報中心 (CRM)</title>
+    <style>
+        :root { --bg-color: #121820; --panel-bg: #1e2732; --gold: #d4af37; --cyan: #4fd1c5; --danger: #ff4d4d; --text: #e0e0e0; }
+        body { background-color: var(--bg-color); color: var(--text); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; }
+        
+        /* 頂部導航 */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 15px; }
+        h1 { margin: 0; color: var(--gold); letter-spacing: 2px; }
+        .btn-back { background: #333; color: #ddd; border: 1px solid #555; padding: 10px 20px; border-radius: 4px; cursor: pointer; text-decoration: none; font-weight: bold; }
+        .btn-back:hover { background: #444; border-color: var(--gold); color: var(--gold); }
+
+        /* 搜尋列 */
+        .search-bar { display: flex; gap: 10px; margin-bottom: 20px; background: var(--panel-bg); padding: 15px; border-radius: 8px; border: 1px solid #444; }
+        input { flex: 1; padding: 10px; background: #111; border: 1px solid #555; color: white; border-radius: 4px; font-size: 1em; }
+        .btn-search { background: var(--cyan); color: #000; border: none; padding: 0 25px; font-weight: bold; cursor: pointer; border-radius: 4px; }
+
+        /* 資料列表 (卡片式，適合手機與電腦) */
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .client-card { background: var(--panel-bg); border: 1px solid #444; border-radius: 8px; padding: 15px; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+        .client-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.5); border-color: var(--gold); }
+        
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .client-name { font-size: 1.2em; font-weight: bold; color: var(--gold); }
+        .client-date { font-size: 0.85em; color: #888; }
+        
+        .card-body { font-size: 0.9em; line-height: 1.6; color: #ccc; }
+        .tag-row { margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap; }
+        .tag { font-size: 0.75em; padding: 2px 8px; background: #333; border-radius: 4px; color: var(--cyan); border: 1px solid #444; }
+        
+        .card-footer { margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px; }
+        .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.2em; opacity: 0.7; transition: opacity 0.2s; }
+        .btn-icon:hover { opacity: 1; transform: scale(1.1); }
+        .btn-del { color: var(--danger); }
+        .btn-view { color: var(--cyan); }
+
+        /* 詳細彈窗 */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
+        .modal-content { background: #1e2732; width: 90%; max-width: 600px; padding: 25px; border-radius: 8px; border: 1px solid var(--gold); max-height: 85vh; overflow-y: auto; }
+        .detail-row { margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .detail-label { color: var(--gold); font-size: 0.9em; display: block; margin-bottom: 5px; }
+        .detail-value { color: #eee; white-space: pre-wrap; }
+        
+        /* 熱點樣式 */
+        .heatmap-tag { font-size: 0.8em; padding: 2px 6px; background: #2d3748; color: #ddd; margin-right: 5px; border-radius: 4px; }
+        .heatmap-tag.hot { background: rgba(255, 77, 77, 0.2); color: #ff4d4d; border: 1px solid #ff4d4d; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>📂 達摩客戶戰情室</h1>
+    <a href="/" class="btn-back">⬅ 返回排盤系統</a>
+</div>
+
+<div class="search-bar">
+    <input type="text" id="searchInput" placeholder="搜尋客戶姓名、電話、標籤或備註..." onkeypress="if(event.key==='Enter') searchData()">
+    <button class="btn-search" onclick="searchData()">🔍 搜尋</button>
+</div>
+
+<div id="dataGrid" class="grid-container">
+    <div style="color:#888; text-align:center; grid-column: 1/-1;">載入中...</div>
+</div>
+
+<div id="detailModal" class="modal">
+    <div class="modal-content">
+        <div class="card-header">
+            <span class="client-name" id="modalTitle">客戶詳情</span>
+            <button class="btn-icon" onclick="closeModal()">✖</button>
+        </div>
+        <div id="modalBody">
+            </div>
+        <div class="card-footer">
+            <button class="btn-back" style="background:var(--danger); border-color:var(--danger);" onclick="deleteCurrentItem()">🗑 刪除此紀錄</button>
+            <button class="btn-back" onclick="restoreToDashboard()">🚀 載入至排盤</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentData = [];
+    let selectedItem = null;
+
+    async function searchData() {
+        const keyword = document.getElementById('searchInput').value;
+        const grid = document.getElementById('dataGrid');
+        grid.innerHTML = '<div style="color:#888; text-align:center; grid-column: 1/-1;">搜尋中...</div>';
+        
+        try {
+            const res = await fetch(`/api/search_records?keyword=${encodeURIComponent(keyword)}`);
+            const data = await res.json();
+            currentData = data;
+            renderGrid(data);
+        } catch(e) {
+            grid.innerHTML = '<div style="color:red; text-align:center; grid-column: 1/-1;">連線錯誤</div>';
+        }
+    }
+
+    function renderGrid(data) {
+        const grid = document.getElementById('dataGrid');
+        if(data.length === 0) {
+            grid.innerHTML = '<div style="color:#888; text-align:center; grid-column: 1/-1;">查無資料</div>';
+            return;
+        }
+        
+        let html = '';
+        data.forEach((item, index) => {
+            const tagsHtml = item.tags ? item.tags.map(t => `<span class="tag">${t}</span>`).join('') : '';
+            // 解析熱點前三名
+            let heatHtml = '';
+            if (item.ai_log && item.ai_log.click_heatmap) {
+                const sorted = Object.entries(item.ai_log.click_heatmap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+                if(sorted.length > 0) heatHtml = `<div style="margin-top:8px; font-size:0.8em; color:#888;">🔥 ${sorted.map(s=>s[0]).join(', ')}</div>`;
+            }
+
+            html += `
+            <div class="client-card" onclick="openDetail(${index})">
+                <div class="card-header">
+                    <span class="client-name">${item.client_name}</span>
+                    <span class="client-date">${item.created_at.split(' ')[0]}</span>
+                </div>
+                <div class="card-body">
+                    <div>📞 ${item.phone || "無電話"}</div>
+                    <div style="margin-top:5px; color:#aaa;">📝 ${item.note || "無備註"}</div>
+                    ${heatHtml}
+                    <div class="tag-row">${tagsHtml}</div>
+                </div>
+            </div>`;
+        });
+        grid.innerHTML = html;
+    }
+
+    function openDetail(index) {
+        selectedItem = currentData[index];
+        const m = document.getElementById('detailModal');
+        const b = document.getElementById('modalBody');
+        
+        // 構建詳細內容
+        let tagsHtml = selectedItem.tags ? selectedItem.tags.map(t => `[${t}]`).join(' ') : '';
+        
+        // 熱點分析
+        let heatHtml = '無數據';
+        if (selectedItem.ai_log && selectedItem.ai_log.click_heatmap) {
+            heatHtml = '';
+            const sorted = Object.entries(selectedItem.ai_log.click_heatmap).sort((a,b)=>b[1]-a[1]);
+            sorted.forEach(([k,v], i) => {
+                const cls = i===0 ? 'hot' : '';
+                heatHtml += `<span class="heatmap-tag ${cls}">${k}:${v}</span>`;
+            });
+        }
+
+        const aiAdvice = (selectedItem.ai_log && selectedItem.ai_log.saved_content) 
+                         ? selectedItem.ai_log.saved_content 
+                         : "(本次未記錄 AI 建議)";
+
+        b.innerHTML = `
+            <div class="detail-row">
+                <span class="detail-label">基本資料</span>
+                <div class="detail-value">姓名：${selectedItem.client_name} | 性別：${selectedItem.gender==1?'男':'女'}</div>
+                <div class="detail-value">生日：${selectedItem.solar_date} ${selectedItem.hour}時</div>
+                <div class="detail-value">電話：${selectedItem.phone}</div>
+                <div class="detail-value" style="color:var(--cyan); margin-top:5px;">${tagsHtml}</div>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">諮詢紀錄</span>
+                <div class="detail-value">問事年份：${selectedItem.target_year}</div>
+                <div class="detail-value">備註：${selectedItem.note}</div>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">🔥 行為熱點 (關注度)</span>
+                <div class="detail-value">${heatHtml}</div>
+            </div>
+            <div class="detail-row" style="border:none;">
+                <span class="detail-label">🤖 AI 戰略建議</span>
+                <div class="detail-value" style="background:#111; padding:10px; border-radius:4px; border-left:3px solid var(--gold);">${aiAdvice}</div>
+            </div>
+        `;
+        
+        document.getElementById('modalTitle').innerText = selectedItem.client_name;
+        m.style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
+
+    async function deleteCurrentItem() {
+        if(!selectedItem) return;
+        if(!confirm(`確定要刪除 ${selectedItem.client_name} 的紀錄嗎？此動作無法復原。`)) return;
+        
+        try {
+            const res = await fetch(`/api/delete_record/${selectedItem.id}`, {method: 'DELETE'});
+            const resData = await res.json();
+            if(resData.status === 'success') {
+                alert("已刪除");
+                closeModal();
+                searchData(); // 重新整理
+            } else {
+                alert("刪除失敗");
+            }
+        } catch(e) { alert("連線錯誤"); }
+    }
+
+    function restoreToDashboard() {
+        if(!selectedItem) return;
+        // 將資料存入 localStorage，跳轉回 index.html 後讀取
+        localStorage.setItem('damo_restore_data', JSON.stringify(selectedItem));
+        window.location.href = '/';
+    }
+
+    // 初始載入
+    searchData();
+</script>
+
+</body>
+</html>
