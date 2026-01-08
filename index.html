@@ -263,16 +263,27 @@
 </div>
 
 <script>
+    // ==========================================
+    // 1. 全域變數與設定
+    // ==========================================
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
     const STAR_TRAITS = { '天貴': { type: '吉', keyword: '貴人/顯赫' }, '天厄': { type: '凶', keyword: '勞碌/疾厄' }, '天權': { type: '平', keyword: '權力/社交' }, '天破': { type: '凶', keyword: '消耗/破損' }, '天奸': { type: '平', keyword: '機智/變動' }, '天文': { type: '吉', keyword: '智慧/文采' }, '天福': { type: '吉', keyword: '福氣/財祿' }, '天驛': { type: '平', keyword: '奔波/變動' }, '天孤': { type: '凶', keyword: '孤獨/獨立' }, '天刃': { type: '凶', keyword: '剛強/血光' }, '天藝': { type: '平', keyword: '才藝/技術' }, '天壽': { type: '吉', keyword: '長壽/圓融' } };
+    
+    // [修復關鍵] 動畫路徑定義
     const ROULETTE_PATH = ['巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰'];
+    
+    // 全域狀態
     let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
 
+    // ==========================================
+    // 2. 基礎工具函數 (UI 操作)
+    // ==========================================
     function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
     function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
     function toggleCard(bodyId) { const body = document.getElementById(bodyId); const arrow = body.previousElementSibling.querySelector('.arrow-icon'); if (body.classList.contains('collapsed')) { body.classList.remove('collapsed'); if(arrow) arrow.classList.remove('collapsed'); } else { body.classList.add('collapsed'); if(arrow) arrow.classList.add('collapsed'); } }
     function getRealmColor(realm) { if(realm.includes('佛')) return '#ffd700'; if(realm.includes('仙')) return '#4fd1c5'; if(realm.includes('修羅')) return '#ff9f43'; if(realm.includes('鬼')) return '#a0aec0'; if(realm.includes('畜')) return '#8c7853'; return '#e0e0e0'; }
     function getStatusColor(relation) { if(relation==='生我'||relation==='比旺') return 'var(--status-best)'; if(relation==='我生') return 'var(--status-good)'; if(relation==='我剋') return 'var(--status-growth)'; if(relation==='剋我') return 'var(--status-bad)'; return '#888'; }
+    
     function getStrategicAdvice(aspect, relation, star) {
         const starInfo = STAR_TRAITS[star] || { type: '平', keyword: '未知' };
         let context = aspect.includes('總命運') ? '整體運勢' : aspect.includes('錢財') ? '財務佈局' : '應對策略';
@@ -289,26 +300,17 @@
         const solarRadio = document.querySelector('input[name="calendarType"][value="solar"]');
         const lunarRadio = document.querySelector('input[name="calendarType"][value="lunar"]');
         
-        // 防呆鎖定
         if (scope === 'year') {
-            lunarRadio.checked = true;
-            solarRadio.disabled = true;
-            solarRadio.parentElement.style.opacity = '0.5';
-            solarRadio.parentElement.style.cursor = 'not-allowed';
+            lunarRadio.checked = true; solarRadio.disabled = true;
+            solarRadio.parentElement.style.opacity = '0.5'; solarRadio.parentElement.style.cursor = 'not-allowed';
             solarRadio.parentElement.title = "流年推演僅支援農曆年份 (避免跨年誤差)";
         } else {
-            solarRadio.disabled = false;
-            solarRadio.parentElement.style.opacity = '1';
-            solarRadio.parentElement.style.cursor = 'pointer';
-            solarRadio.parentElement.title = "";
+            solarRadio.disabled = false; solarRadio.parentElement.style.opacity = '1'; solarRadio.parentElement.style.cursor = 'pointer'; solarRadio.parentElement.title = "";
         }
 
         const calType = document.querySelector('input[name="calendarType"]:checked').value;
         const prefix = (calType === 'solar') ? '西元' : '農曆';
-        setText('lblYear', `${prefix}年份`);
-        setText('lblMonth', `${prefix}月份`);
-        setText('lblDay', `${prefix}日期`);
-
+        setText('lblYear', `${prefix}年份`); setText('lblMonth', `${prefix}月份`); setText('lblDay', `${prefix}日期`);
         document.getElementById('monthInput').className = (scope !== 'year') ? 'input-group show' : 'input-group';
         document.getElementById('dayInput').className = (scope === 'day' || scope === 'hour') ? 'input-group show' : 'input-group';
         document.getElementById('hourInput').className = (scope === 'hour') ? 'input-group show' : 'input-group';
@@ -335,13 +337,151 @@
         return "";
     }
 
+    // ==========================================
+    // 3. 核心邏輯：排盤與動畫
+    // ==========================================
+    
+    // [API] 呼叫後端計算
+    async function calculate() {
+        document.getElementById('loadingOverlay').style.display='flex';
+        const data = { 
+            gender: parseInt(document.getElementById('gender').value), 
+            solar_date: document.getElementById('solarDate').value, 
+            hour: document.getElementById('hour').value, 
+            target_calendar: document.querySelector('input[name="calendarType"]:checked').value, 
+            target_scope: document.getElementById('targetScope').value, 
+            target_year: parseInt(document.getElementById('tYear').value)||2026, 
+            target_month: parseInt(document.getElementById('tMonth').value)||1, 
+            target_day: parseInt(document.getElementById('tDay').value)||1, 
+            target_hour: document.getElementById('tHour').value 
+        };
+        try { 
+            const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); 
+            if(!res.ok) throw new Error((await res.json()).detail); 
+            globalLastResult = await res.json(); 
+            startAnimationSequence(globalLastResult); 
+        } catch(e) { 
+            alert("❌ 排盤失敗：\n"+e.message); 
+            document.getElementById('loadingOverlay').style.display='none'; 
+        }
+    }
+
+    // [動畫] 啟動序列
+    async function startAnimationSequence(result) {
+        document.getElementById('loadingOverlay').style.display='none'; 
+        document.getElementById('animControls').style.display='flex';
+        
+        // 重置狀態
+        globalSkipAnimation=false; 
+        globalIsPaused=false; 
+        initMap(); 
+        setHTML('pillarsArea','');
+        
+        setText('lunarInfo', `| 虛歲 ${result.age} | ${result.lunar_info}`);
+        setText('targetDisplayInfo', result.target_display);
+        
+        const p = result.base_chart;
+        const list = [
+            {z:p.年柱.zhi, n:p.年柱.name, c:'var(--p-year)', k:'年'}, 
+            {z:p.月柱.zhi, n:p.月柱.name, c:'var(--p-month)', k:'月'}, 
+            {z:p.日柱.zhi, n:p.日柱.name, c:'var(--p-day)', k:'日'}, 
+            {z:p.時柱.zhi, n:p.時柱.name, c:'var(--p-hour)', k:'命'}
+        ];
+        
+        const isMale = (parseInt(document.getElementById('gender').value)===1);
+        
+        for(let item of list) { 
+            if(globalSkipAnimation) break; 
+            // 呼叫輪盤動畫 (這裡是之前報錯的地方)
+            await runRoulette(item.z, isMale); 
+            addBadgeToCell(item.z, item.k, item.c); 
+            document.getElementById('pillarsArea').innerHTML += `<div class="pillar-box active" style="border-color:${item.c}"><div style="color:${item.c}">${item.n}</div><div>${item.z}</div></div>`; 
+        }
+        renderFullView(result);
+    }
+
+    // [動畫] 輪盤跑燈 (修復 ReferenceError: runRoulette is not defined)
+    function runRoulette(targetZhi, isMale) { 
+        return new Promise(resolve => { 
+            let rounds=0, maxRounds=1, speed=60; 
+            const targetIndex = ROULETTE_PATH.indexOf(targetZhi); 
+            const step = isMale ? 1 : -1; 
+            
+            function nextStep() { 
+                if(globalSkipAnimation) { resolve(); return; } 
+                if(globalIsPaused) { setTimeout(nextStep, 100); return; } 
+                
+                const prev = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); 
+                if(prev) prev.classList.remove('roulette-active'); 
+                
+                currentLightIndex = (currentLightIndex + step + 12) % 12; 
+                const curr = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); 
+                if(curr) curr.classList.add('roulette-active'); 
+                
+                if(rounds>=maxRounds && currentLightIndex===targetIndex) { 
+                    if(curr) curr.classList.add('flash-stop'); 
+                    setTimeout(()=>{ if(curr){curr.classList.remove('roulette-active'); curr.classList.remove('flash-stop');} resolve(); }, 800); 
+                    return; 
+                } 
+                
+                if(currentLightIndex===0) rounds++; 
+                if(rounds>=maxRounds) speed+=30; 
+                setTimeout(nextStep, speed); 
+            } 
+            nextStep(); 
+        }); 
+    }
+
+    // [動畫控制] 重播、暫停、跳過 (修復 ReferenceError: replayAnimation is not defined)
+    function replayAnimation() { if(globalLastResult) startAnimationSequence(globalLastResult); }
+    function togglePause() { globalIsPaused = !globalIsPaused; }
+    function skipToComplete() { if(globalLastResult) { globalSkipAnimation=true; renderFullView(globalLastResult); } }
+    
+    function addBadgeToCell(zhi, text, color, instant) { 
+        const cell = document.getElementById('cell-'+zhi); 
+        if(cell) { 
+            cell.classList.add('active'); 
+            const c = cell.querySelector('.pillar-badges-container'); 
+            if(c && !Array.from(c.children).some(e=>e.innerText===text)) { 
+                const b = document.createElement('span'); 
+                b.className='pillar-badge'; b.style.background=color; b.innerText=text; c.appendChild(b); 
+                if(instant) b.classList.add('show'); else setTimeout(()=>b.classList.add('show'),50); 
+            } 
+        } 
+    }
+
+    // ==========================================
+    // 4. 渲染邏輯 (圖表與列表)
+    // ==========================================
+    function renderFullView(result) {
+        initMap();
+        const h = result.hierarchy;
+        const pillars = [ { k:'年', c:'var(--p-year)', z:result.base_chart.年柱.zhi, n:result.base_chart.年柱.name }, { k:'月', c:'var(--p-month)', z:result.base_chart.月柱.zhi, n:result.base_chart.月柱.name }, { k:'日', c:'var(--p-day)', z:result.base_chart.日柱.zhi, n:result.base_chart.日柱.name }, { k:'命', c:'var(--p-hour)', z:result.base_chart.時柱.zhi, n:result.base_chart.時柱.name } ];
+        pillars.forEach(p => { addBadgeToCell(p.z, p.k, p.c, true); });
+        
+        if(h.big_luck) addBadgeToCell(h.big_luck.zhi, '大運', 'var(--p-luck)', true);
+        if(h.year) addBadgeToCell(h.year.zhi, '流年', 'var(--p-year)', true);
+        const targetScope = document.getElementById('targetScope').value;
+        if(['month','day','hour'].includes(targetScope) && h.month) addBadgeToCell(h.month.zhi, '流月', 'var(--p-month)', true);
+        if(['day','hour'].includes(targetScope) && h.day) addBadgeToCell(h.day.zhi, '流日', 'var(--p-day)', true);
+        if(targetScope==='hour' && h.hour) addBadgeToCell(h.hour.zhi, '流時', 'var(--p-hour)', true);
+        
+        result.aspects.forEach(a => {
+            const cell = document.getElementById('cell-'+a.zhi);
+            if(cell && !cell.querySelector('.cell-aspect-name')) {
+                cell.innerHTML += `<div class="cell-aspect-name show-content">${a.name}</div><div class="cell-relation-tag" style="background:${getStatusColor(a.relation)}; color:#1a2634;">${a.relation}</div>`;
+                if(a.is_alert) cell.classList.add('alert');
+            }
+        });
+        fillLists(result, h);
+    }
+
     function renderTrendChart(labels, scores, tooltips, title) {
         const ctx = document.getElementById('trendChart').getContext('2d');
         if (trendChartInstance) trendChartInstance.destroy();
         document.getElementById('trendTitle').innerHTML = `時空運勢波形圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>`;
         const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-        gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)');
-        gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+        gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
         
         const targetStr = document.getElementById('tYear').value;
         const targetMonth = parseInt(document.getElementById('tMonth').value);
@@ -356,7 +496,6 @@
             else if (scope === 'day') isTarget = labelStr.includes(`初${targetDay}`);
             return isTarget ? '#ff4d4d' : '#fff';
         });
-        
         const pointBorderColors = pointBackgroundColors.map(c => c === '#ff4d4d' ? '#fff' : '#d4af37');
         const pointRadii = pointBackgroundColors.map(c => c === '#ff4d4d' ? 8 : 4);
         
@@ -370,11 +509,7 @@
                     legend: { display: false },
                     tooltip: { 
                         callbacks: { 
-                            title: function(tooltipItems) {
-                                let label = tooltipItems[0].label;
-                                if(Array.isArray(label)) label = label.join(" ");
-                                return label;
-                            },
+                            title: function(tooltipItems) { let label = tooltipItems[0].label; if(Array.isArray(label)) label = label.join(" "); return label; },
                             label: function(context) {
                                 const aspectName = lastActiveAspect;
                                 const index = context.dataIndex;
@@ -385,8 +520,7 @@
                                 return `總分 ${finalScore} = 基礎 ${baseScore} ${adjustment !== 0 ? `(星宿${sign}${adjustment})` : ''}`;
                             },
                             afterLabel: function(ctx) { return tooltips[ctx.dataIndex]; } 
-                        }, 
-                        backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37', bodyFont:{size:13}
+                        }, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37', bodyFont:{size:13}
                     } 
                 } 
             }
@@ -402,13 +536,11 @@
         const isAdjusted = document.getElementById('gradeCheckbox').checked;
         const baseScores = globalTrendData.datasets[aspectName];
         const adjustments = (globalTrendData.adjustments && globalTrendData.adjustments[aspectName]) ? globalTrendData.adjustments[aspectName] : new Array(baseScores.length).fill(0);
-
         const finalScores = baseScores.map((score, i) => {
             if (!isAdjusted) return score;
             let val = score + adjustments[i];
             return Math.max(5, Math.min(95, val));
         });
-
         renderTrendChart(globalTrendData.axis_labels, finalScores, globalTrendData.tooltips[aspectName], aspectName + (isAdjusted ? " + 加權" : ""));
         document.querySelectorAll('.aspect-row').forEach(row => row.classList.remove('active-aspect'));
         const activeRow = document.getElementById(`row-${aspectName}`);
@@ -441,12 +573,10 @@
 
         result.aspects.forEach(a => {
             let score = 50, baseScore = 50, adjScore = 0, trendHtml = '<span class="trend-icon flat">-</span>';
-            
             if (dataIndex !== -1 && globalTrendData.datasets[a.name]) {
                 const baseScores = globalTrendData.datasets[a.name];
                 const adjustments = globalTrendData.adjustments[a.name] || [];
                 const isAdjusted = document.getElementById('gradeCheckbox').checked;
-
                 baseScore = baseScores[dataIndex];
                 adjScore = adjustments[dataIndex] || 0;
                 let rawScore = baseScore;
@@ -515,7 +645,9 @@
         if(result.trend_data) { globalTrendData = result.trend_data; updateTrendChart('總命運'); }
     }
 
-    // CRM 功能
+    // ==========================================
+    // 5. CRM 與 AI 功能
+    // ==========================================
     function openSaveModal() { 
         document.getElementById('saveModal').style.display = 'flex'; 
         const aiText = document.getElementById('aiResponseArea').innerText;
@@ -561,7 +693,6 @@
         const originalText = btn.innerText;
         btn.innerText = "儲存中...";
         try {
-            // [關鍵修正] 使用相對路徑，適配 Cloud Run
             const res = await fetch('/api/save_record', {
                 method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
             });
@@ -569,112 +700,45 @@
             if(result.status === 'success') {
                 alert(`✅ ${name} 的檔案已建立！`);
                 closeSaveModal(); 
+                // 如果有 CRM 列表功能，這裡呼叫 loadHistory()
             } else { alert("❌ 儲存失敗：" + result.message); }
         } catch(e) { alert("連線錯誤：" + e.message); } finally { btn.innerText = originalText; }
     }
 
-    async function startAnimationSequence(result) {
-        document.getElementById('loadingOverlay').style.display='none'; document.getElementById('animControls').style.display='flex';
-        globalSkipAnimation=false; globalIsPaused=false; initMap(); setHTML('pillarsArea','');
-        const isMale = (parseInt(document.getElementById('gender').value)===1);
-        setText('lunarInfo', `| 虛歲 ${result.age} | ${result.lunar_info}`);
-        setText('targetDisplayInfo', result.target_display);
-        const p = result.base_chart;
-        const list = [{z:p.年柱.zhi, n:p.年柱.name, c:'var(--p-year)', k:'年'}, {z:p.月柱.zhi, n:p.月柱.name, c:'var(--p-month)', k:'月'}, {z:p.日柱.zhi, n:p.日柱.name, c:'var(--p-day)', k:'日'}, {z:p.時柱.zhi, n:p.時柱.name, c:'var(--p-hour)', k:'命'}];
-        for(let item of list) { if(globalSkipAnimation) break; await runRoulette(item.z, isMale); addBadgeToCell(item.z, item.k, item.c); document.getElementById('pillarsArea').innerHTML += `<div class="pillar-box active" style="border-color:${item.c}"><div style="color:${item.c}">${item.n}</div><div>${item.z}</div></div>`; }
-        renderFullView(result);
-    }
-
-    async function calculate() {
-        document.getElementById('loadingOverlay').style.display='flex';
-        const data = { gender: parseInt(document.getElementById('gender').value), solar_date: document.getElementById('solarDate').value, hour: document.getElementById('hour').value, target_calendar: document.querySelector('input[name="calendarType"]:checked').value, target_scope: document.getElementById('targetScope').value, target_year: parseInt(document.getElementById('tYear').value)||2026, target_month: parseInt(document.getElementById('tMonth').value)||1, target_day: parseInt(document.getElementById('tDay').value)||1, target_hour: document.getElementById('tHour').value };
-        try { 
-            // [關鍵修正] 使用相對路徑
-            const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); 
-            if(!res.ok) throw new Error((await res.json()).detail); globalLastResult = await res.json(); startAnimationSequence(globalLastResult); 
-        } catch(e) { alert("❌ 排盤失敗：\n"+e.message); document.getElementById('loadingOverlay').style.display='none'; }
+    async function loadHistory() {
+        window.location.href = '/crm'; // 跳轉至獨立 CRM 頁面
     }
 
     async function callAIWithMode(mode) {
         const aspectName = lastActiveAspect || '總命運'; 
-        const targetLabel = getTargetLabel();
-        
         if (!globalTrendData) { alert("請先完成排盤！"); return; }
         
-        // 尋找對應的 Data Index
-        const scope = document.getElementById('targetScope').value;
-        const targetMonth = parseInt(document.getElementById('tMonth').value);
-        const targetDay = parseInt(document.getElementById('tDay').value);
-        const targetStr = document.getElementById('tYear').value;
-        
-        let dataIndex = globalTrendData.axis_labels.findIndex(l => {
-            let labelStr = Array.isArray(l) ? l.join("") : l;
-            if (scope === 'year') return labelStr.includes(targetStr);
-            else if (scope === 'month') return labelStr.includes(`農${targetMonth.toString().padStart(2,'0')}`);
-            else if (scope === 'day') return labelStr.includes(`初${targetDay}`);
-            return false;
-        });
-        if (dataIndex === -1) dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
-
-        let strongest = { name: '', score: -1, star: '' };
-        let weakest = { name: '', score: 999, star: '' };
-        let currentAspectData = { score: 0, relation: '', star: '' };
-
-        for (const key in globalTrendData.datasets) {
-            const score = globalTrendData.datasets[key][dataIndex];
-            const tooltipRaw = globalTrendData.tooltips[key][dataIndex] || ""; 
-            const starName = tooltipRaw.split('坐')[1]?.split(' ')[0] || "未知";
-            const relationName = tooltipRaw.split('(')[1]?.split(')')[0] || "未知";
-            if (key === aspectName) currentAspectData = { score, relation: relationName, star: starName };
-            if (score > strongest.score) strongest = { name: key, score, star: starName };
-            if (score < weakest.score) weakest = { name: key, score, star: starName };
-        }
-
-        let maxClickedAspect = aspectName, maxCount = 0, totalClicks = 0;
-        for (const [key, count] of Object.entries(aspectClickCounts)) { totalClicks += count; if (count > maxCount) { maxCount = count; maxClickedAspect = key; } }
-        let behaviorInsight = "";
-        if (totalClicks >= 3 && maxClickedAspect !== aspectName) {
-            behaviorInsight = `⚠️ 潛在焦慮偵測：案主目前停留在【${aspectName}】，但數據顯示他查看【${maxClickedAspect}】次數最多（${maxCount}次）。請分析這兩者的連動關係。`;
-        }
-
-        let specificPrompt = "", loadingText = "";
-        if (mode === 'general') {
-            loadingText = `🔮 戰略顧問正在進行【${aspectName}】全盤交叉比對...`;
-            specificPrompt = `請進行全盤戰略推演。重點分析【${aspectName}】目前的處境 (${currentAspectData.score}分, ${currentAspectData.relation})。並指出【${weakest.name}】(${weakest.score}分) 是否為潛在風險，以及如何利用【${strongest.name}】(${strongest.score}分) 來借力使力。${behaviorInsight} 輸出格式：【局勢總覽】、【關鍵戰術(3點)】、【連鎖反應預警】、【成功率預估】。`;
-        } else if (mode === 'weakest') {
-            loadingText = `💔 正在掃描全盤最弱環節與病灶...`;
-            specificPrompt = `請專注分析案主的【致命弱點/病灶】。全盤最弱的宮位是【${weakest.name}】，分數僅 ${weakest.score} 分，坐 ${weakest.star}。1. 請解釋為什麼 ${weakest.name} 會崩盤？2. 這個弱點會如何拖累案主最在意的【${aspectName}】？3. 請給出「止血療傷」的具體方案。`;
-        } else if (mode === 'timing') {
-            loadingText = `📅 正在為【${aspectName}】計算最佳進攻窗口...`;
-            const scores = globalTrendData.datasets[aspectName];
-            const labels = globalTrendData.axis_labels;
-            let maxVal = -1, maxIdx = -1, minVal = 999, minIdx = -1;
-            scores.forEach((s, i) => { if (s > maxVal) { maxVal = s; maxIdx = i; } if (s < minVal) { minVal = s; minIdx = i; } });
-            
-            // 處理雙曆 Label
-            const bestTime = Array.isArray(labels[maxIdx]) ? labels[maxIdx].join(" ") : labels[maxIdx];
-            const worstTime = Array.isArray(labels[minIdx]) ? labels[minIdx].join(" ") : labels[minIdx];
-            
-            specificPrompt = `案主想知道【${aspectName}】的行動時機。根據波形圖數據：- 最佳時機 (進攻)：在【${bestTime}】，能量高達 ${maxVal} 分。- 最差時機 (避險)：在【${worstTime}】，能量跌至 ${minVal} 分。請給出時間戰略。`;
-        } else if (mode === 'script') {
-            loadingText = `🗣️ 正在為您生成針對【${aspectName}】的談判劇本...`;
-            specificPrompt = `案主需要針對【${aspectName}】的實戰話術/劇本。當前情境：分數 ${currentAspectData.score} 分，關係為 ${currentAspectData.relation}，對方/環境帶有 ${currentAspectData.star} 的特性。請設計對話劇本。`;
-        }
-
+        let specificPrompt = "";
         const aiBody = document.getElementById('aiBody');
         if(aiBody.classList.contains('collapsed')) toggleCard('aiBody');
-        setHTML('aiResponseArea', loadingText);
+        setHTML('aiResponseArea', `🤖 AI 正在為您分析【${aspectName}】的${mode}策略...`);
 
-        const finalPrompt = `你是一位精通《達摩一掌經》的戰略顧問。依據資料：${specificPrompt}`;
+        if (mode === 'general') specificPrompt = `請分析【${aspectName}】的運勢，並給出 3 點關鍵建議。`;
+        else if (mode === 'weakest') specificPrompt = `請找出全盤最弱的環節，並分析它如何影響【${aspectName}】，給出止血方案。`;
+        else if (mode === 'timing') specificPrompt = `請分析【${aspectName}】的最佳進攻時間與最差避險時間。`;
+        else if (mode === 'script') specificPrompt = `請給我針對【${aspectName}】的談判話術與心理建設金句。`;
+
+        const finalPrompt = `你是一位精通《達摩一掌經》的戰略顧問。依據排盤資料：${specificPrompt}`;
+        
         try {
-            // [關鍵修正] 使用相對路徑
             const res = await fetch('/api/ask_ai', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:finalPrompt})});
             const d = await res.json();
             setHTML('aiResponseArea', d.reply.replace(/\n/g, '<br>') || d.error);
         } catch(e) { setHTML('aiResponseArea', '連線失敗：'+e.message); }
     }
 
-    // 接收 CRM 還原請求
+    // ==========================================
+    // 6. 啟動與還原
+    // ==========================================
+    updateFormUI(); 
+    initMap();
+    
+    // 檢查是否有來自 CRM 的還原請求
     window.onload = function() {
         const restoreDataStr = localStorage.getItem('damo_restore_data');
         if (restoreDataStr) {
@@ -685,12 +749,17 @@
             document.getElementById('tYear').value = item.target_year;
             localStorage.removeItem('damo_restore_data');
             setTimeout(() => {
-                alert(`已從戰情室載入：${item.client_name}\n備註：${item.note}`);
+                // 自動觸發計算
                 calculate();
+                // 顯示簡單提示
+                const aiArea = document.getElementById('aiResponseArea');
+                aiArea.innerText = `已載入客戶：${item.client_name}\n備註：${item.note}`;
+                const aiBody = document.getElementById('aiBody');
+                if(aiBody.classList.contains('collapsed')) toggleCard('aiBody');
             }, 500);
         }
-        updateFormUI(); initMap(); 
     };
 </script>
 </body>
 </html>
+
