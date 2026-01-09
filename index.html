@@ -262,16 +262,24 @@
 </div>
 
 <script>
+    // ==========================================
+    // 達摩一掌經 V9.9.3 (終極修復版 Script)
+    // ==========================================
+
+    // 1. 全域變數與設定
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
     const STAR_TRAITS = { '天貴': { type: '吉', keyword: '貴人/顯赫' }, '天厄': { type: '凶', keyword: '勞碌/疾厄' }, '天權': { type: '平', keyword: '權力/社交' }, '天破': { type: '凶', keyword: '消耗/破損' }, '天奸': { type: '平', keyword: '機智/變動' }, '天文': { type: '吉', keyword: '智慧/文采' }, '天福': { type: '吉', keyword: '福氣/財祿' }, '天驛': { type: '平', keyword: '奔波/變動' }, '天孤': { type: '凶', keyword: '孤獨/獨立' }, '天刃': { type: '凶', keyword: '剛強/血光' }, '天藝': { type: '平', keyword: '才藝/技術' }, '天壽': { type: '吉', keyword: '長壽/圓融' } };
     const ROULETTE_PATH = ['巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰'];
+    
     let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
 
+    // 2. 基礎工具
     function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
     function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
     function toggleCard(bodyId) { const body = document.getElementById(bodyId); const arrow = body.previousElementSibling.querySelector('.arrow-icon'); if (body.classList.contains('collapsed')) { body.classList.remove('collapsed'); if(arrow) arrow.classList.remove('collapsed'); } else { body.classList.add('collapsed'); if(arrow) arrow.classList.add('collapsed'); } }
     function getRealmColor(realm) { if(realm.includes('佛')) return '#ffd700'; if(realm.includes('仙')) return '#4fd1c5'; if(realm.includes('修羅')) return '#ff9f43'; if(realm.includes('鬼')) return '#a0aec0'; if(realm.includes('畜')) return '#8c7853'; return '#e0e0e0'; }
     function getStatusColor(relation) { if(relation==='生我'||relation==='比旺') return 'var(--status-best)'; if(relation==='我生') return 'var(--status-good)'; if(relation==='我剋') return 'var(--status-growth)'; if(relation==='剋我') return 'var(--status-bad)'; return '#888'; }
+    
     function getStrategicAdvice(aspect, relation, star) {
         const starInfo = STAR_TRAITS[star] || { type: '平', keyword: '未知' };
         let context = aspect.includes('總命運') ? '整體運勢' : aspect.includes('錢財') ? '財務佈局' : '應對策略';
@@ -287,6 +295,7 @@
         const scope = document.getElementById('targetScope').value;
         const solarRadio = document.querySelector('input[name="calendarType"][value="solar"]');
         const lunarRadio = document.querySelector('input[name="calendarType"][value="lunar"]');
+        
         if (scope === 'year') {
             lunarRadio.checked = true; solarRadio.disabled = true;
             solarRadio.parentElement.style.opacity = '0.5'; solarRadio.parentElement.style.cursor = 'not-allowed';
@@ -294,6 +303,7 @@
         } else {
             solarRadio.disabled = false; solarRadio.parentElement.style.opacity = '1'; solarRadio.parentElement.style.cursor = 'pointer'; solarRadio.parentElement.title = "";
         }
+
         const calType = document.querySelector('input[name="calendarType"]:checked').value;
         const prefix = (calType === 'solar') ? '西元' : '農曆';
         setText('lblYear', `${prefix}年份`); setText('lblMonth', `${prefix}月份`); setText('lblDay', `${prefix}日期`);
@@ -323,7 +333,82 @@
         return "";
     }
 
-    // Charting
+    // 3. API 呼叫與動畫
+    async function calculate() {
+        document.getElementById('loadingOverlay').style.display='flex';
+        const data = { 
+            gender: parseInt(document.getElementById('gender').value), 
+            solar_date: document.getElementById('solarDate').value, 
+            hour: document.getElementById('hour').value, 
+            target_calendar: document.querySelector('input[name="calendarType"]:checked').value, 
+            target_scope: document.getElementById('targetScope').value, 
+            target_year: parseInt(document.getElementById('tYear').value)||2026, 
+            target_month: parseInt(document.getElementById('tMonth').value)||1, 
+            target_day: parseInt(document.getElementById('tDay').value)||1, 
+            target_hour: document.getElementById('tHour').value 
+        };
+        try { 
+            const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); 
+            if(!res.ok) throw new Error((await res.json()).detail); 
+            globalLastResult = await res.json(); 
+            startAnimationSequence(globalLastResult); 
+        } catch(e) { 
+            alert("❌ 排盤失敗：\n"+e.message); 
+            document.getElementById('loadingOverlay').style.display='none'; 
+        }
+    }
+
+    async function startAnimationSequence(result) {
+        document.getElementById('loadingOverlay').style.display='none'; 
+        document.getElementById('animControls').style.display='flex';
+        globalSkipAnimation=false; globalIsPaused=false; initMap(); setHTML('pillarsArea','');
+        
+        setText('lunarInfo', `| 虛歲 ${result.age} | ${result.lunar_info}`);
+        setText('targetDisplayInfo', result.target_display);
+        
+        const p = result.base_chart;
+        const list = [{z:p.年柱.zhi, n:p.年柱.name, c:'var(--p-year)', k:'年'}, {z:p.月柱.zhi, n:p.月柱.name, c:'var(--p-month)', k:'月'}, {z:p.日柱.zhi, n:p.日柱.name, c:'var(--p-day)', k:'日'}, {z:p.時柱.zhi, n:p.時柱.name, c:'var(--p-hour)', k:'命'}];
+        const isMale = (parseInt(document.getElementById('gender').value)===1);
+        
+        for(let item of list) { 
+            if(globalSkipAnimation) break; 
+            await runRoulette(item.z, isMale); 
+            addBadgeToCell(item.z, item.k, item.c); 
+            document.getElementById('pillarsArea').innerHTML += `<div class="pillar-box active" style="border-color:${item.c}"><div style="color:${item.c}">${item.n}</div><div>${item.z}</div></div>`; 
+        }
+        renderFullView(result); // 這裡呼叫，必須確保下方有定義
+    }
+
+    function runRoulette(targetZhi, isMale) { return new Promise(resolve => { let rounds=0, maxRounds=1, speed=50; const targetIndex = ROULETTE_PATH.indexOf(targetZhi); const step = isMale ? 1 : -1; function nextStep() { if(globalSkipAnimation) { resolve(); return; } if(globalIsPaused) { setTimeout(nextStep, 100); return; } const prev = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(prev) prev.classList.remove('roulette-active'); currentLightIndex = (currentLightIndex + step + 12) % 12; const curr = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(curr) curr.classList.add('roulette-active'); if(rounds>=maxRounds && currentLightIndex===targetIndex) { if(curr) curr.classList.add('flash-stop'); setTimeout(()=>{ if(curr){curr.classList.remove('roulette-active'); curr.classList.remove('flash-stop');} resolve(); }, 800); return; } if(currentLightIndex===0) rounds++; if(rounds>=maxRounds) speed+=30; setTimeout(nextStep, speed); } nextStep(); }); }
+    function togglePause() { globalIsPaused = !globalIsPaused; }
+    function skipToComplete() { if(globalLastResult) { globalSkipAnimation=true; renderFullView(globalLastResult); } }
+    function replayAnimation() { if(globalLastResult) startAnimationSequence(globalLastResult); }
+    function addBadgeToCell(zhi, text, color, instant) { const cell = document.getElementById('cell-'+zhi); if(cell) { cell.classList.add('active'); const c = cell.querySelector('.pillar-badges-container'); if(c && !Array.from(c.children).some(e=>e.innerText===text)) { const b = document.createElement('span'); b.className='pillar-badge'; b.style.background=color; b.innerText=text; c.appendChild(b); if(instant) b.classList.add('show'); else setTimeout(()=>b.classList.add('show'),50); } } }
+
+    // 4. [關鍵修復] 渲染與圖表邏輯 (renderFullView 在此定義)
+    function renderFullView(result) {
+        initMap();
+        const h = result.hierarchy;
+        const pillars = [ { k:'年', c:'var(--p-year)', z:result.base_chart.年柱.zhi, n:result.base_chart.年柱.name }, { k:'月', c:'var(--p-month)', z:result.base_chart.月柱.zhi, n:result.base_chart.月柱.name }, { k:'日', c:'var(--p-day)', z:result.base_chart.日柱.zhi, n:result.base_chart.日柱.name }, { k:'命', c:'var(--p-hour)', z:result.base_chart.時柱.zhi, n:result.base_chart.時柱.name } ];
+        pillars.forEach(p => { addBadgeToCell(p.z, p.k, p.c, true); });
+        
+        if(h.big_luck) addBadgeToCell(h.big_luck.zhi, '大運', 'var(--p-luck)', true);
+        if(h.year) addBadgeToCell(h.year.zhi, '流年', 'var(--p-year)', true);
+        const targetScope = document.getElementById('targetScope').value;
+        if(['month','day','hour'].includes(targetScope) && h.month) addBadgeToCell(h.month.zhi, '流月', 'var(--p-month)', true);
+        if(['day','hour'].includes(targetScope) && h.day) addBadgeToCell(h.day.zhi, '流日', 'var(--p-day)', true);
+        if(targetScope==='hour' && h.hour) addBadgeToCell(h.hour.zhi, '流時', 'var(--p-hour)', true);
+        
+        result.aspects.forEach(a => {
+            const cell = document.getElementById('cell-'+a.zhi);
+            if(cell && !cell.querySelector('.cell-aspect-name')) {
+                cell.innerHTML += `<div class="cell-aspect-name show-content">${a.name}</div><div class="cell-relation-tag" style="background:${getStatusColor(a.relation)}; color:#1a2634;">${a.relation}</div>`;
+                if(a.is_alert) cell.classList.add('alert');
+            }
+        });
+        fillLists(result, h); // 呼叫 fillLists，它會負責第一次畫圖
+    }
+
     function renderTrendChart(labels, mainScores, baseScores, tooltips, title) {
         const ctx = document.getElementById('trendChart').getContext('2d');
         if (trendChartInstance) trendChartInstance.destroy();
@@ -333,17 +418,11 @@
         gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
         
         const targetStr = document.getElementById('tYear').value;
-        const targetMonth = parseInt(document.getElementById('tMonth').value);
-        const targetDay = parseInt(document.getElementById('tDay').value);
         const scope = document.getElementById('targetScope').value;
 
         const pointBackgroundColors = labels.map((l, i) => {
-            let isTarget = false;
             let labelStr = Array.isArray(l) ? l.join("") : l; 
-            if (scope === 'year') isTarget = labelStr.includes(targetStr);
-            else if (scope === 'month') isTarget = labelStr.includes(`農${targetMonth.toString().padStart(2,'0')}`);
-            else if (scope === 'day') isTarget = labelStr.includes(`初${targetDay}`);
-            return isTarget ? '#ff4d4d' : '#fff';
+            return (scope === 'year' && labelStr.includes(targetStr)) ? '#ff4d4d' : '#fff';
         });
         const pointBorderColors = pointBackgroundColors.map(c => c === '#ff4d4d' ? '#fff' : '#d4af37');
         const pointRadii = pointBackgroundColors.map(c => c === '#ff4d4d' ? 8 : 4);
@@ -353,30 +432,8 @@
             data: { 
                 labels: labels, 
                 datasets: [
-                    // 細線：星宿底氣 (Base)
-                    { 
-                        label: '底氣 (基礎)', 
-                        data: baseScores, 
-                        borderColor: 'rgba(255, 255, 255, 0.3)', 
-                        borderWidth: 1, 
-                        borderDash: [5, 5], 
-                        pointRadius: 0,
-                        fill: false 
-                    },
-                    // 粗線：總能量 (Main)
-                    { 
-                        label: '總能量', 
-                        data: mainScores, 
-                        borderColor: '#d4af37', 
-                        backgroundColor: gradient, 
-                        borderWidth: 3, 
-                        pointBackgroundColor: pointBackgroundColors, 
-                        pointBorderColor: pointBorderColors, 
-                        pointRadius: pointRadii, 
-                        pointBorderWidth: 2, 
-                        fill: true, 
-                        tension: 0.4 
-                    }
+                    { label: '底氣 (基礎)', data: baseScores, borderColor: 'rgba(255, 255, 255, 0.3)', borderWidth: 1, borderDash: [5, 5], pointRadius: 0, fill: false },
+                    { label: '總能量', data: mainScores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointBackgroundColors, pointBorderColor: pointBorderColors, pointRadius: pointRadii, pointBorderWidth: 2, fill: true, tension: 0.4 }
                 ] 
             },
             options: { 
@@ -386,13 +443,9 @@
                     legend: { display: false },
                     tooltip: { 
                         callbacks: { 
-                            title: function(tooltipItems) { let label = tooltipItems[0].label; if(Array.isArray(label)) label = label.join(" "); return label; },
-                            label: function(context) {
-                                // 只顯示主線的 Tooltip
-                                if (context.datasetIndex === 0) return null;
-                                return tooltips[context.dataIndex]; // 使用後端傳來的完整說明
-                            },
-                            afterLabel: function(ctx) { return null; } 
+                            title: function(i) { return Array.isArray(i[0].label) ? i[0].label.join(" ") : i[0].label; },
+                            label: function(ctx) { if (ctx.datasetIndex === 0) return null; return tooltips[ctx.dataIndex]; },
+                            afterLabel: function() { return null; } 
                         }, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37', bodyFont:{size:13}
                     } 
                 } 
@@ -408,29 +461,25 @@
 
         const comp = globalTrendData.components[aspectName];
         
-        // 讀取 Checkbox 狀態
         const chkStar = document.getElementById('chkStar').checked;
         const chkElement = document.getElementById('chkElement').checked;
         const chkPalace = document.getElementById('chkPalace').checked;
 
-        // 計算分數陣列
-        // Base Line: 永遠是 60 + 星宿分數
-        const baseLineScores = comp.star.map(s => 60 + s);
-
-        // Main Line: 根據 Checkbox 疊加
+        const baseLineScores = comp.star.map(s => 60 + s); // Base Line 邏輯: 60 + 星宿
         const mainLineScores = comp.star.map((s, i) => {
-            let total = 60; // 起始分
+            let total = 60; 
             if (chkStar) total += s;
             if (chkElement) total += comp.element[i];
             if (chkPalace) total += comp.palace[i];
             return Math.max(5, Math.min(95, total));
         });
 
-        // 取出 Tooltip (目前簡易處理，若要動態 Tooltip 需重組字串，這裡先用後端傳的靜態 Tooltip)
-        // 進階：其實 Tooltip 也可以動態組，但為了效能先維持
-        const currentTooltips = globalTrendData.tooltips[aspectName];
-
-        renderTrendChart(globalTrendData.axis_labels, mainLineScores, baseLineScores, currentTooltips, aspectName);
+        renderTrendChart(globalTrendData.axis_labels, mainLineScores, baseLineScores, globalTrendData.tooltips[aspectName], aspectName);
+        
+        // 更新列表高亮
+        document.querySelectorAll('.aspect-row').forEach(row => row.classList.remove('active-aspect'));
+        const activeRow = document.getElementById(`row-${aspectName}`);
+        if(activeRow) activeRow.classList.add('active-aspect');
     }
 
     function fillLists(result, h) {
@@ -439,24 +488,18 @@
         setHTML('hierarchyArea', hHtml);
 
         let aHtml = '';
-        let dataIndex = Math.floor(globalTrendData.axis_labels.length / 2); // 預設取中間值
+        let dataIndex = Math.floor(globalTrendData.axis_labels.length / 2); 
 
         result.aspects.forEach(a => {
-            // 計算列表顯示的分數 (預設全勾選狀態，或跟隨目前 Checkbox?)
-            // 為了列表一致性，列表分數通常顯示「全勾選」的最終結果
-            // 或者我們讓列表分數也跟隨 Checkbox 連動
-            
-            // 這裡為了簡單，列表顯示 "全勾" 的總分
             let score = 50;
+            // 列表顯示的分數，目前設定為顯示「全勾選」的總分
             if (globalTrendData.components[a.name]) {
                 const c = globalTrendData.components[a.name];
                 score = 60 + c.star[dataIndex] + c.element[dataIndex] + c.palace[dataIndex];
                 score = Math.max(5, Math.min(95, score));
             }
             
-            let trendHtml = '-';
-            // 趨勢計算略... (可沿用之前的邏輯)
-
+            let trendHtml = '-'; // 簡化趨勢顯示
             let barColor = '#888';
             if (score >= 80) barColor = 'var(--status-best)'; 
             else if (score >= 65) barColor = 'var(--status-good)';
@@ -472,19 +515,27 @@
         });
         setHTML('aspectsList', aHtml);
         setText('aiPrompt', result.ai_prompt);
-        if(result.trend_data) { globalTrendData = result.trend_data; updateTrendChart('總命運'); }
+        
+        // 畫出預設的總命運圖表
+        if(result.trend_data) { 
+            globalTrendData = result.trend_data; 
+            updateTrendChart('總命運'); 
+        }
     }
 
-    // CRM & AI & Animation
-    function openSaveModal() { document.getElementById('saveModal').style.display = 'flex'; openAiNote(); }
-    function closeSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
-    function toggleTag(el) { el.classList.toggle('selected'); }
-    function openAiNote() {
+    // 5. CRM & AI
+    function openSaveModal() { 
+        document.getElementById('saveModal').style.display = 'flex'; 
         const aiText = document.getElementById('aiResponseArea').innerText;
         const aiInput = document.getElementById('crmAiContent');
-        if (aiText && !aiText.includes('請點擊') && !aiText.includes('正在')) aiInput.value = aiText;
-        else { aiInput.value = ""; aiInput.placeholder = "本次尚未進行 AI 分析..."; }
+        if (aiText && !aiText.includes('請點擊') && !aiText.includes('正在')) {
+            aiInput.value = aiText;
+        } else {
+            aiInput.value = ""; aiInput.placeholder = "本次尚未進行 AI 分析...";
+        }
     }
+    function closeSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
+    function toggleTag(el) { el.classList.toggle('selected'); }
 
     async function confirmSave() {
         const name = document.getElementById('crmName').value || "未命名";
@@ -494,7 +545,9 @@
         const tags = []; document.querySelectorAll('.tag-chip.selected').forEach(el => tags.push(el.innerText));
         
         let maxClickedAspect = "無", maxCount = 0;
-        for (const [key, count] of Object.entries(aspectClickCounts)) { if (count > maxCount) { maxCount = count; maxClickedAspect = key; } }
+        for (const [key, count] of Object.entries(aspectClickCounts)) {
+            if (count > maxCount) { maxCount = count; maxClickedAspect = key; }
+        }
         
         const aiLog = { saved_content: aiContent, most_focused: `${maxClickedAspect} (${maxCount}次)`, last_focused: lastActiveAspect, click_heatmap: aspectClickCounts };
         const data = { solar_date: document.getElementById('solarDate').value, gender: parseInt(document.getElementById('gender').value), hour: document.getElementById('hour').value, target_year: parseInt(document.getElementById('tYear').value), client_name: name, phone: phone, tags: tags, note: note, ai_log: aiLog };
@@ -503,37 +556,27 @@
         try { const res = await fetch('/api/save_record', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); if((await res.json()).status === 'success') { alert("已儲存"); closeSaveModal(); } else alert("儲存失敗"); } catch(e) { alert("連線錯誤"); } finally { btn.innerText = originalText; }
     }
 
-    async function startAnimationSequence(result) {
-        document.getElementById('loadingOverlay').style.display='none'; document.getElementById('animControls').style.display='flex';
-        globalSkipAnimation=false; globalIsPaused=false; initMap(); setHTML('pillarsArea','');
-        setText('lunarInfo', `| 虛歲 ${result.age} | ${result.lunar_info}`); setText('targetDisplayInfo', result.target_display);
-        const p = result.base_chart;
-        const list = [{z:p.年柱.zhi, n:p.年柱.name, c:'var(--p-year)', k:'年'}, {z:p.月柱.zhi, n:p.月柱.name, c:'var(--p-month)', k:'月'}, {z:p.日柱.zhi, n:p.日柱.name, c:'var(--p-day)', k:'日'}, {z:p.時柱.zhi, n:p.時柱.name, c:'var(--p-hour)', k:'命'}];
-        const isMale = (parseInt(document.getElementById('gender').value)===1);
-        for(let item of list) { if(globalSkipAnimation) break; await runRoulette(item.z, isMale); addBadgeToCell(item.z, item.k, item.c); document.getElementById('pillarsArea').innerHTML += `<div class="pillar-box active" style="border-color:${item.c}"><div style="color:${item.c}">${item.n}</div><div>${item.z}</div></div>`; }
-        renderFullView(result);
-    }
-    
-    function runRoulette(targetZhi, isMale) { return new Promise(resolve => { let rounds=0, maxRounds=1, speed=50; const targetIndex = ROULETTE_PATH.indexOf(targetZhi); const step = isMale ? 1 : -1; function nextStep() { if(globalSkipAnimation) { resolve(); return; } if(globalIsPaused) { setTimeout(nextStep, 100); return; } const prev = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(prev) prev.classList.remove('roulette-active'); currentLightIndex = (currentLightIndex + step + 12) % 12; const curr = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(curr) curr.classList.add('roulette-active'); if(rounds>=maxRounds && currentLightIndex===targetIndex) { if(curr) curr.classList.add('flash-stop'); setTimeout(()=>{ if(curr){curr.classList.remove('roulette-active'); curr.classList.remove('flash-stop');} resolve(); }, 800); return; } if(currentLightIndex===0) rounds++; if(rounds>=maxRounds) speed+=30; setTimeout(nextStep, speed); } nextStep(); }); }
-    function togglePause() { globalIsPaused = !globalIsPaused; }
-    function skipToComplete() { if(globalLastResult) { globalSkipAnimation=true; renderFullView(globalLastResult); } }
-    function replayAnimation() { if(globalLastResult) startAnimationSequence(globalLastResult); }
-    function addBadgeToCell(zhi, text, color, instant) { const cell = document.getElementById('cell-'+zhi); if(cell) { cell.classList.add('active'); const c = cell.querySelector('.pillar-badges-container'); if(c && !Array.from(c.children).some(e=>e.innerText===text)) { const b = document.createElement('span'); b.className='pillar-badge'; b.style.background=color; b.innerText=text; c.appendChild(b); if(instant) b.classList.add('show'); else setTimeout(()=>b.classList.add('show'),50); } } }
-
-    async function calculate() {
-        document.getElementById('loadingOverlay').style.display='flex';
-        const data = { gender: parseInt(document.getElementById('gender').value), solar_date: document.getElementById('solarDate').value, hour: document.getElementById('hour').value, target_calendar: document.querySelector('input[name="calendarType"]:checked').value, target_scope: document.getElementById('targetScope').value, target_year: parseInt(document.getElementById('tYear').value)||2026, target_month: parseInt(document.getElementById('tMonth').value)||1, target_day: parseInt(document.getElementById('tDay').value)||1, target_hour: document.getElementById('tHour').value };
-        try { const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); if(!res.ok) throw new Error((await res.json()).detail); globalLastResult = await res.json(); startAnimationSequence(globalLastResult); } catch(e) { alert("❌ 排盤失敗：\n"+e.message); document.getElementById('loadingOverlay').style.display='none'; }
-    }
+    async function loadHistory() { window.location.href = '/crm'; }
 
     async function callAIWithMode(mode) {
         const aspectName = lastActiveAspect || '總命運'; 
         if (!globalTrendData) { alert("請先完成排盤！"); return; }
-        const prompt = `分析${aspectName}，模式:${mode}`;
-        document.getElementById('aiResponseArea').innerText = "AI 思考中...";
-        try { const res = await fetch('/api/ask_ai', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:prompt})}); const d = await res.json(); document.getElementById('aiResponseArea').innerText = d.reply || d.error; } catch(e) { document.getElementById('aiResponseArea').innerText = "連線失敗"; }
+        
+        let specificPrompt = "";
+        const aiBody = document.getElementById('aiBody');
+        if(aiBody.classList.contains('collapsed')) toggleCard('aiBody');
+        setHTML('aiResponseArea', `🤖 AI 正在為您分析【${aspectName}】...`);
+
+        if (mode === 'general') specificPrompt = `請分析【${aspectName}】的運勢，並給出 3 點關鍵建議。`;
+        else if (mode === 'weakest') specificPrompt = `請找出全盤最弱的環節，並分析它如何影響【${aspectName}】，給出止血方案。`;
+        else if (mode === 'timing') specificPrompt = `請分析【${aspectName}】的最佳進攻時間與最差避險時間。`;
+        else if (mode === 'script') specificPrompt = `請給我針對【${aspectName}】的談判話術與心理建設金句。`;
+
+        const finalPrompt = `你是一位精通《達摩一掌經》的戰略顧問。依據排盤資料：${specificPrompt}`;
+        try { const res = await fetch('/api/ask_ai', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:finalPrompt})}); const d = await res.json(); setHTML('aiResponseArea', d.reply.replace(/\n/g, '<br>') || d.error); } catch(e) { setHTML('aiResponseArea', '連線失敗：'+e.message); }
     }
 
+    // 6. 啟動
     updateFormUI(); initMap();
     window.onload = function() {
         const restoreDataStr = localStorage.getItem('damo_restore_data');
@@ -544,9 +587,13 @@
             document.getElementById('hour').value = item.hour;
             document.getElementById('tYear').value = item.target_year;
             localStorage.removeItem('damo_restore_data');
-            setTimeout(() => calculate(), 500);
+            setTimeout(() => {
+                alert(`已從戰情室載入：${item.client_name}\n備註：${item.note}`);
+                calculate();
+            }, 500);
         }
     };
 </script>
 </body>
 </html>
+
