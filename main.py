@@ -10,9 +10,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from borax.calendars.lunardate import LunarDate
 from google.cloud import firestore
 
+# 設定日誌
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("DamoSystem")
 
+# ==========================================
+# 請在此填入您的 OpenAI API Key (或設定環境變數)
+# ==========================================
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API_Key"
 
 app = FastAPI(title="達摩一掌經命理戰略中台 - V5.9")
@@ -24,12 +28,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ---------------- 資料庫初始化 ----------------
 db = None
 try:
     db = firestore.Client()
     logger.info("✅ Firestore 連線成功")
 except Exception as e:
-    logger.warning(f"⚠️ Firestore 連線失敗: {e}")
+    logger.warning(f"⚠️ Firestore 連線失敗 (若是本地測試請忽略): {e}")
 
 # ---------------- 知識庫 (分數定義) ----------------
 ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
@@ -56,8 +61,7 @@ ELEMENT_SCORES_MAP = {
     "比旺": 10, "生我": 15, "我生": 5, "我剋": -5, "剋我": -15, "未知": 0
 }
 
-# 3. 十二宮品格 (Palace): 模擬宮位加權 (此處為範例邏輯)
-# 邏輯：星宿五行 與 宮位地支五行 的關係
+# 3. 十二宮品格 (Palace): 模擬宮位加權 (範例邏輯：星宿五行 vs 宮位地支五行)
 PALACE_SCORES_MAP = {
     "水": {"水":5, "木":5, "金":5, "火":-5, "土":-10}, # 水星入各宮
     "木": {"木":5, "火":5, "水":5, "土":-5, "金":-10},
@@ -205,7 +209,7 @@ class OnePalmSystem:
             trend_response["axis_labels"].append(point['label'])
             target_el = None; target_name = ""; current_anchor_idx = 0 
             
-            # 定位邏輯 (同前)
+            # 定位邏輯
             if scope == 'year':
                 y_age = point['val'] - lunar_data['lunar_year_num'] + 1
                 luck_stg = (y_age - 1) // 7
@@ -259,7 +263,7 @@ class OnePalmSystem:
 
         return trend_response
 
-# ---------------- API 模型與路由 (維持不變，僅 calculate 更新) ----------------
+# ---------------- API 模型與路由 ----------------
 class UserRequest(BaseModel):
     gender: int; solar_date: str; hour: str; target_calendar: str = 'lunar'; target_scope: str = 'year'; target_year: int; target_month: int = 1; target_day: int = 1; target_hour: str = '子'
 class AIRequest(BaseModel):
