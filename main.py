@@ -4,10 +4,9 @@ import sys
 import datetime
 import shutil
 import json
-import uuid
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, HTTPException, UploadFile, File, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,13 +20,10 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經命理戰略中台 - V7.0")
+app = FastAPI(title="達摩一掌經命理戰略中台 - V7.1 最終版")
 
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
 )
 
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -39,7 +35,7 @@ try:
 except Exception as e:
     logger.warning(f"⚠️ Firestore 連線失敗: {e}")
 
-# ---------------- 知識庫 & 核心算法 (保持不變) ----------------
+# ---------------- 知識庫 ----------------
 ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
 STARS_INFO = {
     '子': {'name': '天貴星', 'element': '水'}, '丑': {'name': '天厄星', 'element': '土'},
@@ -49,12 +45,23 @@ STARS_INFO = {
     '申': {'name': '天孤星', 'element': '金'}, '酉': {'name': '天刃星', 'element': '金'},
     '戌': {'name': '天藝星', 'element': '土'}, '亥': {'name': '天壽星', 'element': '水'}
 }
-# 定義凶星與關鍵字 (用於自動預警)
-BAD_STARS = ['天厄星', '天破星', '天刃星']
-RISK_PALACES = ['命宮', '疾厄宮', '福德宮'] # 這裡簡化，實務上可根據需求調整
+ASPECTS_ORDER = ["總命運", "形象", "幸福", "事業", "變動", "健慾", "愛情", "領導", "親信", "根基", "朋友", "錢財"]
+STAR_MODIFIERS = {'天貴星': 30, '天厄星': -30, '天權星': 20, '天破星': -20, '天奸星': -30, '天文星': 0, '天福星': 30, '天驛星': 0, '天孤星': -20, '天刃星': 0, '天藝星': 0, '天壽星': 20}
+BAD_STARS = ['天厄星', '天破星', '天刃星'] # 風險星
 
+# ---------------- 核心函數 ----------------
 def get_zhi_index(zhi_char): return ZHI.index(zhi_char) if zhi_char in ZHI else 0
 def get_next_position(start_index, steps, direction=1): return (start_index + (steps * direction)) % 12
+def get_element_relation(me, target):
+    PRODUCING = {'水': '木', '木': '火', '火': '土', '土': '金', '金': '水'}
+    CONTROLING = {'水': '火', '火': '金', '金': '木', '木': '土', '土': '水'}
+    if me == target: return {"type": "比旺", "score": 95, "alert": False}
+    if PRODUCING.get(target) == me: return {"type": "生我", "score": 80, "alert": False} 
+    if PRODUCING.get(me) == target: return {"type": "我生", "score": 75, "alert": False}  
+    if CONTROLING.get(me) == target: return {"type": "我剋", "score": 55, "alert": True}  
+    if CONTROLING.get(target) == me: return {"type": "剋我", "score": 5, "alert": True}
+    return {"type": "未知", "score": 50, "alert": False}
+
 def solar_to_one_palm_lunar(solar_date_str):
     try:
         y, m, d = map(int, solar_date_str.split('-'))
@@ -62,8 +69,18 @@ def solar_to_one_palm_lunar(solar_date_str):
         year_zhi_idx = (lunar.year - 4) % 12
         final_month = lunar.month
         if lunar.leap and lunar.day > 15: final_month += 1
-        return {"year_zhi": ZHI[year_zhi_idx], "month": final_month, "day": lunar.day, "lunar_year_num": lunar.year}
+        return {"year_zhi": ZHI[year_zhi_idx], "month": final_month, "day": lunar.day, "lunar_year_num": lunar.year, "lunar_str": f"農曆 {lunar.year}年 {('閏' if lunar.leap else '')}{lunar.month}月 {lunar.day}日"}
     except: return None
+
+def parse_target_date(mode, calendar_type, year, month, day, hour_zhi):
+    try:
+        target_lunar_year = year; target_lunar_month = month; target_lunar_day = day; display_info = f"農曆 {year}-{month}-{day}"
+        if calendar_type == 'solar':
+            lunar = LunarDate.from_solar_date(year, month, day)
+            target_lunar_year = lunar.year; target_lunar_month = lunar.month; target_lunar_day = lunar.day
+            display_info = f"國曆 {year}-{month}-{day}"
+        return {"lunar_year": target_lunar_year, "lunar_month": target_lunar_month, "lunar_day": target_lunar_day, "year_zhi": ZHI[(target_lunar_year - 4) % 12], "hour_zhi": hour_zhi, "display_info": display_info}
+    except: return {"lunar_year": year, "lunar_month": month, "lunar_day": day, "year_zhi": ZHI[(year-4)%12], "hour_zhi": hour_zhi, "display_info": ""}
 
 class OnePalmSystem:
     def __init__(self, gender, birth_year_zhi, birth_month_num, birth_day_num, birth_hour_zhi):
@@ -73,103 +90,107 @@ class OnePalmSystem:
         self.day_idx = get_next_position(self.month_idx, birth_day_num - 1, self.direction)
         self.hour_idx = get_next_position(self.day_idx, get_zhi_index(birth_hour_zhi), self.direction)
     
-    # 專門用於家庭風險掃描的輕量級計算
+    def get_base_chart(self):
+        chart = {}; keys = [("年柱", self.year_idx), ("月柱", self.month_idx), ("日柱", self.day_idx), ("時柱", self.hour_idx)]
+        for key, idx in keys: chart[key] = {**STARS_INFO[ZHI[idx]], "zhi": ZHI[idx], "name": STARS_INFO[ZHI[idx]]['name']}
+        return chart
+
+    def calculate_hierarchy(self, current_age, target_data, scope):
+        start_luck = get_next_position(self.hour_idx, 1, self.direction)
+        luck_stage = (current_age - 1) // 7
+        big_luck_idx = get_next_position(start_luck, luck_stage, self.direction)
+        hierarchy = {"big_luck": {**STARS_INFO[ZHI[big_luck_idx]], "zhi": ZHI[big_luck_idx]}}
+        t_year_zhi_idx = get_zhi_index(target_data['year_zhi'])
+        flow_year_idx = get_next_position(big_luck_idx, t_year_zhi_idx, self.direction)
+        hierarchy["year"] = {**STARS_INFO[ZHI[flow_year_idx]], "zhi": ZHI[flow_year_idx]}
+        flow_month_idx = get_next_position(flow_year_idx, target_data['lunar_month'] - 1, self.direction)
+        hierarchy["month"] = {**STARS_INFO[ZHI[flow_month_idx]], "zhi": ZHI[flow_month_idx]}
+        flow_day_idx = get_next_position(flow_month_idx, target_data['lunar_day'] - 1, self.direction)
+        hierarchy["day"] = {**STARS_INFO[ZHI[flow_day_idx]], "zhi": ZHI[flow_day_idx]}
+        t_hour_idx = get_zhi_index(target_data['hour_zhi'])
+        flow_hour_idx = get_next_position(flow_day_idx, t_hour_idx, self.direction)
+        hierarchy["hour"] = {**STARS_INFO[ZHI[flow_hour_idx]], "zhi": ZHI[flow_hour_idx]}
+        return hierarchy
+
+    def calculate_full_trend(self, hierarchy, scope, lunar_data, target_data, system_obj):
+        trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "tooltips": {} }
+        for name in ASPECTS_ORDER: trend_response["datasets"][name] = []; trend_response["adjustments"][name] = []; trend_response["tooltips"][name] = []
+        loop_range = []
+        if scope == 'year':
+            for y in range(target_data['lunar_year'] - 6, target_data['lunar_year'] + 7): loop_range.append({'type': 'year', 'val': y, 'label': f"{y}"})
+        else: 
+            for i in range(1, 13): loop_range.append({'type': 'month', 'val': i, 'label': f"{i}月"})
+        
+        for point in loop_range:
+            trend_response["axis_labels"].append(point['label'])
+            target_el = STARS_INFO[ZHI[get_zhi_index(hierarchy['year']['zhi'])]]['element'] 
+            if scope=='year': target_el = STARS_INFO[ZHI[get_zhi_index(hierarchy['big_luck']['zhi'])]]['element']
+            for i, name in enumerate(ASPECTS_ORDER):
+                star_info = STARS_INFO[ZHI[(system_obj.hour_idx + i) % 12]]
+                rel = get_element_relation(star_info['element'], target_el)
+                trend_response["datasets"][name].append(rel["score"])
+                trend_response["adjustments"][name].append(STAR_MODIFIERS.get(star_info['name'], 0))
+                trend_response["tooltips"][name].append(f"{star_info['name']} {rel['type']}")
+        return trend_response
+
     def check_risk(self, current_lunar_year):
-        # 簡單計算流年落點
-        # 注意：這裡使用簡化的流年推算邏輯 (大運+流年)
-        # 為了效能，這裡只示範「流年宮位」本身的星宿風險
-        # 實務上需完整算出大運流年
-        # 假設：流年只看年支對應的宮位 (簡化版)
-        
-        # 真正的流年計算需依賴年齡，這裡做一個快速估算
-        # 暫時以 "年柱" 為基準跑流年 (僅作範例)
         risks = []
-        
-        # 檢查命宮 (時柱)
         star = STARS_INFO[ZHI[self.hour_idx]]['name']
-        if star in BAD_STARS:
-            risks.append(f"命帶{star}")
-            
+        if star in BAD_STARS: risks.append(f"本命帶{star}")
         return risks
 
 # ---------------- API 模型 ----------------
+class UserRequest(BaseModel):
+    gender: int; solar_date: str; hour: str; target_calendar: str = 'lunar'; target_scope: str = 'year'; target_year: int; target_month: int = 1; target_day: int = 1; target_hour: str = '子'
+class AIRequest(BaseModel): prompt: str
 class SaveRequest(BaseModel):
     solar_date: str; gender: int; hour: str; target_year: int; client_name: str; phone: str = ""; tags: List[str] = []; note: str = ""; ai_log: Dict[str, Any] = {}
     image_urls: List[str] = []; audio_url: str = ""; transcript: str = ""
-    relations: List[Dict[str, Any]] = [] # [{'name':'xxx', 'relation':'父', 'solar_date':'...', 'hour':'子', 'gender':1}]
+    relations: List[Dict[str, Any]] = [] 
     consent_signed: bool = False; consent_date: str = ""
 
-# ---------------- 核心 API ----------------
-
+# ---------------- 路由 ----------------
 @app.get("/", response_class=HTMLResponse)
-async def read_root():
-    if os.path.exists("index.html"): return open("index.html", "r", encoding="utf-8").read()
-    return "<h1>系統啟動中</h1>"
+async def read_root(): return open("index.html", "r", encoding="utf-8").read() if os.path.exists("index.html") else "<h1>Error</h1>"
 
 @app.get("/crm", response_class=HTMLResponse)
-async def read_crm():
-    if os.path.exists("crm.html"): return open("crm.html", "r", encoding="utf-8").read()
-    return "<h1>CRM 頁面建置中</h1>"
+async def read_crm(): return open("crm.html", "r", encoding="utf-8").read() if os.path.exists("crm.html") else "<h1>Error</h1>"
 
-# [V7.0] 數位同意書頁面
 @app.get("/consent_page", response_class=HTMLResponse)
-async def read_consent_page():
-    if os.path.exists("consent.html"): return open("consent.html", "r", encoding="utf-8").read()
-    return "<h1>同意書載入錯誤</h1>"
+async def read_consent_page(): return open("consent.html", "r", encoding="utf-8").read() if os.path.exists("consent.html") else "<h1>Error</h1>"
 
-# [V7.0] 家族風險掃描 (Ecosystem Core)
-@app.post("/api/scan_family_risks")
-async def scan_family_risks(req: SaveRequest):
-    alerts = []
-    target_year = req.target_year or 2026
-    
-    # 遍歷關係人
-    for p in req.relations:
-        try:
-            if not p.get('solar_date'): continue
-            lunar = solar_to_one_palm_lunar(p['solar_date'])
-            if not lunar: continue
-            
-            # 排盤
-            sys = OnePalmSystem(int(p['gender']), lunar['year_zhi'], lunar['month'], lunar['day'], p['hour'])
-            
-            # 檢查風險 (這裡用簡單邏輯：如果命宮是凶星)
-            # 進階版應計算流年
-            risks = sys.check_risk(target_year)
-            
-            if risks:
-                alerts.append({
-                    "name": p['name'],
-                    "relation": p['relation'],
-                    "risk": ", ".join(risks),
-                    "advice": "建議安排詳細流年諮詢"
-                })
-        except Exception as e:
-            logger.error(f"Scan error for {p.get('name')}: {e}")
-            continue
-            
-    return {"alerts": alerts}
-
-# [V7.0] 簽署同意書 API
-@app.post("/api/sign_consent/{doc_id}")
-async def sign_consent(doc_id: str):
-    if not db: return {"status": "error"}
+# [核心] 排盤 API (已修復：不再是佔位符)
+@app.post("/api/calculate")
+async def calculate(req: UserRequest):
     try:
-        db.collection('consultations').document(doc_id).update({
-            "consent_signed": True,
-            "consent_date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        })
-        return {"status": "success"}
-    except Exception as e: return {"status": "error", "msg": str(e)}
+        lunar_data = solar_to_one_palm_lunar(req.solar_date)
+        target_data = parse_target_date(req.target_scope, req.target_calendar, req.target_year, req.target_month, req.target_day, req.target_hour)
+        age = target_data['lunar_year'] - lunar_data['lunar_year_num'] + 1
+        system = OnePalmSystem(req.gender, lunar_data['year_zhi'], lunar_data['month'], lunar_data['day'], req.hour)
+        base_chart = system.get_base_chart()
+        hierarchy = system.calculate_hierarchy(age, target_data, req.target_scope)
+        aspects = []
+        base_idx = get_zhi_index(hierarchy['year']['zhi']) if req.target_scope == 'year' else get_zhi_index(hierarchy['year']['zhi']) # 簡化
+        target_env_star = hierarchy['big_luck'] if req.target_scope == 'year' else hierarchy['year']
 
-# ---------------- 原有功能 (保持不變) ----------------
-# (transcribe_audio, calculate, ask_ai, save_record, search_records, delete_record...)
-# 為節省篇幅，請保留您 V6.2 中的所有其他 API 函數
-# 務必包含 transcribe_audio, calculate 等
+        for i, name in enumerate(ASPECTS_ORDER):
+            curr_idx = (base_idx + i) % 12 
+            star_info = STARS_INFO[ZHI[curr_idx]]
+            rel = get_element_relation(star_info['element'], target_env_star['element'])
+            aspects.append({"name": name, "star": star_info['name'], "element": star_info['element'], "zhi": ZHI[curr_idx], "relation": rel['type'], "is_alert": rel['alert']})
+        
+        trend_data = system.calculate_full_trend(hierarchy, req.target_scope, lunar_data, target_data, system)
+        scope_map = {'year': '流年', 'month': '流月', 'day': '流日', 'hour': '流時'}
+        ai_prompt = (f"案主{age}歲，目標{target_data['display_info']}，層級{scope_map.get(req.target_scope)}。")
+        
+        return {"lunar_info": lunar_data['lunar_str'], "age": age, "base_chart": base_chart, "hierarchy": hierarchy, "target_display": target_data['display_info'], "aspects": aspects, "ai_prompt": ai_prompt, "trend_data": trend_data}
+    except Exception as e:
+        logger.error(str(e)); raise HTTPException(status_code=500, detail=str(e))
 
+# [新增] 語音轉錄
 @app.post("/api/transcribe_audio")
 async def transcribe_audio(file: UploadFile = File(...)):
-    if not OPENAI_API_KEY or "請在此填入" in OPENAI_API_KEY: return {"text": "⚠️ API Key 未設定", "path": ""}
+    if not OPENAI_API_KEY or "請在此" in OPENAI_API_KEY: return {"text": "API Key Error", "path": ""}
     try:
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_filename = f"{timestamp}_{file.filename}"
@@ -179,27 +200,40 @@ async def transcribe_audio(file: UploadFile = File(...)):
         client = OpenAI(api_key=OPENAI_API_KEY)
         with open(file_path, "rb") as audio_file: transcript = client.audio.transcriptions.create(model="whisper-1", file=audio_file)
         return {"text": transcript.text, "path": f"/uploads/{safe_filename}"}
-    except Exception as e: return {"text": f"Error: {str(e)}", "path": ""}
+    except Exception as e: return {"text": str(e), "path": ""}
 
-# ... (請保留 calculate, ask_ai, save_record, search_records, delete_record) ...
-# 注意：save_record 需確保能存 relations 與 consent 欄位 (Pydantic 模型已更新，直接用即可)
+# [新增] 家族風險掃描
+@app.post("/api/scan_family_risks")
+async def scan_family_risks(req: SaveRequest):
+    alerts = []
+    target_year = req.target_year or 2026
+    for p in req.relations:
+        try:
+            if not p.get('solar_date'): continue
+            lunar = solar_to_one_palm_lunar(p['solar_date'])
+            if not lunar: continue
+            sys = OnePalmSystem(int(p.get('gender', 1)), lunar['year_zhi'], lunar['month'], lunar['day'], p['hour'])
+            risks = sys.check_risk(target_year)
+            if risks: alerts.append({"name": p['name'], "relation": p['relation'], "risk": ", ".join(risks)})
+        except: continue
+    return {"alerts": alerts}
 
-@app.post("/api/save_record")
-async def save_record(req: SaveRequest):
-    if not db: return {"status": "error", "message": "資料庫未連接"}
-    try:
-        doc_ref = db.collection('consultations').document()
-        data = req.dict(); data['created_at'] = firestore.SERVER_TIMESTAMP
-        doc_ref.set(data)
-        return {"status": "success", "id": doc_ref.id}
-    except Exception as e: return {"status": "error", "message": str(e)}
+# [新增] 同意書簽署
+@app.post("/api/sign_consent/{doc_id}")
+async def sign_consent(doc_id: str):
+    if not db: return {"status": "error"}
+    db.collection('consultations').document(doc_id).update({"consent_signed": True, "consent_date": datetime.datetime.now().strftime("%Y-%m-%d")})
+    return {"status": "success"}
 
-@app.post("/api/calculate") # 簡化版佔位，請使用 V6.2 的完整 calculate
-async def calculate(req: UserRequest):
-    # 請將 V6.2 的 calculate 函數完整貼於此
-    return {"status": "請貼上完整 calculate"} # 佔位符
+# [新增] 更新紀錄 (避免重複存檔)
+@app.post("/api/update_record/{doc_id}")
+async def update_record(doc_id: str, req: SaveRequest):
+    if not db: return {"status": "error"}
+    db.collection('consultations').document(doc_id).set(req.dict(), merge=True)
+    return {"status": "success"}
 
-@app.get("/api/search_records") # 簡化版佔位
+# [原有] 搜尋
+@app.get("/api/search_records")
 async def search_records(keyword: str = ""):
     if not db: return []
     try:
@@ -207,18 +241,40 @@ async def search_records(keyword: str = ""):
         results = []
         for doc in docs:
             data = doc.to_dict(); data['id'] = doc.id
-            if data.get('created_at'): data['created_at'] = str(data['created_at']) # 簡化
+            if data.get('created_at'): data['created_at'] = datetime.datetime.fromtimestamp(data['created_at'].timestamp()).strftime("%Y-%m-%d")
             if keyword:
-                if keyword.lower() in str(data).lower(): results.append(data)
+                search_target = f"{data.get('client_name','')} {data.get('note','')} {data.get('phone','')}"
+                if keyword.lower() in search_target.lower(): results.append(data)
             else: results.append(data)
         return results
     except: return []
 
+# [原有] 刪除
 @app.delete("/api/delete_record/{doc_id}")
 async def delete_record(doc_id: str):
     if not db: return {"status": "error"}
     db.collection('consultations').document(doc_id).delete()
     return {"status": "success"}
+
+# [原有] AI
+@app.post("/api/ask_ai")
+async def ask_ai(req: AIRequest):
+    if "請在此" in OPENAI_API_KEY: return {"error": "Key Error"}
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        res = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": req.prompt}])
+        return {"reply": res.choices[0].message.content}
+    except Exception as e: return {"error": str(e)}
+
+# [原有] 新增 (僅用於第一次建立)
+@app.post("/api/save_record")
+async def save_record(req: SaveRequest):
+    if not db: return {"status": "error"}
+    doc_ref = db.collection('consultations').document()
+    data = req.dict(); data['created_at'] = firestore.SERVER_TIMESTAMP
+    doc_ref.set(data)
+    return {"status": "success", "id": doc_ref.id}
 
 if __name__ == "__main__":
     import uvicorn
