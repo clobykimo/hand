@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>諮詢服務同意書</title>
+    <style>
+        body { background: #f5f5f5; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; }
+        .paper { background: white; width: 100%; max-width: 500px; padding: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-radius: 8px; }
+        h1 { text-align: center; color: #333; }
+        p { line-height: 1.6; color: #555; }
+        .btn { width: 100%; padding: 15px; background: #d4af37; color: white; border: none; font-size: 1.2em; border-radius: 4px; cursor: pointer; margin-top: 20px; }
+        .btn:disabled { background: #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <h1>達摩一掌經<br>諮詢服務同意書</h1>
+    <hr>
+    <p>歡迎您使用本諮詢服務。為了保障您的權益與隱私，請詳閱以下條款：</p>
+    <ol>
+        <li><strong>隱私保護：</strong>您的命盤資料、錄音及諮詢內容僅供命理師分析使用，系統將採用加密技術保存，絕不外洩。</li>
+        <li><strong>錄音保存：</strong>您同意系統將保存諮詢過程之錄音，作為後續服務參考，您亦可隨時要求刪除。</li>
+        <li><strong>非醫療聲明：</strong>本服務僅提供命理學角度之建議，不涉及醫療診斷或法律訴訟建議。</li>
+    </ol>
+    <br>
+    <label style="display:flex; align-items:center; gap:10px;">
+        <input type="checkbox" id="agreeChk" onchange="document.getElementById('signBtn').disabled = !this.checked">
+        我已詳閱並同意上述條款
+    </label>
+    
+    <button id="signBtn" class="btn" disabled onclick="sign()">數 位 簽 署</button>
+</div>
+
+<script>
+    async function sign() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+        if(!id) { alert("無效的連結"); return; }
+        
+        const btn = document.getElementById('signBtn');
+        btn.innerText = "簽署中...";
+        
+        try {
+            const res = await fetch(`/api/sign_consent/${id}`, {method:'POST'});
+            const d = await res.json();
+            if(d.status === 'success') {
+                document.body.innerHTML = "<div style='text-align:center; padding:50px;'><h1>✅ 簽署完成</h1><p>您現在可以關閉此頁面。</p></div>";
+            } else { alert("簽署失敗"); }
+        } catch(e) { alert("連線錯誤"); }
+    }
+</script>
+
+</body>
+</html>
