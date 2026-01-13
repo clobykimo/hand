@@ -21,7 +21,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經命理戰略中台 - V8.4 顯示邏輯修復版")
+app = FastAPI(title="達摩一掌經命理戰略中台 - V8.6 大運特案修正版")
 
 app.add_middleware(
     CORSMiddleware,
@@ -71,16 +71,16 @@ BAD_STARS = ['天厄星', '天破星', '天刃星']
 def get_zhi_index(zhi_char): return ZHI.index(zhi_char) if zhi_char in ZHI else 0
 def get_next_position(start_index, steps, direction=1): return (start_index + (steps * direction)) % 12
 
-# [V8.2] 五行生剋分數 (階梯版 80/65/50/35/20)
+# [V8.5] 五行生剋分數 (階梯版 80/75/50/35/20)
 def get_element_relation(me, target):
-    # me = 主 (流年), target = 客 (宮位)
+    # me = 主 (流年/大運), target = 客 (宮位)
     PRODUCING = {'水': '木', '木': '火', '火': '土', '土': '金', '金': '水'}
     CONTROLING = {'水': '火', '火': '金', '金': '木', '木': '土', '土': '水'}
     
     # 1. 生我 (客生主)：大吉 80
     if PRODUCING.get(target) == me: return {"type": "生我", "score": 80} 
-    # 2. 比旺 (客同主)：次吉 65
-    if me == target: return {"type": "比旺", "score": 65}
+    # 2. 比旺 (客同主)：強吉 75
+    if me == target: return {"type": "比旺", "score": 75}
     # 3. 我生 (主生客)：平 50
     if PRODUCING.get(me) == target: return {"type": "我生", "score": 50}  
     # 4. 我剋 (主剋客)：勞 35
@@ -145,7 +145,7 @@ class OnePalmSystem:
         hierarchy["hour"] = {**STARS_INFO[ZHI[flow_hour_idx]], "zhi": ZHI[flow_hour_idx]}
         return hierarchy
 
-    # [V8.3] 趨勢運算 (主客對調)
+    # [V8.6] 趨勢運算 (修正：總命運改為對照大運)
     def calculate_full_trend(self, hierarchy, scope, lunar_data, target_data, system_obj):
         trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "renhe_scores": [], "tooltips": {} }
         for name in ASPECTS_ORDER: 
@@ -169,6 +169,7 @@ class OnePalmSystem:
         for point in loop_range:
             trend_response["axis_labels"].append(point['label'])
             
+            # 計算當前時間點的流年/流月星
             if scope == 'year':
                 offset = point['val'] - target_data['lunar_year']
                 dynamic_fy_idx = get_next_position(current_fy_idx, offset, system_obj.direction)
@@ -178,7 +179,7 @@ class OnePalmSystem:
                 fm_idx = get_next_position(current_fy_idx, offset, system_obj.direction)
                 time_star_info = STARS_INFO[ZHI[fm_idx]]
             
-            # 主 (Me) = 流年總命運
+            # 預設 主 (Me) = 流年總命運
             me_el = time_star_info['element'] 
             age_star_name = time_star_info['name']
             
@@ -192,14 +193,24 @@ class OnePalmSystem:
                 # 客 (Target) = 宮位/事件
                 guest_el = aspect_star_info['element']
                 
-                # [核心修正] (我=流年, 對象=宮位)
-                rel = get_element_relation(me=me_el, target=guest_el)
+                # [特案修正 V8.6]
+                # 若是「流年模式」且項目是「總命運」
+                # 主 (Me) 改為「大運」 (Big Luck)
+                current_host_el = me_el
+                current_host_name = age_star_name
+                
+                if scope == 'year' and name == "總命運":
+                    current_host_el = hierarchy['big_luck']['element']
+                    current_host_name = hierarchy['big_luck']['name'] + "(大運)"
+                
+                # 計算關係 (主客對調：Host vs Guest)
+                rel = get_element_relation(me=current_host_el, target=guest_el)
                 
                 trend_response["datasets"][name].append(rel["score"])
                 grade_score = STAR_MODIFIERS.get(aspect_star_info['name'], 0)
                 root_score = 10 if curr_idx in pillar_indices else 0
                 trend_response["adjustments"][name].append(grade_score + root_score)
-                trend_response["tooltips"][name].append(f"{aspect_star_info['name']}(客) {rel['type']} {age_star_name}(我)")
+                trend_response["tooltips"][name].append(f"{aspect_star_info['name']}(客) {rel['type']} {current_host_name}(主)")
                 
         return trend_response
 
@@ -254,8 +265,9 @@ async def calculate(req: UserRequest):
         aspects = []
         base_idx = get_zhi_index(hierarchy['year']['zhi']) if req.target_scope == 'year' else get_zhi_index(hierarchy['year']['zhi'])
         
-        # [V8.4 修正] 列表顯示的主客邏輯
-        # 主 (Me) = 流年 (或流月，視 Scope 而定)
+        # [V8.6] 列表顯示也要配合特案
+        # 若是流年模式，總命運 (i=0) 要對應大運
+        
         host_star = hierarchy['year'] 
         if req.target_scope == 'month': host_star = hierarchy['month']
         
@@ -263,8 +275,13 @@ async def calculate(req: UserRequest):
             curr_idx = (base_idx + i) % 12 
             guest_star_info = STARS_INFO[ZHI[curr_idx]] # 客 (宮位)
             
-            # [核心修正] 這裡也要主客對調：Me=Host(流年), Target=Guest(宮位)
-            rel = get_element_relation(me=host_star['element'], target=guest_star_info['element'])
+            # 判斷此項目是否為總命運且在流年模式
+            current_host_star = host_star
+            if req.target_scope == 'year' and name == "總命運":
+                current_host_star = hierarchy['big_luck'] # 改為主是大運
+            
+            # 主客對調
+            rel = get_element_relation(me=current_host_star['element'], target=guest_star_info['element'])
             
             aspects.append({
                 "name": name, 
