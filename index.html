@@ -32,7 +32,6 @@
         .card-body { overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), opacity 0.4s ease-in-out, margin-top 0.4s; max-height: 2000px; opacity: 1; margin-top: 15px; }
         .card-body.collapsed { max-height: 0; opacity: 0; margin-top: 0; }
         
-        /* Map Styles */
         .twelve-palaces-map { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 130px); gap: 12px; padding: 15px; margin-top: 0; background: rgba(0,0,0,0.2); border: 1px solid #444; border-radius: 8px; grid-template-areas: "si wu wei shen" "chen . . you" "mao . . xu" "yin chou zi hai"; }
         .grid-cell { position: relative; background: #2a3544; border: 1px solid #3f4a5a; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
         .grid-cell.active { border-color: var(--gold); background: #3a4555; }
@@ -48,7 +47,6 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
-        /* Dashboard Components */
         .aspect-row { border-bottom: 1px solid #333; padding: 14px 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: background 0.2s; }
         .aspect-row.clickable { cursor: pointer; border-left: 3px solid transparent; }
         .aspect-row.clickable:hover { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
@@ -73,22 +71,7 @@
         .score-bonus { color: #ffd700; }
         .score-penalty { color: #ff4d4d; }
 
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
-        .modal-content { background-color: #1e2732; border: 1px solid var(--gold); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
-        .modal h3 { color: var(--gold); margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .form-group { margin-bottom: 12px; }
-        .form-group label { color: #aaa; font-size: 0.9em; margin-bottom: 4px; display:block; }
-        .tag-container { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
-        .tag-chip { font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: #333; cursor: pointer; border: 1px solid #555; user-select: none; color: #ddd; }
-        .tag-chip.selected { background: var(--cyan); color: #000; border-color: var(--cyan); }
-        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-        
-        .ai-history-block { background: rgba(16, 163, 127, 0.1); border-left: 3px solid var(--gpt-color); padding: 8px; margin-top: 5px; font-size: 0.85em; color: #cfd8dc; white-space: pre-wrap; display: none; }
-        .toggle-ai-btn { background: none; border: none; color: var(--gpt-color); cursor: pointer; font-size: 0.8em; text-decoration: underline; margin-left: 5px; }
-        .heatmap-tag { font-size: 0.75em; padding: 1px 5px; border-radius: 4px; background: #2d3748; color: #a0aec0; margin-right: 4px; border: 1px solid #4a5568; }
-        .heatmap-tag.hot { border-color: #ff4d4d; color: #ff4d4d; background: rgba(255, 77, 77, 0.1); font-weight: bold; }
-
-        /* 動畫開關樣式 */
+        /* [V9.9.6] 動畫開關樣式 */
         .switch-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 10px; }
         .switch-label { font-size: 0.8em; color: #888; font-weight: bold; }
         .switch { position: relative; display: inline-block; width: 36px; height: 18px; }
@@ -98,6 +81,17 @@
         input:checked + .slider { background-color: var(--gold); border-color: var(--gold); }
         input:checked + .slider:before { transform: translateX(18px); background-color: #1a2634; }
         .switch:hover .slider { border-color: #888; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        .modal-content { background-color: #1e2732; border: 1px solid var(--gold); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        .modal h3 { color: var(--gold); margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { color: #aaa; font-size: 0.9em; margin-bottom: 4px; display:block; }
+        .tag-container { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+        .tag-chip { font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: #333; cursor: pointer; border: 1px solid #555; user-select: none; color: #ddd; }
+        .tag-chip.selected { background: var(--cyan); color: #000; border-color: var(--cyan); }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
         @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
         @media (max-width: 950px) { .dashboard { grid-template-columns: 1fr; } .control-panel { position: static; } }
@@ -171,6 +165,7 @@
             <h3 class="card-header" style="color:var(--gold);">
                 <div style="display:flex; align-items:center; width:100%">
                     <div style="white-space:nowrap;">戰略儀表板 <span id="lunarInfo" style="font-size:0.8em; color:#a0a0a0;"></span></div>
+                    
                     <div style="display:flex; align-items:center; margin-left:auto;">
                         <div class="switch-container">
                             <span class="switch-label">動畫</span>
@@ -187,6 +182,7 @@
                     </div>
                 </div>
             </h3>
+            
             <div class="twelve-palaces-map">
                 <div class="grid-cell" id="cell-巳"><div class="pillar-badges-container"></div><span class="cell-zhi">巳</span><span class="cell-star">天文</span><span class="cell-realm">仙道</span></div>
                 <div class="grid-cell" id="cell-午"><div class="pillar-badges-container"></div><span class="cell-zhi">午</span><span class="cell-star">天福</span><span class="cell-realm">佛道</span></div>
@@ -273,10 +269,12 @@
             </div>
         </div>
         <div class="form-group"><label>諮詢筆記</label><textarea id="crmNote" rows="2" placeholder="紀錄重點..."></textarea></div>
+        
         <div class="form-group">
             <label style="color:var(--gpt-color);">🤖 AI 戰略建議 (自動帶入/可編輯)</label>
             <textarea id="crmAiContent" rows="4" style="border-color:var(--gpt-color); color:#cfd8dc; font-size:0.9em;"></textarea>
         </div>
+
         <div class="modal-footer">
             <button class="ctrl-btn" onclick="closeSaveModal()">取消</button>
             <button class="ctrl-btn active" onclick="confirmSave()">確認儲存</button>
@@ -387,6 +385,7 @@
         const h = result.hierarchy;
         const pillars = [ { k:'年', c:'var(--p-year)', z:result.base_chart.年柱.zhi, n:result.base_chart.年柱.name }, { k:'月', c:'var(--p-month)', z:result.base_chart.月柱.zhi, n:result.base_chart.月柱.name }, { k:'日', c:'var(--p-day)', z:result.base_chart.日柱.zhi, n:result.base_chart.日柱.name }, { k:'命', c:'var(--p-hour)', z:result.base_chart.時柱.zhi, n:result.base_chart.時柱.name } ];
         pillars.forEach(p => { addBadgeToCell(p.z, p.k, p.c, true); });
+        
         if(h.big_luck) addBadgeToCell(h.big_luck.zhi, '大運', 'var(--p-luck)', true);
         if(h.year) addBadgeToCell(h.year.zhi, '流年', 'var(--p-year)', true);
         if(['month','day','hour'].includes(document.getElementById('targetScope').value) && h.month) addBadgeToCell(h.month.zhi, '流月', 'var(--p-month)', true);
@@ -403,7 +402,6 @@
         fillLists(result, h);
     }
 
-    // 列表與圖表
     function fillLists(result, h) {
         let hHtml = `<div class="hierarchy-step"><span class="step-label">大運</span><span class="step-value">${result.hierarchy.big_luck.zhi}宮 ${result.hierarchy.big_luck.name}</span></div>`;
         hHtml += `<div class="hierarchy-step"><span class="step-label">流年</span><span class="step-value">${result.hierarchy.year.zhi}宮 ${result.hierarchy.year.name}</span></div>`;
@@ -425,7 +423,7 @@
         }
 
         result.aspects.forEach(a => {
-            let score = 50;
+            let score = 50, trendHtml = '-';
             if (dataIndex !== -1 && globalTrendData && globalTrendData.datasets[a.name]) {
                 const baseScores = globalTrendData.datasets[a.name];
                 const adjustments = globalTrendData.adjustments[a.name] || [];
@@ -533,3 +531,5 @@
         }
     };
 </script>
+</body>
+</html>
