@@ -32,6 +32,7 @@
         .card-body { overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), opacity 0.4s ease-in-out, margin-top 0.4s; max-height: 2000px; opacity: 1; margin-top: 15px; }
         .card-body.collapsed { max-height: 0; opacity: 0; margin-top: 0; }
         
+        /* Map Styles */
         .twelve-palaces-map { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 130px); gap: 12px; padding: 15px; margin-top: 0; background: rgba(0,0,0,0.2); border: 1px solid #444; border-radius: 8px; grid-template-areas: "si wu wei shen" "chen . . you" "mao . . xu" "yin chou zi hai"; }
         .grid-cell { position: relative; background: #2a3544; border: 1px solid #3f4a5a; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
         .grid-cell.active { border-color: var(--gold); background: #3a4555; }
@@ -47,6 +48,7 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
+        /* Dashboard Components */
         .aspect-row { border-bottom: 1px solid #333; padding: 14px 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: background 0.2s; }
         .aspect-row.clickable { cursor: pointer; border-left: 3px solid transparent; }
         .aspect-row.clickable:hover { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
@@ -80,10 +82,22 @@
         .tag-chip { font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: #333; cursor: pointer; border: 1px solid #555; user-select: none; color: #ddd; }
         .tag-chip.selected { background: var(--cyan); color: #000; border-color: var(--cyan); }
         .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        
         .ai-history-block { background: rgba(16, 163, 127, 0.1); border-left: 3px solid var(--gpt-color); padding: 8px; margin-top: 5px; font-size: 0.85em; color: #cfd8dc; white-space: pre-wrap; display: none; }
         .toggle-ai-btn { background: none; border: none; color: var(--gpt-color); cursor: pointer; font-size: 0.8em; text-decoration: underline; margin-left: 5px; }
         .heatmap-tag { font-size: 0.75em; padding: 1px 5px; border-radius: 4px; background: #2d3748; color: #a0aec0; margin-right: 4px; border: 1px solid #4a5568; }
         .heatmap-tag.hot { border-color: #ff4d4d; color: #ff4d4d; background: rgba(255, 77, 77, 0.1); font-weight: bold; }
+
+        /* [V9.9.6] 動畫開關樣式 */
+        .switch-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 10px; }
+        .switch-label { font-size: 0.8em; color: #888; font-weight: bold; }
+        .switch { position: relative; display: inline-block; width: 36px; height: 18px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 18px; border: 1px solid #555; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: #888; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--gold); border-color: var(--gold); }
+        input:checked + .slider:before { transform: translateX(18px); background-color: #1a2634; }
+        .switch:hover .slider { border-color: #888; }
 
         @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
         @media (max-width: 950px) { .dashboard { grid-template-columns: 1fr; } .control-panel { position: static; } }
@@ -145,29 +159,33 @@
             </select>
         </div>
         <button class="btn-main" onclick="calculate()">啟動全時空推演</button>
-
-        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #444;">
-            <h3 style="color:var(--cyan); font-size:1em;">📂 客戶紀錄管理</h3>
-            <div style="display:flex; gap:10px;">
-                <button class="ctrl-btn active" style="flex:1; padding:8px;" onclick="openSaveModal()">💾 存檔</button>
-                <button class="ctrl-btn" style="flex:1; padding:8px;" onclick="loadHistory()">📜 讀取歷史</button>
-            </div>
-            <div id="historyList" style="margin-top:10px; max-height:200px; overflow-y:auto; font-size:0.9em; color:#aaa;"></div>
-        </div>
+        <button class="btn-main" style="background: #2d3748; border: 1px solid #4a5568; margin-top:15px; color:var(--cyan);" onclick="window.location.href='/crm'">📂 進入客戶戰情室 (CRM)</button>
+        <button class="ctrl-btn active" style="width:100%; margin-top:10px; padding:10px; margin-left:0;" onclick="openSaveModal()">💾 儲存本次諮詢紀錄</button>
     </div>
 
     <div class="info-panel" id="resultArea">
         <div class="card" style="border-left:5px solid var(--gold); overflow:hidden;">
             <h3 class="card-header" style="color:var(--gold);">
-                <div style="display:flex; justify-content:space-between; width:100%">
-                    <div>戰略儀表板 <span id="lunarInfo" style="font-size:0.8em; color:#a0a0a0;"></span></div>
-                    <div id="animControls" style="display:none; font-size:0.8em;">
-                        <button class="ctrl-btn" id="pauseBtn" onclick="togglePause(); event.stopPropagation();">⏯</button>
-                        <button class="ctrl-btn finish" onclick="skipToComplete(); event.stopPropagation();">⏩</button>
-                        <button class="ctrl-btn" onclick="replayAnimation(); event.stopPropagation();">🔄</button>
+                <div style="display:flex; align-items:center; width:100%">
+                    <div style="white-space:nowrap;">戰略儀表板 <span id="lunarInfo" style="font-size:0.8em; color:#a0a0a0;"></span></div>
+                    
+                    <div style="display:flex; align-items:center; margin-left:auto;">
+                        <div class="switch-container">
+                            <span class="switch-label">動畫</span>
+                            <label class="switch">
+                                <input type="checkbox" id="animToggle" onchange="toggleAnim(this)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div id="animControls" style="display:none; font-size:0.8em;">
+                            <button class="ctrl-btn" id="pauseBtn" onclick="togglePause(); event.stopPropagation();">⏯</button>
+                            <button class="ctrl-btn finish" onclick="skipToComplete(); event.stopPropagation();">⏩</button>
+                            <button class="ctrl-btn" onclick="replayAnimation(); event.stopPropagation();">🔄</button>
+                        </div>
                     </div>
                 </div>
             </h3>
+            
             <div class="twelve-palaces-map">
                 <div class="grid-cell" id="cell-巳"><div class="pillar-badges-container"></div><span class="cell-zhi">巳</span><span class="cell-star">天文</span><span class="cell-realm">仙道</span></div>
                 <div class="grid-cell" id="cell-午"><div class="pillar-badges-container"></div><span class="cell-zhi">午</span><span class="cell-star">天福</span><span class="cell-realm">佛道</span></div>
@@ -254,12 +272,10 @@
             </div>
         </div>
         <div class="form-group"><label>諮詢筆記</label><textarea id="crmNote" rows="2" placeholder="紀錄重點..."></textarea></div>
-        
         <div class="form-group">
             <label style="color:var(--gpt-color);">🤖 AI 戰略建議 (自動帶入/可編輯)</label>
             <textarea id="crmAiContent" rows="4" style="border-color:var(--gpt-color); color:#cfd8dc; font-size:0.9em;"></textarea>
         </div>
-
         <div class="modal-footer">
             <button class="ctrl-btn" onclick="closeSaveModal()">取消</button>
             <button class="ctrl-btn active" onclick="confirmSave()">確認儲存</button>
@@ -268,10 +284,16 @@
 </div>
 
 <script>
+    // ==========================================
+    // 達摩一掌經 V9.9.6 (穩定版 + 動畫開關)
+    // ==========================================
+
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
     const STAR_TRAITS = { '天貴': { type: '吉', keyword: '貴人/顯赫' }, '天厄': { type: '凶', keyword: '勞碌/疾厄' }, '天權': { type: '平', keyword: '權力/社交' }, '天破': { type: '凶', keyword: '消耗/破損' }, '天奸': { type: '平', keyword: '機智/變動' }, '天文': { type: '吉', keyword: '智慧/文采' }, '天福': { type: '吉', keyword: '福氣/財祿' }, '天驛': { type: '平', keyword: '奔波/變動' }, '天孤': { type: '凶', keyword: '孤獨/獨立' }, '天刃': { type: '凶', keyword: '剛強/血光' }, '天藝': { type: '平', keyword: '才藝/技術' }, '天壽': { type: '吉', keyword: '長壽/圓融' } };
     const ROULETTE_PATH = ['巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰'];
+    
     let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
+    let isAnimEnabled = false; // 預設關閉動畫
 
     function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
     function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
@@ -289,10 +311,13 @@
         return `🔍 ${context}：靜觀其變。`;
     }
 
+    function toggleAnim(el) { isAnimEnabled = el.checked; }
+
     function updateFormUI() {
         const scope = document.getElementById('targetScope').value;
         const solarRadio = document.querySelector('input[name="calendarType"][value="solar"]');
         const lunarRadio = document.querySelector('input[name="calendarType"][value="lunar"]');
+        
         if (scope === 'year') {
             lunarRadio.checked = true; solarRadio.disabled = true;
             solarRadio.parentElement.style.opacity = '0.5'; solarRadio.parentElement.style.cursor = 'not-allowed';
@@ -300,6 +325,7 @@
         } else {
             solarRadio.disabled = false; solarRadio.parentElement.style.opacity = '1'; solarRadio.parentElement.style.cursor = 'pointer'; solarRadio.parentElement.title = "";
         }
+
         const calType = document.querySelector('input[name="calendarType"]:checked').value;
         const prefix = (calType === 'solar') ? '西元' : '農曆';
         setText('lblYear', `${prefix}年份`); setText('lblMonth', `${prefix}月份`); setText('lblDay', `${prefix}日期`);
@@ -329,7 +355,90 @@
         return "";
     }
 
-    // Charting
+    async function calculate() {
+        document.getElementById('loadingOverlay').style.display='flex';
+        const data = { 
+            gender: parseInt(document.getElementById('gender').value), 
+            solar_date: document.getElementById('solarDate').value, 
+            hour: document.getElementById('hour').value, 
+            target_calendar: document.querySelector('input[name="calendarType"]:checked').value, 
+            target_scope: document.getElementById('targetScope').value, 
+            target_year: parseInt(document.getElementById('tYear').value)||2026, 
+            target_month: parseInt(document.getElementById('tMonth').value)||1, 
+            target_day: parseInt(document.getElementById('tDay').value)||1, 
+            target_hour: document.getElementById('tHour').value 
+        };
+        try { 
+            const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); 
+            if(!res.ok) throw new Error((await res.json()).detail); 
+            globalLastResult = await res.json(); 
+            startAnimationSequence(globalLastResult); 
+        } catch(e) { 
+            alert("❌ 排盤失敗：\n"+e.message); 
+            document.getElementById('loadingOverlay').style.display='none'; 
+        }
+    }
+
+    async function startAnimationSequence(result) {
+        document.getElementById('loadingOverlay').style.display='none'; 
+        
+        // 如果動畫開啟，才顯示播放控制鈕
+        document.getElementById('animControls').style.display = isAnimEnabled ? 'flex' : 'none';
+        
+        globalSkipAnimation=false; globalIsPaused=false; initMap(); setHTML('pillarsArea','');
+        
+        setText('lunarInfo', `| 虛歲 ${result.age} | ${result.lunar_info}`);
+        setText('targetDisplayInfo', result.target_display);
+        
+        const p = result.base_chart;
+        const list = [{z:p.年柱.zhi, n:p.年柱.name, c:'var(--p-year)', k:'年'}, {z:p.月柱.zhi, n:p.月柱.name, c:'var(--p-month)', k:'月'}, {z:p.日柱.zhi, n:p.日柱.name, c:'var(--p-day)', k:'日'}, {z:p.時柱.zhi, n:p.時柱.name, c:'var(--p-hour)', k:'命'}];
+        const isMale = (parseInt(document.getElementById('gender').value)===1);
+        
+        for(let item of list) { 
+            if(globalSkipAnimation) break; 
+            
+            // [關鍵修改] 判斷是否開啟動畫
+            if (isAnimEnabled) {
+                await runRoulette(item.z, isMale); 
+            }
+            
+            addBadgeToCell(item.z, item.k, item.c, !isAnimEnabled); // 如果沒動畫，instant=true
+            document.getElementById('pillarsArea').innerHTML += `<div class="pillar-box active" style="border-color:${item.c}"><div style="color:${item.c}">${item.n}</div><div>${item.z}</div></div>`; 
+        }
+        
+        // 確保如果 renderFullView 失敗不會卡住
+        try { renderFullView(result); } catch(e) { console.error(e); }
+    }
+
+    function runRoulette(targetZhi, isMale) { return new Promise(resolve => { let rounds=0, maxRounds=1, speed=50; const targetIndex = ROULETTE_PATH.indexOf(targetZhi); const step = isMale ? 1 : -1; function nextStep() { if(globalSkipAnimation) { resolve(); return; } if(globalIsPaused) { setTimeout(nextStep, 100); return; } const prev = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(prev) prev.classList.remove('roulette-active'); currentLightIndex = (currentLightIndex + step + 12) % 12; const curr = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(curr) curr.classList.add('roulette-active'); if(rounds>=maxRounds && currentLightIndex===targetIndex) { if(curr) curr.classList.add('flash-stop'); setTimeout(()=>{ if(curr){curr.classList.remove('roulette-active'); curr.classList.remove('flash-stop');} resolve(); }, 800); return; } if(currentLightIndex===0) rounds++; if(rounds>=maxRounds) speed+=30; setTimeout(nextStep, speed); } nextStep(); }); }
+    function togglePause() { globalIsPaused = !globalIsPaused; }
+    function skipToComplete() { if(globalLastResult) { globalSkipAnimation=true; renderFullView(globalLastResult); } }
+    function replayAnimation() { if(globalLastResult) startAnimationSequence(globalLastResult); }
+    function addBadgeToCell(zhi, text, color, instant) { const cell = document.getElementById('cell-'+zhi); if(cell) { cell.classList.add('active'); const c = cell.querySelector('.pillar-badges-container'); if(c && !Array.from(c.children).some(e=>e.innerText===text)) { const b = document.createElement('span'); b.className='pillar-badge'; b.style.background=color; b.innerText=text; c.appendChild(b); if(instant) b.classList.add('show'); else setTimeout(()=>b.classList.add('show'),50); } } }
+
+    function renderFullView(result) {
+        initMap();
+        const h = result.hierarchy;
+        const pillars = [ { k:'年', c:'var(--p-year)', z:result.base_chart.年柱.zhi, n:result.base_chart.年柱.name }, { k:'月', c:'var(--p-month)', z:result.base_chart.月柱.zhi, n:result.base_chart.月柱.name }, { k:'日', c:'var(--p-day)', z:result.base_chart.日柱.zhi, n:result.base_chart.日柱.name }, { k:'命', c:'var(--p-hour)', z:result.base_chart.時柱.zhi, n:result.base_chart.時柱.name } ];
+        pillars.forEach(p => { addBadgeToCell(p.z, p.k, p.c, true); });
+        
+        if(h.big_luck) addBadgeToCell(h.big_luck.zhi, '大運', 'var(--p-luck)', true);
+        if(h.year) addBadgeToCell(h.year.zhi, '流年', 'var(--p-year)', true);
+        const targetScope = document.getElementById('targetScope').value;
+        if(['month','day','hour'].includes(targetScope) && h.month) addBadgeToCell(h.month.zhi, '流月', 'var(--p-month)', true);
+        if(['day','hour'].includes(targetScope) && h.day) addBadgeToCell(h.day.zhi, '流日', 'var(--p-day)', true);
+        if(targetScope==='hour' && h.hour) addBadgeToCell(h.hour.zhi, '流時', 'var(--p-hour)', true);
+        
+        result.aspects.forEach(a => {
+            const cell = document.getElementById('cell-'+a.zhi);
+            if(cell && !cell.querySelector('.cell-aspect-name')) {
+                cell.innerHTML += `<div class="cell-aspect-name show-content">${a.name}</div><div class="cell-relation-tag" style="background:${getStatusColor(a.relation)}; color:#1a2634;">${a.relation}</div>`;
+                if(a.is_alert) cell.classList.add('alert');
+            }
+        });
+        fillLists(result, h);
+    }
+
     function renderTrendChart(labels, scores, tooltips, title) {
         const ctx = document.getElementById('trendChart').getContext('2d');
         if (trendChartInstance) trendChartInstance.destroy();
@@ -339,17 +448,11 @@
         gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
         
         const targetStr = document.getElementById('tYear').value;
-        const targetMonth = parseInt(document.getElementById('tMonth').value);
-        const targetDay = parseInt(document.getElementById('tDay').value);
         const scope = document.getElementById('targetScope').value;
 
         const pointBackgroundColors = labels.map((l, i) => {
-            let isTarget = false;
             let labelStr = Array.isArray(l) ? l.join("") : l; 
-            if (scope === 'year') isTarget = labelStr.includes(targetStr);
-            else if (scope === 'month') isTarget = labelStr.includes(`農${targetMonth.toString().padStart(2,'0')}`);
-            else if (scope === 'day') isTarget = labelStr.includes(`初${targetDay}`);
-            return isTarget ? '#ff4d4d' : '#fff';
+            return (scope === 'year' && labelStr.includes(targetStr)) ? '#ff4d4d' : '#fff';
         });
         const pointBorderColors = pointBackgroundColors.map(c => c === '#ff4d4d' ? '#fff' : '#d4af37');
         const pointRadii = pointBackgroundColors.map(c => c === '#ff4d4d' ? 8 : 4);
@@ -364,7 +467,7 @@
                     legend: { display: false },
                     tooltip: { 
                         callbacks: { 
-                            title: function(tooltipItems) { let label = tooltipItems[0].label; if(Array.isArray(label)) label = label.join(" "); return label; },
+                            title: function(i) { return Array.isArray(i[0].label) ? i[0].label.join(" ") : i[0].label; },
                             label: function(context) {
                                 const aspectName = lastActiveAspect;
                                 const index = context.dataIndex;
@@ -454,7 +557,6 @@
         if(result.trend_data) { globalTrendData = result.trend_data; updateTrendChart('總命運'); }
     }
 
-    // CRM & AI & Animation
     function openSaveModal() { document.getElementById('saveModal').style.display = 'flex'; openAiNote(); }
     function closeSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
     function toggleTag(el) { el.classList.toggle('selected'); }
@@ -483,78 +585,7 @@
     }
 
     async function loadHistory() {
-        const listDiv = document.getElementById('historyList'); listDiv.innerHTML = "載入中...";
-        try {
-            const res = await fetch('/api/get_history'); const history = await res.json();
-            let html = '<ul style="padding-left:10px; margin:0; list-style:none;">';
-            history.forEach((item, index) => {
-                const jsonStr = JSON.stringify(item).replace(/"/g, '&quot;');
-                let tagsHtml = item.tags ? item.tags.map(t => `<span style="background:#333; padding:1px 4px; font-size:0.7em; border-radius:3px; margin-right:3px;">${t}</span>`).join('') : '';
-                let heatHtml = '';
-                if(item.ai_log && item.ai_log.click_heatmap) {
-                    const sorted = Object.entries(item.ai_log.click_heatmap).sort((a,b)=>b[1]-a[1]).slice(0,3);
-                    if(sorted.length>0) heatHtml = `<div style="margin-top:4px;display:flex;">${sorted.map((s,i)=>`<span class="heatmap-tag ${i===0?'hot':''}">${s[0]} ${s[1]}</span>`).join('')}</div>`;
-                }
-                let aiBtn = (item.ai_log && item.ai_log.saved_content && item.ai_log.saved_content.length>5) ? `<button class="toggle-ai-btn" onclick="event.stopPropagation();document.getElementById('ai-hist-${index}').style.display = document.getElementById('ai-hist-${index}').style.display==='block'?'none':'block'">查看建議 ▼</button>` : '';
-                html += `<li style="margin-bottom:12px;border-bottom:1px solid #333;padding-bottom:8px;"><div style="cursor:pointer;" onclick="restoreFromHistory(${jsonStr})"><div style="display:flex;justify-content:space-between;"><b style="color:var(--gold);">${item.client_name}</b><span style="color:#666;font-size:0.8em;">${item.created_at.split(' ')[0]}</span></div><div style="color:#aaa;font-size:0.9em;">${item.note||"無備註"}</div><div style="margin-top:4px;">${tagsHtml} ${aiBtn}</div>${heatHtml}</div><div id="ai-hist-${index}" class="ai-history-block">${item.ai_log?.saved_content||''}</div></li>`;
-            });
-            listDiv.innerHTML = html + '</ul>';
-        } catch(e) { listDiv.innerHTML = "讀取失敗"; }
-    }
-
-    function restoreFromHistory(item) {
-        document.getElementById('solarDate').value = item.solar_date;
-        document.getElementById('gender').value = item.gender;
-        document.getElementById('hour').value = item.hour;
-        document.getElementById('tYear').value = item.target_year;
-        alert(`已載入：${item.client_name}`);
-        calculate();
-    }
-
-    async function startAnimationSequence(result) {
-        document.getElementById('loadingOverlay').style.display='none'; document.getElementById('animControls').style.display='flex';
-        globalSkipAnimation=false; globalIsPaused=false; initMap(); setHTML('pillarsArea','');
-        setText('lunarInfo', `| 虛歲 ${result.age} | ${result.lunar_info}`); setText('targetDisplayInfo', result.target_display);
-        const p = result.base_chart;
-        const list = [{z:p.年柱.zhi, n:p.年柱.name, c:'var(--p-year)', k:'年'}, {z:p.月柱.zhi, n:p.月柱.name, c:'var(--p-month)', k:'月'}, {z:p.日柱.zhi, n:p.日柱.name, c:'var(--p-day)', k:'日'}, {z:p.時柱.zhi, n:p.時柱.name, c:'var(--p-hour)', k:'命'}];
-        const isMale = (parseInt(document.getElementById('gender').value)===1);
-        for(let item of list) { if(globalSkipAnimation) break; await runRoulette(item.z, isMale); addBadgeToCell(item.z, item.k, item.c); document.getElementById('pillarsArea').innerHTML += `<div class="pillar-box active" style="border-color:${item.c}"><div style="color:${item.c}">${item.n}</div><div>${item.z}</div></div>`; }
-        renderFullView(result);
-    }
-    
-    function runRoulette(targetZhi, isMale) { return new Promise(resolve => { let rounds=0, maxRounds=1, speed=50; const targetIndex = ROULETTE_PATH.indexOf(targetZhi); const step = isMale ? 1 : -1; function nextStep() { if(globalSkipAnimation) { resolve(); return; } if(globalIsPaused) { setTimeout(nextStep, 100); return; } const prev = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(prev) prev.classList.remove('roulette-active'); currentLightIndex = (currentLightIndex + step + 12) % 12; const curr = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(curr) curr.classList.add('roulette-active'); if(rounds>=maxRounds && currentLightIndex===targetIndex) { if(curr) curr.classList.add('flash-stop'); setTimeout(()=>{ if(curr){curr.classList.remove('roulette-active'); curr.classList.remove('flash-stop');} resolve(); }, 800); return; } if(currentLightIndex===0) rounds++; if(rounds>=maxRounds) speed+=30; setTimeout(nextStep, speed); } nextStep(); }); }
-    function togglePause() { globalIsPaused = !globalIsPaused; }
-    function skipToComplete() { if(globalLastResult) { globalSkipAnimation=true; renderFullView(globalLastResult); } }
-    function replayAnimation() { if(globalLastResult) startAnimationSequence(globalLastResult); }
-    function addBadgeToCell(zhi, text, color, instant) { const cell = document.getElementById('cell-'+zhi); if(cell) { cell.classList.add('active'); const c = cell.querySelector('.pillar-badges-container'); if(c && !Array.from(c.children).some(e=>e.innerText===text)) { const b = document.createElement('span'); b.className='pillar-badge'; b.style.background=color; b.innerText=text; c.appendChild(b); if(instant) b.classList.add('show'); else setTimeout(()=>b.classList.add('show'),50); } } }
-
-    function renderFullView(result) {
-        initMap();
-        const h = result.hierarchy;
-        const pillars = [ { k:'年', c:'var(--p-year)', z:result.base_chart.年柱.zhi, n:result.base_chart.年柱.name }, { k:'月', c:'var(--p-month)', z:result.base_chart.月柱.zhi, n:result.base_chart.月柱.name }, { k:'日', c:'var(--p-day)', z:result.base_chart.日柱.zhi, n:result.base_chart.日柱.name }, { k:'命', c:'var(--p-hour)', z:result.base_chart.時柱.zhi, n:result.base_chart.時柱.name } ];
-        pillars.forEach(p => { addBadgeToCell(p.z, p.k, p.c, true); });
-        
-        if(h.big_luck) addBadgeToCell(h.big_luck.zhi, '大運', 'var(--p-luck)', true);
-        if(h.year) addBadgeToCell(h.year.zhi, '流年', 'var(--p-year)', true);
-        const targetScope = document.getElementById('targetScope').value;
-        if(['month','day','hour'].includes(targetScope) && h.month) addBadgeToCell(h.month.zhi, '流月', 'var(--p-month)', true);
-        if(['day','hour'].includes(targetScope) && h.day) addBadgeToCell(h.day.zhi, '流日', 'var(--p-day)', true);
-        if(targetScope==='hour' && h.hour) addBadgeToCell(h.hour.zhi, '流時', 'var(--p-hour)', true);
-        
-        result.aspects.forEach(a => {
-            const cell = document.getElementById('cell-'+a.zhi);
-            if(cell && !cell.querySelector('.cell-aspect-name')) {
-                cell.innerHTML += `<div class="cell-aspect-name show-content">${a.name}</div><div class="cell-relation-tag" style="background:${getStatusColor(a.relation)}; color:#1a2634;">${a.relation}</div>`;
-                if(a.is_alert) cell.classList.add('alert');
-            }
-        });
-        fillLists(result, h);
-    }
-
-    async function calculate() {
-        document.getElementById('loadingOverlay').style.display='flex';
-        const data = { gender: parseInt(document.getElementById('gender').value), solar_date: document.getElementById('solarDate').value, hour: document.getElementById('hour').value, target_calendar: document.querySelector('input[name="calendarType"]:checked').value, target_scope: document.getElementById('targetScope').value, target_year: parseInt(document.getElementById('tYear').value)||2026, target_month: parseInt(document.getElementById('tMonth').value)||1, target_day: parseInt(document.getElementById('tDay').value)||1, target_hour: document.getElementById('tHour').value };
-        try { const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); if(!res.ok) throw new Error((await res.json()).detail); globalLastResult = await res.json(); startAnimationSequence(globalLastResult); } catch(e) { alert("❌ 排盤失敗：\n"+e.message); document.getElementById('loadingOverlay').style.display='none'; }
+        window.location.href = '/crm'; // 跳轉至獨立 CRM 頁面 (請確保 main.py 有設定 /crm 路由)
     }
 
     async function callAIWithMode(mode) {
@@ -566,4 +597,18 @@
     }
 
     updateFormUI(); initMap();
+    window.onload = function() {
+        const restoreDataStr = localStorage.getItem('damo_restore_data');
+        if (restoreDataStr) {
+            const item = JSON.parse(restoreDataStr);
+            document.getElementById('solarDate').value = item.solar_date;
+            document.getElementById('gender').value = item.gender;
+            document.getElementById('hour').value = item.hour;
+            document.getElementById('tYear').value = item.target_year;
+            localStorage.removeItem('damo_restore_data');
+            setTimeout(() => calculate(), 500);
+        }
+    };
 </script>
+</body>
+</html>
