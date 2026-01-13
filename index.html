@@ -284,7 +284,7 @@
 
 <script>
     // ==========================================
-    // 達摩一掌經 V9.9.13 (自定義趨勢門檻版)
+    // 達摩一掌經 V9.9.14 (紅點強化版 Script)
     // ==========================================
 
     // 1. 全域變數
@@ -408,7 +408,7 @@
         fillLists(result, h);
     }
 
-    // 4. 列表與動能分級箭頭 (Momentum Grading)
+    // 4. 列表與趨勢箭頭 (門檻調整版)
     function fillLists(result, h) {
         let hHtml = `<div class="hierarchy-step"><span class="step-label">大運</span><span class="step-value">${result.hierarchy.big_luck.zhi}宮 ${result.hierarchy.big_luck.name}</span></div>`;
         hHtml += `<div class="hierarchy-step"><span class="step-label">流年</span><span class="step-value">${result.hierarchy.year.zhi}宮 ${result.hierarchy.year.name}</span></div>`;
@@ -418,7 +418,6 @@
         let aHtml = '';
         let dataIndex = -1;
         
-        // 尋找當前年份的 Index
         if(globalTrendData && globalTrendData.axis_labels) {
             const currentTargetYear = String(document.getElementById('tYear').value);
             const currentScope = document.getElementById('targetScope').value;
@@ -435,18 +434,16 @@
 
         result.aspects.forEach(a => {
             let score = 50; 
-            let trendHtml = '<span class="trend-icon flat" style="color:#666; font-size:0.8em;">➡</span>'; // 預設平穩
+            let trendHtml = '<span class="trend-icon flat" style="color:#666; font-size:0.8em;">➡</span>'; 
             
             if (dataIndex !== -1 && globalTrendData && globalTrendData.datasets[a.name]) {
                 const baseScores = globalTrendData.datasets[a.name];
                 const adjustments = globalTrendData.adjustments[a.name] || [];
                 const isAdjusted = document.getElementById('gradeCheckbox').checked;
                 
-                // 計算當前分數
                 let val = baseScores[dataIndex] + (isAdjusted ? (adjustments[dataIndex] || 0) : 0);
                 score = Math.max(5, Math.min(95, val));
                 
-                // [核心] 箭頭分級邏輯 (Momentum Grading - 自定義門檻)
                 let compareIndex = -1;
                 let isLookingForward = true;
 
@@ -464,7 +461,7 @@
                     let diff = nextScore - score;
                     if (!isLookingForward) diff = score - nextScore;
 
-                    // [修正] 新的門檻：10, 20, 30
+                    // [自定義門檻] 10, 20, 30
                     if (diff >= 30) trendHtml = '<span class="trend-icon up" style="color:#ff4d4d; font-weight:900;">↗↗↗</span>';
                     else if (diff >= 20) trendHtml = '<span class="trend-icon up" style="color:#ff6b6b; font-weight:bold;">↗↗</span>';
                     else if (diff >= 10) trendHtml = '<span class="trend-icon up" style="color:#ff8787;">↗</span>';
@@ -499,19 +496,79 @@
         if(result.trend_data) { globalTrendData = result.trend_data; updateTrendChart('總命運'); }
     }
 
+    // 5. [關鍵修復] 圖表渲染 (強化紅點)
     function renderTrendChart(labels, scores, tooltips, title) {
         const ctx = document.getElementById('trendChart').getContext('2d');
         if (trendChartInstance) trendChartInstance.destroy();
         document.getElementById('trendTitle').innerHTML = `時空運勢波形圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>`;
+        
         const gradient = ctx.createLinearGradient(0, 0, 0, 250);
         gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+        
         const targetStr = String(document.getElementById('tYear').value);
-        const pointBackgroundColors = labels.map((l) => { let s = Array.isArray(l)?l.join(""):String(l); return s.includes(targetStr)?'#ff4d4d':'#fff'; });
+        const currentScope = document.getElementById('targetScope').value;
+
+        // 動態產生樣式
+        const bgColors = [];
+        const borderColors = [];
+        const radii = [];
+        const borderWidths = [];
+
+        labels.forEach(label => {
+            let labelStr = Array.isArray(label) ? label.join("") : String(label);
+            // 比對邏輯：如果是流年，比對年份；如果是其他，簡單比對
+            if (labelStr.includes(targetStr) || (currentScope !== 'year' && labelStr.includes("月"))) {
+                // [紅點強化] 命中當前點
+                bgColors.push('#ff0000'); // 亮紅
+                borderColors.push('#ffffff'); // 白邊
+                radii.push(10); // 超大
+                borderWidths.push(3); // 厚邊
+            } else {
+                // 普通點
+                bgColors.push('#ffffff');
+                borderColors.push('#d4af37');
+                radii.push(4);
+                borderWidths.push(1);
+            }
+        });
         
         trendChartInstance = new Chart(ctx, {
             type: 'line',
-            data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointBackgroundColors, pointRadius: 4, fill: true, tension: 0.4 }] },
-            options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'} }, x: { grid: {color:'#333'}, ticks: {color:'#888'} } }, plugins: { legend: {display:false}, tooltip: { callbacks: { title: i=>Array.isArray(i[0].label)?i[0].label.join(" "):i[0].label, afterLabel: ctx=>tooltips[ctx.dataIndex] }, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37' } } }
+            data: { 
+                labels: labels, 
+                datasets: [{ 
+                    label: '運勢能量', 
+                    data: scores, 
+                    borderColor: '#d4af37', 
+                    backgroundColor: gradient, 
+                    borderWidth: 3, 
+                    pointBackgroundColor: bgColors, 
+                    pointBorderColor: borderColors, 
+                    pointRadius: radii, 
+                    pointBorderWidth: borderWidths,
+                    pointHoverRadius: 12, // Hover 時更大
+                    fill: true, 
+                    tension: 0.4 
+                }] 
+            },
+            options: { 
+                maintainAspectRatio: false, 
+                scales: { 
+                    y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, 
+                    x: { grid: {color:'#333'}, ticks: {color:'#888'} } 
+                }, 
+                plugins: { 
+                    legend: { display: false }, 
+                    tooltip: { 
+                        callbacks: { 
+                            title: i=>Array.isArray(i[0].label)?i[0].label.join(" "):i[0].label, 
+                            afterLabel: ctx=>tooltips[ctx.dataIndex] 
+                        }, 
+                        backgroundColor: 'rgba(0,0,0,0.9)', 
+                        titleColor: '#d4af37' 
+                    } 
+                } 
+            } 
         });
     }
 
@@ -533,7 +590,7 @@
         if(activeRow) activeRow.classList.add('active-aspect');
     }
 
-    // 5. CRM & AI
+    // CRM / AI
     function openSaveModal() { document.getElementById('saveModal').style.display = 'flex'; openAiNote(); }
     function closeSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
     function toggleTag(el) { el.classList.toggle('selected'); }
@@ -581,5 +638,6 @@
 </script>
 </body>
 </html>
+
 
 
