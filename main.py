@@ -12,16 +12,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from borax.calendars.lunardate import LunarDate
 from google.cloud import firestore
 
-# 設定 Log 格式
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("DamoSystem")
 
-# API Key 設定
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API_Key"
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經命理戰略中台 - V7.9 最終整合版")
+app = FastAPI(title="達摩一掌經命理戰略中台 - V8.0 雙重加權版")
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,7 +30,6 @@ app.add_middleware(
 
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# Firestore 資料庫連線
 db = None
 try:
     db = firestore.Client()
@@ -52,14 +49,21 @@ STARS_INFO = {
 }
 ASPECTS_ORDER = ["總命運", "形象", "幸福", "事業", "變動", "健慾", "愛情", "領導", "親信", "根基", "朋友", "錢財"]
 
-# [V7.6] 三品格分數表 (天權恢復為 +10)
+# [Level 2] 十二宮三品格 (宮位加權)
 STAR_MODIFIERS = {
-    # [上三品] 吉星 (+30)
     '天貴星': 30, '天福星': 30, '天文星': 30, '天壽星': 30,
-    # [中三品] 平吉星 (+10)
     '天權星': 10, '天藝星': 10, '天驛星': 10, '天奸星': 10,
-    # [下三品] 凶星 (-20)
     '天孤星': -20, '天破星': -20, '天刃星': -20, '天厄星': -20
+}
+
+# [Level 3] 根基人和 (歲數星加權) - V8.0 新增
+RENHE_MODIFIERS = {
+    # 上三品 (+10)
+    '天貴星': 10, '天福星': 10, '天文星': 10, '天壽星': 10,
+    # 中三品 (+5)
+    '天權星': 5, '天藝星': 5, '天驛星': 5, '天奸星': 5,
+    # 下三品 (-10)
+    '天孤星': -10, '天破星': -10, '天刃星': -10, '天厄星': -10
 }
 
 BAD_STARS = ['天厄星', '天破星', '天刃星']
@@ -88,45 +92,20 @@ def solar_to_one_palm_lunar(solar_date_str):
         return {"year_zhi": ZHI[year_zhi_idx], "month": final_month, "day": lunar.day, "lunar_year_num": lunar.year, "lunar_str": f"農曆 {lunar.year}年 {('閏' if lunar.leap else '')}{lunar.month}月 {lunar.day}日"}
     except: return None
 
-# [V7.8] 日期解析 (雙曆並顯版)
 def parse_target_date(mode, calendar_type, year, month, day, hour_zhi):
     try:
-        target_lunar_year = year
-        target_lunar_month = month
-        target_lunar_day = day
-        display_info = ""
-
+        target_lunar_year = year; target_lunar_month = month; target_lunar_day = day; display_info = ""
         if calendar_type == 'solar':
             lunar = LunarDate.from_solar_date(year, month, day)
-            target_lunar_year = lunar.year
-            target_lunar_month = lunar.month
-            target_lunar_day = lunar.day
+            target_lunar_year = lunar.year; target_lunar_month = lunar.month; target_lunar_day = lunar.day
             display_info = f"國曆 {year}-{month}-{day} (農曆 {lunar.year}年{lunar.month}月{lunar.day}日)"
         else:
             lunar_obj = LunarDate(year, month, day)
             solar_obj = lunar_obj.to_solar_date()
-            target_lunar_year = year
-            target_lunar_month = month
-            target_lunar_day = day
+            target_lunar_year = year; target_lunar_month = month; target_lunar_day = day
             display_info = f"農曆 {year}年{month}月{day}日 (國曆 {solar_obj.year}-{solar_obj.month}-{solar_obj.day})"
-
-        return {
-            "lunar_year": target_lunar_year, 
-            "lunar_month": target_lunar_month, 
-            "lunar_day": target_lunar_day, 
-            "year_zhi": ZHI[(target_lunar_year - 4) % 12], 
-            "hour_zhi": hour_zhi, 
-            "display_info": display_info
-        }
-    except Exception as e:
-        return {
-            "lunar_year": year, 
-            "lunar_month": month, 
-            "lunar_day": day, 
-            "year_zhi": ZHI[(year-4)%12], 
-            "hour_zhi": hour_zhi, 
-            "display_info": f"{'國曆' if calendar_type=='solar' else '農曆'} {year}-{month}-{day} (轉換誤差)"
-        }
+        return {"lunar_year": target_lunar_year, "lunar_month": target_lunar_month, "lunar_day": target_lunar_day, "year_zhi": ZHI[(target_lunar_year - 4) % 12], "hour_zhi": hour_zhi, "display_info": display_info}
+    except: return {"lunar_year": year, "lunar_month": month, "lunar_day": day, "year_zhi": ZHI[(year-4)%12], "hour_zhi": hour_zhi, "display_info": f"日期錯誤"}
 
 class OnePalmSystem:
     def __init__(self, gender, birth_year_zhi, birth_month_num, birth_day_num, birth_hour_zhi):
@@ -158,79 +137,77 @@ class OnePalmSystem:
         hierarchy["hour"] = {**STARS_INFO[ZHI[flow_hour_idx]], "zhi": ZHI[flow_hour_idx]}
         return hierarchy
 
-    # [V7.9] 趨勢運算 (修正 X 軸：追加國曆對照時間)
+    # [V8.0] 雙重加權核心運算
     def calculate_full_trend(self, hierarchy, scope, lunar_data, target_data, system_obj):
-        trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "tooltips": {} }
+        # 初始化數據結構
+        # datasets: 運氣分 (Level 1)
+        # adjustments: 宮位星宿分 (Level 2)
+        # renhe_scores: 歲數星分 (Level 3) [NEW]
+        trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "renhe_scores": [], "tooltips": {} }
+        
         for name in ASPECTS_ORDER: 
             trend_response["datasets"][name] = []
             trend_response["adjustments"][name] = []
             trend_response["tooltips"][name] = []
         
         loop_range = []
-        
-        # 1. 產生時間軸與標籤 (加入國曆換算)
         if scope == 'year':
-            # --- 流年模式 (前後6年) ---
             for y in range(target_data['lunar_year'] - 6, target_data['lunar_year'] + 7):
                 try:
-                    # 計算該農曆年的「正月初一」對應的國曆日期
-                    l_date = LunarDate(y, 1, 1)
-                    s_date = l_date.to_solar_date()
-                    # 標籤格式：["2026", "國2/17起"]
+                    l_date = LunarDate(y, 1, 1); s_date = l_date.to_solar_date()
                     label = [f"{y}", f"國{s_date.month}/{s_date.day}起"]
-                except:
-                    label = [f"{y}", ""]
+                except: label = [f"{y}", ""]
                 loop_range.append({'type': 'year', 'val': y, 'label': label})
         else: 
-            # --- 流月模式 (1~12月) ---
             for i in range(1, 13):
                 try:
-                    l_date = LunarDate(target_data['lunar_year'], i, 1)
-                    s_date = l_date.to_solar_date()
+                    l_date = LunarDate(target_data['lunar_year'], i, 1); s_date = l_date.to_solar_date()
                     label = [f"{i}月", f"{s_date.month}/{s_date.day}"]
-                except:
-                    label = [f"{i}月", ""]
+                except: label = [f"{i}月", ""]
                 loop_range.append({'type': 'month', 'val': i, 'label': label})
         
         current_fy_idx = get_zhi_index(hierarchy['year']['zhi'])
         
-        # [V7.6] 取得四柱索引，用於根基加權
-        pillar_indices = [system_obj.year_idx, system_obj.month_idx, system_obj.day_idx, system_obj.hour_idx]
-
         for point in loop_range:
             trend_response["axis_labels"].append(point['label'])
             target_el = "土"
+            age_star_name = "" # 當歲數(流年/月) 的星宿名稱
             
+            # 計算該時間點的「天時星」 (流年星/流月星)
             if scope == 'year':
                 offset = point['val'] - target_data['lunar_year']
                 dynamic_fy_idx = get_next_position(current_fy_idx, offset, system_obj.direction)
-                target_el = STARS_INFO[ZHI[dynamic_fy_idx]]['element']
+                time_star_info = STARS_INFO[ZHI[dynamic_fy_idx]]
             else: 
                 offset = point['val'] - 1 
                 fm_idx = get_next_position(current_fy_idx, offset, system_obj.direction)
-                target_el = STARS_INFO[ZHI[fm_idx]]['element']
+                time_star_info = STARS_INFO[ZHI[fm_idx]]
+            
+            target_el = time_star_info['element']
+            age_star_name = time_star_info['name']
 
+            # [Level 3] 計算人和(根基)分數：看「歲數」落在哪顆星
+            renhe_val = RENHE_MODIFIERS.get(age_star_name, 0)
+            trend_response["renhe_scores"].append({
+                "score": renhe_val,
+                "star": age_star_name
+            })
+
+            # 計算各宮位分數
             for i, name in enumerate(ASPECTS_ORDER):
                 curr_idx = (system_obj.hour_idx + i) % 12
                 star_info = STARS_INFO[ZHI[curr_idx]]
                 
-                # 1. 運氣分
+                # [Level 1] 運氣分 (五行生剋)
                 rel = get_element_relation(star_info['element'], target_el)
                 trend_response["datasets"][name].append(rel["score"])
                 
-                # 2. 品格分 (星宿)
+                # [Level 2] 品格分 (宮位星宿)
                 grade_score = STAR_MODIFIERS.get(star_info['name'], 0)
-                
-                # 3. 根基分 (四柱)
-                root_score = 10 if curr_idx in pillar_indices else 0
-                
-                total_adj = grade_score + root_score
-                trend_response["adjustments"][name].append(total_adj)
+                trend_response["adjustments"][name].append(grade_score)
                 
                 # Tooltip
-                tip = f"{star_info['name']} {rel['type']}"
-                if root_score > 0: tip += " [有根]"
-                trend_response["tooltips"][name].append(tip)
+                trend_response["tooltips"][name].append(f"{star_info['name']} {rel['type']}")
                 
         return trend_response
 
@@ -240,6 +217,8 @@ class OnePalmSystem:
         if star in BAD_STARS: risks.append(f"命帶{star}")
         return risks
 
+# ... (API 路由部分與 V7.9 相同，無需變動，省略以節省篇幅) ...
+# (請保留 UserRequest, AIRequest, SaveRequest 等模型定義與 @app.get/post 路由)
 # ---------------- API 模型 ----------------
 class UserRequest(BaseModel):
     gender: int; solar_date: str; hour: str; target_calendar: str = 'lunar'; target_scope: str = 'year'; target_year: int; target_month: int = 1; target_day: int = 1; target_hour: str = '子'
