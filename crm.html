@@ -11,14 +11,13 @@
         :root { --bg: #121820; --panel: #1e2732; --gold: #d4af37; --cyan: #4fd1c5; --danger: #ff4d4d; --text: #e0e0e0; }
         body { background-color: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; display: flex; gap: 20px; }
         
-        /* Layout: Main + Sidebar */
         .main-content { flex: 1; }
-        .sidebar { width: 300px; background: var(--panel); border-radius: 8px; border: 1px solid #444; padding: 20px; display: flex; flex-direction: column; height: 90vh; position: sticky; top: 20px; }
-        
+        .sidebar { width: 300px; background: var(--panel); border-radius: 8px; border: 1px solid #444; padding: 20px; height: 90vh; position: sticky; top: 20px; display:none; }
+        @media (min-width: 1200px) { .sidebar { display: block; } }
+
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid var(--gold); padding-bottom: 15px; }
         h1 { margin: 0; color: var(--gold); letter-spacing: 2px; font-size: 1.8em; }
-        .btn { background: #333; color: #ddd; border: 1px solid #555; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s; }
-        .btn:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
+        .btn { background: #333; color: #ddd; border: 1px solid #555; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-primary { background: linear-gradient(135deg, #8c7853, var(--gold)); color: #1a2634; border: none; }
         .btn-danger { color: var(--danger); border-color: var(--danger); }
         
@@ -27,28 +26,24 @@
         input[type="text"] { flex: 1; }
         
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: var(--panel); border: 1px solid #444; border-radius: 8px; padding: 20px; position: relative; transition: all 0.3s ease; cursor: pointer; overflow: hidden; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); border-color: var(--gold); }
-        
+        .card { background: var(--panel); border: 1px solid #444; border-radius: 8px; padding: 20px; transition: all 0.3s ease; cursor: pointer; }
+        .card:hover { transform: translateY(-5px); border-color: var(--gold); }
         .card-head { display: flex; justify-content: space-between; margin-bottom: 10px; }
         .name { font-size: 1.2em; font-weight: bold; color: var(--gold); }
         .note { color: #ccc; font-size: 0.9em; height: 3em; overflow: hidden; }
-        
-        /* Sidebar Widget */
-        .widget-title { color: var(--cyan); font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
-        .task-list { list-style: none; padding: 0; overflow-y: auto; flex: 1; }
-        .task-item { padding: 10px; background: #111; border-radius: 4px; margin-bottom: 8px; border-left: 3px solid #555; font-size: 0.9em; }
-        .task-item.urgent { border-left-color: var(--danger); }
-        .task-item.info { border-left-color: var(--cyan); }
 
         /* Modal */
         .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
-        .modal-box { background: #1e2732; width: 90%; max-width: 900px; height: 90vh; border-radius: 8px; border: 1px solid var(--gold); display: flex; flex-direction: column; overflow: hidden; }
+        .modal-box { background: #1e2732; width: 90%; max-width: 900px; height: 90vh; border-radius: 8px; border: 1px solid var(--gold); display: flex; flex-direction: column; }
         .modal-head { padding: 15px 20px; border-bottom: 1px solid #444; background: #151b24; display:flex; justify-content:space-between; align-items:center; }
         .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
-        .alert-banner { background: rgba(255, 77, 77, 0.2); border: 1px solid var(--danger); color: #ffcccc; padding: 10px; margin-bottom: 15px; border-radius: 4px; display: none; animation: flash 2s infinite; }
         
-        @keyframes flash { 0% {opacity:1} 50% {opacity:0.7} 100% {opacity:1} }
+        .alert-banner { background: rgba(255, 77, 77, 0.2); border: 1px solid var(--danger); color: #ffcccc; padding: 10px; margin-bottom: 15px; border-radius: 4px; display: none; }
+        .consent-status { padding: 10px; background: #111; border-radius: 4px; display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+        .status-badge { padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+        .status-signed { background: var(--cyan); color: #000; }
+        .status-unsigned { background: #555; color: #ccc; }
+        #qrcode { background: white; padding: 10px; width: fit-content; margin: 10px auto; display: none; }
 
         .tabs { display: flex; border-bottom: 1px solid #444; margin-bottom: 20px; }
         .tab { padding: 10px 20px; cursor: pointer; color: #888; border-bottom: 3px solid transparent; font-weight: bold; }
@@ -56,49 +51,32 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* Relation Table */
         .rel-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .rel-table th { text-align: left; color: #888; border-bottom: 1px solid #444; padding: 5px; }
         .rel-table td { padding: 8px 5px; border-bottom: 1px solid #333; color: #eee; }
-        .add-rel-form { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 10px; background: #111; padding: 10px; border-radius: 4px; margin-top: 10px; }
-
-        /* Consent */
-        .consent-status { padding: 10px; background: #111; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-        .status-badge { padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
-        .status-signed { background: var(--cyan); color: #000; }
-        .status-unsigned { background: #555; color: #ccc; }
-        #qrcode { background: white; padding: 10px; width: fit-content; margin: 0 auto; display: none; }
+        .add-rel-form { display: grid; grid-template-columns: 1fr 1fr 1fr 0.5fr 0.5fr auto; gap: 5px; background: #111; padding: 10px; border-radius: 4px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="main-content">
     <div class="header">
-        <h1>📂 達摩客戶戰情室 <span style="font-size:0.5em; color:#666;">(生態系版)</span></h1>
+        <h1>📂 達摩客戶戰情室 <span style="font-size:0.5em; color:#666;">(V7.1 最終版)</span></h1>
         <a href="/" class="btn">⬅ 返回排盤</a>
     </div>
-
     <div class="search-area">
         <input type="text" id="searchInput" placeholder="搜尋..." onkeypress="if(event.key==='Enter') searchData()">
         <button class="btn btn-primary" onclick="searchData()">🔍 搜尋</button>
     </div>
-
     <div id="dataGrid" class="grid"></div>
 </div>
 
 <div class="sidebar">
-    <div class="widget-title">📅 每日任務 (Lifecycle)</div>
-    <ul class="task-list">
-        <li class="task-item urgent">🎂 [生日] 陳大發 (明天)</li>
-        <li class="task-item info">📞 [回訪] 林小美 (超過180天)</li>
-        <li class="task-item info">📝 [整理] 昨日諮詢筆記</li>
+    <div style="color:var(--cyan); font-weight:bold; border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:10px;">📅 待辦事項</div>
+    <ul style="list-style:none; padding:0; color:#aaa; font-size:0.9em;">
+        <li style="margin-bottom:10px;">🎂 [生日] 陳大發 (明天)</li>
+        <li>📝 [整理] 昨日諮詢筆記</li>
     </ul>
-    
-    <div class="widget-title" style="margin-top:20px;">📊 系統狀態</div>
-    <div style="font-size:0.9em; color:#888;">
-        <div>錄音空間：2.1 GB / 100 GB</div>
-        <div>AI 使用量：本月 1,203 Tokens</div>
-    </div>
 </div>
 
 <div id="detailModal" class="modal">
@@ -109,15 +87,10 @@
         </div>
         
         <div class="modal-body">
-            <div id="riskBanner" class="alert-banner">
-                ⚠️ <strong>家族預警：</strong> <span id="riskText"></span>
-            </div>
+            <div id="riskBanner" class="alert-banner">⚠️ <strong>家族預警：</strong> <span id="riskText"></span></div>
 
             <div class="consent-status">
-                <div>
-                    <span>數位同意書：</span>
-                    <span id="consentBadge" class="status-badge status-unsigned">未簽署</span>
-                </div>
+                <div><span>數位同意書：</span><span id="consentBadge" class="status-badge status-unsigned">未簽署</span></div>
                 <button class="btn btn-primary" style="font-size:0.8em;" onclick="generateConsent()">產生簽署連結</button>
             </div>
             <div id="qrcode"></div>
@@ -130,33 +103,26 @@
 
             <div id="tab-basic" class="tab-content active">
                 <textarea id="mNote" style="width:100%; height:150px; background:#111; color:#ddd; border:1px solid #444; padding:10px;"></textarea>
-                <div style="text-align:right; margin-top:5px;"><button class="btn btn-primary" onclick="updateNote()">💾 存檔</button></div>
+                <div style="text-align:right; margin-top:5px;"><button class="btn btn-primary" onclick="updateNote()">💾 更新存檔</button></div>
             </div>
 
             <div id="tab-relation" class="tab-content">
-                <p style="color:#aaa; font-size:0.9em;">建立家族資料後，系統將自動掃描流年風險。</p>
-                
                 <table class="rel-table">
-                    <thead><tr><th>關係</th><th>姓名</th><th>生日</th><th>時辰</th><th>操作</th></tr></thead>
+                    <thead><tr><th>關係</th><th>姓名</th><th>生日</th><th>性別</th><th>時辰</th><th>操作</th></tr></thead>
                     <tbody id="relList"></tbody>
                 </table>
-
                 <div class="add-rel-form">
-                    <input type="text" id="relRelation" placeholder="關係 (如: 長女)">
+                    <input type="text" id="relRelation" placeholder="關係">
                     <input type="text" id="relName" placeholder="姓名">
                     <input type="date" id="relDate">
-                    <select id="relHour">
-                        <option value="子">子</option><option value="丑">丑</option><option value="寅">寅</option>
-                        <option value="卯">卯</option><option value="辰">辰</option><option value="巳">巳</option>
-                        <option value="午">午</option><option value="未">未</option><option value="申">申</option>
-                        <option value="酉">酉</option><option value="戌">戌</option><option value="亥">亥</option>
-                    </select>
+                    <select id="relGender"><option value="1">男</option><option value="0">女</option></select>
+                    <select id="relHour"><option value="子">子</option><option value="丑">丑</option><option value="寅">寅</option><option value="卯">卯</option><option value="辰">辰</option><option value="巳">巳</option><option value="午">午</option><option value="未">未</option><option value="申">申</option><option value="酉">酉</option><option value="戌">戌</option><option value="亥">亥</option></select>
                     <button class="btn btn-primary" onclick="addRelation()">+</button>
                 </div>
             </div>
 
             <div id="tab-media" class="tab-content">
-                <div style="text-align:center; padding:20px; color:#666;">(錄音/照片功能已在上一階段實作)</div>
+                <div style="text-align:center; padding:20px; color:#666;">(請使用 V6.2 版的完整功能)</div>
             </div>
         </div>
     </div>
@@ -183,19 +149,13 @@
         document.getElementById('mName').innerText = selectedItem.client_name;
         document.getElementById('mNote').value = selectedItem.note || '';
         
-        // Consent Status
         const badge = document.getElementById('consentBadge');
         if(selectedItem.consent_signed) { badge.innerText="已簽署"; badge.className="status-badge status-signed"; }
         else { badge.innerText="未簽署"; badge.className="status-badge status-unsigned"; }
-        document.getElementById('qrcode').innerHTML = ""; 
         document.getElementById('qrcode').style.display = "none";
 
-        // Load Relations
         renderRelations();
-        
-        // Auto Scan Risks
         await scanRisks();
-
         switchTab('basic');
         document.getElementById('detailModal').style.display = 'flex';
     }
@@ -204,10 +164,8 @@
         const list = document.getElementById('relList');
         const rels = selectedItem.relations || [];
         list.innerHTML = rels.map((r, i) => `
-            <tr>
-                <td>${r.relation}</td><td>${r.name}</td><td>${r.solar_date}</td><td>${r.hour}</td>
-                <td><button class="btn btn-danger" style="padding:2px 6px; font-size:0.7em;" onclick="removeRel(${i})">×</button></td>
-            </tr>`).join('');
+            <tr><td>${r.relation}</td><td>${r.name}</td><td>${r.solar_date}</td><td>${r.gender==1?'男':'女'}</td><td>${r.hour}</td>
+            <td><button class="btn btn-danger" style="padding:2px 6px; font-size:0.7em;" onclick="removeRel(${i})">×</button></td></tr>`).join('');
     }
 
     function addRelation() {
@@ -216,11 +174,11 @@
             relation: document.getElementById('relRelation').value,
             name: document.getElementById('relName').value,
             solar_date: document.getElementById('relDate').value,
-            hour: document.getElementById('relHour').value,
-            gender: 1 // 簡化預設
+            gender: parseInt(document.getElementById('relGender').value),
+            hour: document.getElementById('relHour').value
         });
         renderRelations();
-        updateNote(true); // 自動存檔並掃描
+        updateNote(true);
     }
 
     function removeRel(i) {
@@ -229,43 +187,33 @@
         updateNote(false);
     }
 
+    // [核心修復] 使用 update_record 避免重複
     async function updateNote(autoScan=false) {
         selectedItem.note = document.getElementById('mNote').value;
-        // 呼叫 save_record (需確保後端支援 relations 欄位更新)
-        // 為了簡化，這裡假設 save_record 是 upsert 邏輯
         try {
-            await fetch('/api/save_record', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(selectedItem)});
+            await fetch(`/api/update_record/${selectedItem.id}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(selectedItem)});
             if(autoScan) await scanRisks();
-            else alert("已存檔");
+            else alert("資料已更新");
         } catch(e) { console.error(e); }
     }
 
     async function scanRisks() {
         if(!selectedItem.relations || selectedItem.relations.length === 0) return;
         const banner = document.getElementById('riskBanner');
-        
         try {
-            // 呼叫後端掃描 API
             const res = await fetch('/api/scan_family_risks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(selectedItem)});
             const result = await res.json();
-            
             if(result.alerts && result.alerts.length > 0) {
-                const text = result.alerts.map(a => `${a.relation}${a.name}(${a.risk})`).join('、');
-                document.getElementById('riskText').innerText = text;
+                document.getElementById('riskText').innerText = result.alerts.map(a => `${a.relation}${a.name}(${a.risk})`).join('、');
                 banner.style.display = 'block';
-            } else {
-                banner.style.display = 'none';
-            }
-        } catch(e) { console.error("掃描失敗", e); }
+            } else { banner.style.display = 'none'; }
+        } catch(e) { console.error(e); }
     }
 
     function generateConsent() {
         const qrDiv = document.getElementById('qrcode');
-        qrDiv.innerHTML = "";
-        qrDiv.style.display = "block";
-        const url = `${window.location.origin}/consent_page?id=${selectedItem.id}`;
-        new QRCode(qrDiv, { text: url, width: 128, height: 128 });
-        alert(`已產生連結：\n${url}\n請讓客戶掃描簽名。`);
+        qrDiv.innerHTML = ""; qrDiv.style.display = "block";
+        new QRCode(qrDiv, { text: `${window.location.origin}/consent_page?id=${selectedItem.id}`, width: 128, height: 128 });
     }
 
     function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
