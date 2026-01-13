@@ -6,50 +6,113 @@
     <title>達摩一掌經．全時空戰略中台</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
-        :root { --bg-color: #121820; --panel-bg: #1e2732; --gold: #d4af37; --cyan: #4fd1c5; --danger: #ff4d4d; --text-main: #e0e0e0; }
+        :root {
+            --bg-color: #121820; --panel-bg: #1e2732; --gold: #d4af37;
+            --bronze: #8c7853; --cyan: #4fd1c5; --danger: #ff4d4d;
+            --text-main: #e0e0e0; --text-sub: #a0a0a0; --gpt-color: #10a37f;
+            --p-year: #d4af37; --p-month: #4fd1c5; --p-day: #ff9f43; --p-hour: #a3a3ff; --p-luck: #2ecc71;
+            --status-best: #ffd700; --status-good: #ADD8E6; --status-growth: #90EE90; --status-bad: #ff4d4d;
+        }
         body { background-color: var(--bg-color); color: var(--text-main); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        h1 { color: var(--gold); letter-spacing: 5px; margin-bottom: 20px; }
+        h1 { color: var(--gold); letter-spacing: 5px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(212,175,55,0.4); }
         .dashboard { display: grid; grid-template-columns: 380px 1fr; gap: 25px; width: 100%; max-width: 1400px; }
-        .control-panel, .card { background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid #8c7853; margin-bottom: 20px; }
-        .control-panel { position: sticky; top: 20px; height: fit-content; }
+        .control-panel, .card { background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--bronze); margin-bottom: 20px; }
+        .control-panel { height: fit-content; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: sticky; top: 20px; }
         label { display: block; margin-bottom: 5px; color: var(--cyan); font-size: 0.9em; }
-        input, select, textarea { width: 100%; padding: 10px; margin-bottom: 15px; background: #151b24; border: 1px solid #4a5568; color: white; border-radius: 4px; }
-        button.btn-main { width: 100%; padding: 14px; background: linear-gradient(135deg, #8c7853, var(--gold)); border: none; font-weight: bold; font-size: 1.2em; border-radius: 4px; cursor: pointer; color: #1a2634; }
-        .card-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--gold); font-weight: bold; margin-bottom: 10px; }
-        .card-body { transition: all 0.3s; overflow: hidden; }
-        .card-body.collapsed { max-height: 0; opacity: 0; margin: 0; padding: 0; }
+        input, select, textarea { width: 100%; padding: 10px; margin-bottom: 15px; background: #151b24; border: 1px solid #4a5568; color: white; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
+        button.btn-main { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--bronze), var(--gold)); border: none; font-weight: bold; font-size: 1.2em; border-radius: 4px; cursor: pointer; color: #1a2634; margin-top: 15px; box-shadow: 0 4px 15px rgba(212,175,55,0.3); }
+        button.btn-main:hover { filter: brightness(1.15); transform: translateY(-2px); }
+        .ctrl-btn { background: #333; color: #ddd; border: 1px solid #555; padding: 4px 12px; border-radius: 4px; cursor: pointer; margin-left: 8px; }
+        .ctrl-btn.active { background: var(--gold); color: #1a2634; }
+        .ctrl-btn.finish { border-color: var(--cyan); color: var(--cyan); }
+        .card-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; transition: opacity 0.2s; }
+        .card-header:hover { opacity: 0.8; }
+        .arrow-icon { transition: transform 0.3s ease; font-size: 0.8em; color: var(--cyan); }
+        .arrow-icon.collapsed { transform: rotate(-90deg); }
+        .card-body { overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), opacity 0.4s ease-in-out, margin-top 0.4s; max-height: 2000px; opacity: 1; margin-top: 15px; }
+        .card-body.collapsed { max-height: 0; opacity: 0; margin-top: 0; }
         
-        .twelve-palaces-map { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 130px); gap: 10px; grid-template-areas: "si wu wei shen" "chen . . you" "mao . . xu" "yin chou zi hai"; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; }
+        /* Map Styles */
+        .twelve-palaces-map { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 130px); gap: 12px; padding: 15px; margin-top: 0; background: rgba(0,0,0,0.2); border: 1px solid #444; border-radius: 8px; grid-template-areas: "si wu wei shen" "chen . . you" "mao . . xu" "yin chou zi hai"; }
         .grid-cell { position: relative; background: #2a3544; border: 1px solid #3f4a5a; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
         .grid-cell.active { border-color: var(--gold); background: #3a4555; }
+        .grid-cell.target { box-shadow: 0 0 25px var(--cyan) !important; border-color: #fff !important; }
         .grid-cell.roulette-active { background: #fff !important; border-color: var(--gold); transform: scale(1.05); z-index: 100; }
         .grid-cell.roulette-active .cell-star { color: #000 !important; }
-        .cell-zhi { position: absolute; top: 5px; left: 8px; font-size: 1em; color: #555; }
+        .cell-zhi { position: absolute; top: 5px; left: 8px; font-size: 1em; color: #555; font-weight: bold; }
         .cell-star { font-size: 1.7em; font-weight: bold; color: #ddd; z-index: 1; }
-        .cell-aspect-name { font-size: 0.95em; color: var(--cyan); border-top: 1px solid rgba(255,255,255,0.1); width: 85%; text-align: center; margin-top: 4px; }
+        .cell-aspect-name { font-size: 0.95em; color: var(--cyan); font-weight: bold; border-top: 1px solid rgba(255,255,255,0.1); width: 85%; text-align: center; margin-top: 4px; }
+        .cell-realm { font-size: 0.7em; color: #555; position:absolute; bottom: 3px; right: 5px; }
+        .cell-relation-tag { position: absolute; top: 5px; right: 5px; font-size: 0.75em; padding: 2px 6px; border-radius: 3px; font-weight: bold; color: #1a2634; }
         .pillar-badges-container { position: absolute; top: 25px; left: 4px; display: flex; flex-direction: column; gap: 3px; }
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
-        .aspect-row { border-bottom: 1px solid #333; padding: 10px 5px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-        .aspect-row:hover, .aspect-row.active-aspect { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
-        .progress-container { flex: 1; height: 6px; background: #333; border-radius: 3px; margin: 0 10px; }
-        .progress-bar { height: 100%; border-radius: 3px; transition: width 0.5s; }
+        /* Dashboard Components */
+        .aspect-row { border-bottom: 1px solid #333; padding: 14px 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: background 0.2s; }
+        .aspect-row.clickable { cursor: pointer; border-left: 3px solid transparent; }
+        .aspect-row.clickable:hover { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
+        .aspect-row.active-aspect { background: rgba(79, 209, 197, 0.15); border-left: 3px solid var(--cyan); }
+        .aspect-tag { padding: 4px 10px; border-radius: 4px; font-size: 0.9em; text-align: center; min-width: 50px; color: #1a2634; font-weight:bold; }
+        .checkbox-wrapper { margin-bottom: 10px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--gold); font-weight: bold; user-select: none; }
+        .checkbox-wrapper input { width: 18px; height: 18px; cursor: pointer; margin: 0; }
         
-        .switch-container { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+        .ai-controls { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .ai-shortcut-btn { flex: 1; background: #2d3748; border: 1px solid #4a5568; color: #cbd5e0; padding: 8px 5px; border-radius: 4px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .ai-shortcut-btn:hover { background: #4a5568; color: white; border-color: var(--gpt-color); transform: translateY(-2px); }
+        .mini-ai-btn { background: transparent; border: 1px solid var(--gpt-color); color: var(--gpt-color); border-radius: 4px; width: 26px; height: 26px; font-size: 0.9em; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 8px; transition: all 0.2s; }
+        .mini-ai-btn:hover { background: var(--gpt-color); color: white; transform: scale(1.1); box-shadow: 0 0 10px rgba(16, 163, 127, 0.4); }
+        
+        .progress-container { flex: 1; height: 6px; background: #333; border-radius: 3px; margin: 0 8px; overflow: hidden; position: relative; }
+        .progress-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+        .trend-icon { font-weight: bold; margin-left: 5px; font-size: 1.1em; }
+        .trend-icon.up { color: #ff4d4d; animation: pulse 2s infinite; }
+        .trend-icon.down { color: #4fd1c5; }
+        .trend-icon.flat { color: #666; font-size: 0.8em; }
+        .score-composition { font-size: 0.7em; color: #888; margin-left: 4px; font-weight: normal; }
+        .score-bonus { color: #ffd700; }
+        .score-penalty { color: #ff4d4d; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        .modal-content { background-color: #1e2732; border: 1px solid var(--gold); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        .modal h3 { color: var(--gold); margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { color: #aaa; font-size: 0.9em; margin-bottom: 4px; display:block; }
+        .tag-container { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+        .tag-chip { font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: #333; cursor: pointer; border: 1px solid #555; user-select: none; color: #ddd; }
+        .tag-chip.selected { background: var(--cyan); color: #000; border-color: var(--cyan); }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        
+        .ai-history-block { background: rgba(16, 163, 127, 0.1); border-left: 3px solid var(--gpt-color); padding: 8px; margin-top: 5px; font-size: 0.85em; color: #cfd8dc; white-space: pre-wrap; display: none; }
+        .toggle-ai-btn { background: none; border: none; color: var(--gpt-color); cursor: pointer; font-size: 0.8em; text-decoration: underline; margin-left: 5px; }
+        .heatmap-tag { font-size: 0.75em; padding: 1px 5px; border-radius: 4px; background: #2d3748; color: #a0aec0; margin-right: 4px; border: 1px solid #4a5568; }
+        .heatmap-tag.hot { border-color: #ff4d4d; color: #ff4d4d; background: rgba(255, 77, 77, 0.1); font-weight: bold; }
+
+        /* 動畫開關樣式 */
+        .switch-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 10px; }
+        .switch-label { font-size: 0.8em; color: #888; font-weight: bold; }
         .switch { position: relative; display: inline-block; width: 36px; height: 18px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 18px; border: 1px solid #555; }
         .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: #888; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--gold); }
+        input:checked + .slider { background-color: var(--gold); border-color: var(--gold); }
         input:checked + .slider:before { transform: translateX(18px); background-color: #1a2634; }
+        .switch:hover .slider { border-color: #888; }
 
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
-        .modal-content { background-color: #1e2732; border: 1px solid var(--gold); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; }
+        @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+        @media (max-width: 950px) { .dashboard { grid-template-columns: 1fr; } .control-panel { position: static; } }
         #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; }
         .spinner { border: 4px solid #333; border-top: 4px solid var(--gold); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
+        @keyframes dropIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .show-content { opacity: 1 !important; }
+        .input-group { display: none; }
+        .input-group.show { display: block; }
+        .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .pillar-box { background: #252f3a; padding: 10px; text-align: center; border: 1px solid #444; border-radius: 6px; opacity: 0.3; }
+        .pillar-box.active { opacity: 1; border-color: var(--gold); }
+        .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; opacity: 0.3; pointer-events: none; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
+        .ai-btn { background: var(--gpt-color); color: white; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight:bold; }
     </style>
 </head>
 <body>
@@ -57,87 +120,140 @@
 <h1>達摩一掌經．全時空戰略中台</h1>
 <div class="dashboard">
     <div class="control-panel">
-        <h3 style="color:var(--cyan); border-bottom:1px solid #444;">1. 本命設定</h3>
+        <h3 style="color:var(--cyan); border-bottom:1px solid #444;">1. 設定案主本命</h3>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
             <div><label>性別</label><select id="gender"><option value="1">男 (順行)</option><option value="0">女 (逆行)</option></select></div>
-            <div><label>時辰</label><select id="hour"><option value="子">子</option><option value="丑">丑</option><option value="寅">寅</option><option value="卯">卯</option><option value="辰">辰</option><option value="巳">巳</option><option value="午">午</option><option value="未">未</option><option value="申">申</option><option value="酉">酉</option><option value="戌">戌</option><option value="亥">亥</option></select></div>
+            <div>
+                <label>出生時辰</label>
+                <select id="hour">
+                    <option value="子">子時 (23:00-01:00)</option><option value="丑">丑時 (01:00-03:00)</option><option value="寅">寅時 (03:00-05:00)</option>
+                    <option value="卯">卯時 (05:00-07:00)</option><option value="辰">辰時 (07:00-09:00)</option><option value="巳">巳時 (09:00-11:00)</option>
+                    <option value="午">午時 (11:00-13:00)</option><option value="未">未時 (13:00-15:00)</option><option value="申">申時 (15:00-17:00)</option>
+                    <option value="酉">酉時 (17:00-19:00)</option><option value="戌">戌時 (19:00-21:00)</option><option value="亥">亥時 (21:00-23:00)</option>
+                </select>
+            </div>
         </div>
-        <label>國曆生日</label><input type="date" id="solarDate" value="1985-03-27">
-        
-        <h3 style="color:var(--gold); border-bottom:1px solid #444; margin-top:20px;">2. 戰略目標</h3>
+        <label>國曆出生日期</label><input type="date" id="solarDate" value="1985-03-27">
+        <h3 style="color:var(--gold); border-bottom:1px solid #444; margin-top:20px;">2. 設定戰略目標</h3>
         <div style="display:flex; gap:20px; margin-bottom:10px;">
-            <label><input type="radio" name="calendarType" value="lunar" checked onchange="updateFormUI()"> 農曆</label>
-            <label><input type="radio" name="calendarType" value="solar" onchange="updateFormUI()"> 西元</label>
+            <label style="color:white; cursor:pointer;"><input type="radio" name="calendarType" value="lunar" checked onchange="updateFormUI()"> 農曆</label>
+            <label style="color:white; cursor:pointer;"><input type="radio" name="calendarType" value="solar" onchange="updateFormUI()"> 西元曆</label>
         </div>
-        <select id="targetScope" onchange="updateFormUI()"><option value="year">流年</option><option value="month">流月</option><option value="day">流日</option><option value="hour">流時</option></select>
-        <div id="yearInput" class="input-group show"><label id="lblYear">農曆年份</label><input type="number" id="tYear" value="2026"></div>
-        <div id="monthInput" class="input-group"><label id="lblMonth">農曆月份</label><input type="number" id="tMonth" value="1"></div>
-        <div id="dayInput" class="input-group"><label id="lblDay">農曆日期</label><input type="number" id="tDay" value="1"></div>
-        <div id="hourInput" class="input-group"><label>時辰</label><select id="tHour"><option value="子">子</option><option value="丑">丑</option><option value="寅">寅</option><option value="卯">卯</option><option value="辰">辰</option><option value="巳">巳</option><option value="午">午</option><option value="未">未</option><option value="申">申</option><option value="酉">酉</option><option value="戌">戌</option><option value="亥">亥</option></select></div>
+        <label>推演層級</label>
+        <select id="targetScope" onchange="updateFormUI()">
+            <option value="year">流年 (只看年)</option><option value="month">流月 (年+月)</option>
+            <option value="day">流日 (年+月+日)</option><option value="hour">流時 (年+月+日+時)</option>
+        </select>
         
+        <div id="yearInput" class="input-group show"><label id="lblYear">農曆年份</label><input type="number" id="tYear" value="2026"></div>
+        <div id="monthInput" class="input-group"><label id="lblMonth">農曆月份</label><input type="number" id="tMonth" value="1" min="1" max="12"></div>
+        <div id="dayInput" class="input-group"><label id="lblDay">農曆日期</label><input type="number" id="tDay" value="1" min="1" max="31"></div>
+        
+        <div id="hourInput" class="input-group">
+            <label>時辰</label>
+            <select id="tHour">
+                <option value="子">子時 (23:00-01:00)</option><option value="丑">丑時 (01:00-03:00)</option><option value="寅">寅時 (03:00-05:00)</option>
+                <option value="卯">卯時 (05:00-07:00)</option><option value="辰">辰時 (07:00-09:00)</option><option value="巳">巳時 (09:00-11:00)</option>
+                <option value="午">午時 (11:00-13:00)</option><option value="未">未時 (13:00-15:00)</option><option value="申">申時 (15:00-17:00)</option>
+                <option value="酉">酉時 (17:00-19:00)</option><option value="戌">戌時 (19:00-21:00)</option><option value="亥">亥時 (21:00-23:00)</option>
+            </select>
+        </div>
         <button class="btn-main" onclick="calculate()">啟動全時空推演</button>
-        <button class="btn-main" style="background:#2d3748; margin-top:15px; color:var(--cyan);" onclick="window.location.href='/crm'">📂 進入客戶戰情室 (CRM)</button>
-        <button class="btn-main" style="background:#333; margin-top:10px; font-size:0.9em;" onclick="openSaveModal()">💾 快速存檔</button>
+        
+        <button class="btn-main" style="background: #2d3748; border: 1px solid #4a5568; margin-top:15px; color:var(--cyan);" onclick="window.location.href='/crm'">
+            📂 進入客戶戰情室 (CRM)
+        </button>
+        <button class="ctrl-btn active" style="width:100%; margin-top:10px; padding:10px; margin-left:0;" onclick="openSaveModal()">💾 儲存本次諮詢紀錄</button>
     </div>
 
     <div class="info-panel" id="resultArea">
-        <div class="card" style="border-left:5px solid var(--gold);">
-            <div class="card-header">
-                <div>戰略儀表板 <span id="lunarInfo" style="font-size:0.8em; color:#888;"></span></div>
-                <div class="switch-container">
-                    <span style="font-size:0.8em; color:#888;">動畫</span>
-                    <label class="switch"><input type="checkbox" id="animToggle" onchange="isAnimEnabled=this.checked"><span class="slider"></span></label>
+        <div class="card" style="border-left:5px solid var(--gold); overflow:hidden;">
+            <h3 class="card-header" style="color:var(--gold);">
+                <div style="display:flex; align-items:center; width:100%">
+                    <div style="white-space:nowrap;">戰略儀表板 <span id="lunarInfo" style="font-size:0.8em; color:#a0a0a0;"></span></div>
+                    <div style="display:flex; align-items:center; margin-left:auto;">
+                        <div class="switch-container">
+                            <span class="switch-label">動畫</span>
+                            <label class="switch">
+                                <input type="checkbox" id="animToggle" onchange="toggleAnim(this)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div id="animControls" style="display:none; font-size:0.8em;">
+                            <button class="ctrl-btn" id="pauseBtn" onclick="togglePause(); event.stopPropagation();">⏯</button>
+                            <button class="ctrl-btn finish" onclick="skipToComplete(); event.stopPropagation();">⏩</button>
+                            <button class="ctrl-btn" onclick="replayAnimation(); event.stopPropagation();">🔄</button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </h3>
             <div class="twelve-palaces-map">
-                <div class="grid-cell" id="cell-巳"><div class="pillar-badges-container"></div><span class="cell-zhi">巳</span><span class="cell-star">天文</span></div>
-                <div class="grid-cell" id="cell-午"><div class="pillar-badges-container"></div><span class="cell-zhi">午</span><span class="cell-star">天福</span></div>
-                <div class="grid-cell" id="cell-未"><div class="pillar-badges-container"></div><span class="cell-zhi">未</span><span class="cell-star">天驛</span></div>
-                <div class="grid-cell" id="cell-申"><div class="pillar-badges-container"></div><span class="cell-zhi">申</span><span class="cell-star">天孤</span></div>
-                <div class="grid-cell" id="cell-辰"><div class="pillar-badges-container"></div><span class="cell-zhi">辰</span><span class="cell-star">天奸</span></div>
+                <div class="grid-cell" id="cell-巳"><div class="pillar-badges-container"></div><span class="cell-zhi">巳</span><span class="cell-star">天文</span><span class="cell-realm">仙道</span></div>
+                <div class="grid-cell" id="cell-午"><div class="pillar-badges-container"></div><span class="cell-zhi">午</span><span class="cell-star">天福</span><span class="cell-realm">佛道</span></div>
+                <div class="grid-cell" id="cell-未"><div class="pillar-badges-container"></div><span class="cell-zhi">未</span><span class="cell-star">天驛</span><span class="cell-realm">鬼道</span></div>
+                <div class="grid-cell" id="cell-申"><div class="pillar-badges-container"></div><span class="cell-zhi">申</span><span class="cell-star">天孤</span><span class="cell-realm">人道</span></div>
+                <div class="grid-cell" id="cell-辰"><div class="pillar-badges-container"></div><span class="cell-zhi">辰</span><span class="cell-star">天奸</span><span class="cell-realm">修羅</span></div>
                 <div class="center-decoration"><span style="font-size:3em; color:var(--gold);">☯</span></div>
-                <div class="grid-cell" id="cell-酉"><div class="pillar-badges-container"></div><span class="cell-zhi">酉</span><span class="cell-star">天刃</span></div>
-                <div class="grid-cell" id="cell-卯"><div class="pillar-badges-container"></div><span class="cell-zhi">卯</span><span class="cell-star">天破</span></div>
-                <div class="grid-cell" id="cell-戌"><div class="pillar-badges-container"></div><span class="cell-zhi">戌</span><span class="cell-star">天藝</span></div>
-                <div class="grid-cell" id="cell-寅"><div class="pillar-badges-container"></div><span class="cell-zhi">寅</span><span class="cell-star">天權</span></div>
-                <div class="grid-cell" id="cell-丑"><div class="pillar-badges-container"></div><span class="cell-zhi">丑</span><span class="cell-star">天厄</span></div>
-                <div class="grid-cell" id="cell-子"><div class="pillar-badges-container"></div><span class="cell-zhi">子</span><span class="cell-star">天貴</span></div>
-                <div class="grid-cell" id="cell-亥"><div class="pillar-badges-container"></div><span class="cell-zhi">亥</span><span class="cell-star">天壽</span></div>
+                <div class="grid-cell" id="cell-酉"><div class="pillar-badges-container"></div><span class="cell-zhi">酉</span><span class="cell-star">天刃</span><span class="cell-realm">畜道</span></div>
+                <div class="grid-cell" id="cell-卯"><div class="pillar-badges-container"></div><span class="cell-zhi">卯</span><span class="cell-star">天破</span><span class="cell-realm">畜道</span></div>
+                <div class="grid-cell" id="cell-戌"><div class="pillar-badges-container"></div><span class="cell-zhi">戌</span><span class="cell-star">天藝</span><span class="cell-realm">修羅</span></div>
+                <div class="grid-cell" id="cell-寅"><div class="pillar-badges-container"></div><span class="cell-zhi">寅</span><span class="cell-star">天權</span><span class="cell-realm">人道</span></div>
+                <div class="grid-cell" id="cell-丑"><div class="pillar-badges-container"></div><span class="cell-zhi">丑</span><span class="cell-star">天厄</span><span class="cell-realm">鬼道</span></div>
+                <div class="grid-cell" id="cell-子"><div class="pillar-badges-container"></div><span class="cell-zhi">子</span><span class="cell-star">天貴</span><span class="cell-realm">佛道</span></div>
+                <div class="grid-cell" id="cell-亥"><div class="pillar-badges-container"></div><span class="cell-zhi">亥</span><span class="cell-star">天壽</span><span class="cell-realm">仙道</span></div>
             </div>
         </div>
 
         <div class="card">
-            <div class="card-header" onclick="toggleCard('pillarsBody')">本命根基 ▼</div>
+            <h3 class="card-header" onclick="toggleCard('pillarsBody')">本命根基 <span class="arrow-icon collapsed">▼</span></h3>
             <div id="pillarsBody" class="card-body collapsed"><div class="four-pillars" id="pillarsArea"></div></div>
         </div>
 
         <div class="card" style="border-left:5px solid var(--cyan);">
-            <div class="card-header" onclick="toggleCard('hierarchyBody')">時空戰略定位 <span id="targetDisplayInfo" style="font-size:0.8em; font-weight:normal; color:#888;"></span> ▼</div>
+            <h3 class="card-header" onclick="toggleCard('hierarchyBody')">
+                時空戰略定位 <span id="targetDisplayInfo" style="font-size:0.7em; color:#888; font-weight:normal;"></span> 
+                <span class="arrow-icon collapsed">▼</span>
+            </h3>
             <div id="hierarchyBody" class="card-body collapsed"><div id="hierarchyArea"></div></div>
         </div>
         
-        <div class="card" style="border-left:5px solid var(--gold);">
-            <div class="card-header">時空運勢波形圖 <span style="font-size:0.7em; color:#888;">(預設: 總命運)</span></div>
-            <div class="card-body">
-                <div style="text-align:right; margin-bottom:10px;"><label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" id="gradeCheckbox" onchange="updateTrendChart(lastActiveAspect)"> 啟用加權</label></div>
-                <div style="height: 250px;"><canvas id="trendChart"></canvas></div>
+        <div class="card" style="border-left: 5px solid var(--gold);">
+            <h3 class="card-header" onclick="toggleCard('trendBody')">
+                <span id="trendTitle">時空運勢波形圖 <span style="font-size:0.7em; color:#888;">(預設: 總命運)</span></span>
+                <span class="arrow-icon">▼</span>
+            </h3>
+            <div id="trendBody" class="card-body">
+                <div style="margin-bottom:10px; display:flex; justify-content:flex-end;">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" id="gradeCheckbox" onchange="updateTrendChart(lastActiveAspect)">
+                        ☑ 十二宮三品格 (啟用星宿加權)
+                    </label>
+                </div>
+                <div style="height: 250px; width: 100%;"><canvas id="trendChart"></canvas></div>
             </div>
         </div>
 
         <div class="card">
-            <div class="card-header">十二運程戰略指導</div>
-            <div class="card-body"><div id="aspectsList"></div></div>
+            <h3 class="card-header" onclick="toggleCard('aspectsBody')">
+                十二運程戰略指導 <span style="font-size:0.7em; color:var(--cyan);">(點擊項目切換波形)</span>
+                <span class="arrow-icon">▼</span>
+            </h3>
+            <div id="aspectsBody" class="card-body"><div id="aspectsList"></div></div>
         </div>
 
         <div class="card" style="background:#161625; border-color:var(--gpt-color);">
-            <div class="card-header" onclick="toggleCard('aiBody')" style="color:var(--gpt-color);">🤖 AI 戰略顧問 ▼</div>
+            <h3 class="card-header" onclick="toggleCard('aiBody')" style="color:var(--gpt-color);">
+                🤖 AI 戰略顧問 <button class="ai-btn" onclick="event.stopPropagation(); callAIWithMode('general');">🔮 綜合分析</button>
+                <span class="arrow-icon collapsed">▼</span>
+            </h3>
             <div id="aiBody" class="card-body collapsed">
-                <div style="display:flex; gap:10px; margin-bottom:10px;">
-                    <button class="ai-btn" onclick="callAIWithMode('general')" style="flex:1;">🔮 綜合</button>
-                    <button class="ai-btn" onclick="callAIWithMode('weakest')" style="flex:1;">💔 病灶</button>
-                    <button class="ai-btn" onclick="callAIWithMode('timing')" style="flex:1;">📅 時機</button>
+                <div class="ai-controls">
+                    <button class="ai-shortcut-btn" onclick="callAIWithMode('weakest')">💔 找病灶</button>
+                    <button class="ai-shortcut-btn" onclick="callAIWithMode('timing')">📅 定時機</button>
+                    <button class="ai-shortcut-btn" onclick="callAIWithMode('script')">🗣️ 求話術</button>
                 </div>
-                <div id="aiResponseArea" style="min-height:100px; color:#ddd;">(點擊上方按鈕啟動...)</div>
+                <div id="aiPrompt" style="display:none;"></div>
+                <div id="aiResponseArea" style="min-height:100px; padding:10px; color:#ddd;">(請點擊上方按鈕，啟動戰略分析...)</div>
             </div>
         </div>
     </div>
@@ -145,166 +261,275 @@
 
 <div id="saveModal" class="modal">
     <div class="modal-content">
-        <h3>建立檔案</h3>
-        <div style="margin-bottom:10px;"><label>姓名</label><input type="text" id="crmName"></div>
-        <div style="margin-bottom:10px;"><label>電話</label><input type="text" id="crmPhone"></div>
-        <div style="margin-bottom:10px;"><label>筆記</label><textarea id="crmNote"></textarea></div>
-        <div style="margin-bottom:10px;"><label>AI建議</label><textarea id="crmAiContent"></textarea></div>
-        <div style="text-align:right; margin-top:20px;">
-            <button class="btn-main" style="background:#555; width:auto;" onclick="closeSaveModal()">取消</button>
-            <button class="btn-main" style="width:auto;" onclick="confirmSave()">儲存</button>
+        <h3>💾 建立客戶檔案</h3>
+        <div class="form-group"><label>客戶姓名</label><input type="text" id="crmName" placeholder="例如：陳大發"></div>
+        <div class="form-group"><label>聯絡電話 / Line</label><input type="text" id="crmPhone" placeholder="09xx-xxx-xxx"></div>
+        <div class="form-group">
+            <label>客戶標籤</label>
+            <div class="tag-container" id="tagList">
+                <span class="tag-chip" onclick="toggleTag(this)">VIP</span><span class="tag-chip" onclick="toggleTag(this)">企業諮詢</span>
+                <span class="tag-chip" onclick="toggleTag(this)">感情困擾</span><span class="tag-chip" onclick="toggleTag(this)">已付款</span>
+                <span class="tag-chip" onclick="toggleTag(this)">需追蹤</span>
+            </div>
+        </div>
+        <div class="form-group"><label>諮詢筆記</label><textarea id="crmNote" rows="2" placeholder="紀錄重點..."></textarea></div>
+        <div class="form-group">
+            <label style="color:var(--gpt-color);">🤖 AI 戰略建議 (自動帶入/可編輯)</label>
+            <textarea id="crmAiContent" rows="4" style="border-color:var(--gpt-color); color:#cfd8dc; font-size:0.9em;"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="ctrl-btn" onclick="closeSaveModal()">取消</button>
+            <button class="ctrl-btn active" onclick="confirmSave()">確認儲存</button>
         </div>
     </div>
 </div>
 
 <script>
-    const DEFAULT_STARS = {'子':{name:'天貴'},'丑':{name:'天厄'},'寅':{name:'天權'},'卯':{name:'天破'},'辰':{name:'天奸'},'巳':{name:'天文'},'午':{name:'天福'},'未':{name:'天驛'},'申':{name:'天孤'},'酉':{name:'天刃'},'戌':{name:'天藝'},'亥':{name:'天壽'}};
-    const STAR_TRAITS = {'天貴':{keyword:'貴人'},'天厄':{keyword:'勞碌'},'天權':{keyword:'權力'},'天破':{keyword:'消耗'},'天奸':{keyword:'機智'},'天文':{keyword:'智慧'},'天福':{keyword:'福氣'},'天驛':{keyword:'奔波'},'天孤':{keyword:'孤獨'},'天刃':{keyword:'剛強'},'天藝':{keyword:'才藝'},'天壽':{keyword:'長壽'}};
+    const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
+    const STAR_TRAITS = { '天貴': { type: '吉', keyword: '貴人/顯赫' }, '天厄': { type: '凶', keyword: '勞碌/疾厄' }, '天權': { type: '平', keyword: '權力/社交' }, '天破': { type: '凶', keyword: '消耗/破損' }, '天奸': { type: '平', keyword: '機智/變動' }, '天文': { type: '吉', keyword: '智慧/文采' }, '天福': { type: '吉', keyword: '福氣/財祿' }, '天驛': { type: '平', keyword: '奔波/變動' }, '天孤': { type: '凶', keyword: '孤獨/獨立' }, '天刃': { type: '凶', keyword: '剛強/血光' }, '天藝': { type: '平', keyword: '才藝/技術' }, '天壽': { type: '吉', keyword: '長壽/圓融' } };
     const ROULETTE_PATH = ['巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰'];
-    let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', isAnimEnabled=false;
+    
+    let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
+    let isAnimEnabled = false;
 
     function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
     function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
-    function toggleCard(bodyId) { const b = document.getElementById(bodyId); b.classList.toggle('collapsed'); }
-    function getStatusColor(relation) { if(relation.includes('生')||relation.includes('旺')) return 'var(--status-best)'; if(relation.includes('剋')) return 'var(--status-bad)'; return '#888'; }
-    function updateFormUI() { 
-        const isSolar = document.querySelector('input[name="calendarType"]:checked').value === 'solar';
-        setText('lblYear', isSolar ? '西元年份' : '農曆年份');
-        const s = document.getElementById('targetScope').value;
-        document.getElementById('monthInput').style.display = s!=='year'?'block':'none';
-        document.getElementById('dayInput').style.display = (s==='day'||s==='hour')?'block':'none';
-        document.getElementById('hourInput').style.display = s==='hour'?'block':'none';
+    function toggleCard(bodyId) { const body = document.getElementById(bodyId); const arrow = body.previousElementSibling.querySelector('.arrow-icon'); if (body.classList.contains('collapsed')) { body.classList.remove('collapsed'); if(arrow) arrow.classList.remove('collapsed'); } else { body.classList.add('collapsed'); if(arrow) arrow.classList.add('collapsed'); } }
+    function getRealmColor(realm) { if(realm.includes('佛')) return '#ffd700'; if(realm.includes('仙')) return '#4fd1c5'; if(realm.includes('修羅')) return '#ff9f43'; if(realm.includes('鬼')) return '#a0aec0'; if(realm.includes('畜')) return '#8c7853'; return '#e0e0e0'; }
+    function getStatusColor(relation) { if(relation==='生我'||relation==='比旺') return 'var(--status-best)'; if(relation==='我生') return 'var(--status-good)'; if(relation==='我剋') return 'var(--status-growth)'; if(relation==='剋我') return 'var(--status-bad)'; return '#888'; }
+    function getStrategicAdvice(aspect, relation, star) {
+        const starInfo = STAR_TRAITS[star] || { type: '平', keyword: '未知' };
+        return `運勢：${relation} | 建議：善用${starInfo.keyword}特性`;
     }
-    
-    function initMap() { for(let z in DEFAULT_STARS) { const c=document.getElementById('cell-'+z); if(c) c.innerHTML = `<div class="pillar-badges-container"></div><span class="cell-zhi">${z}</span><span class="cell-star">${DEFAULT_STARS[z].name}</span>`; } }
+
+    function toggleAnim(el) { isAnimEnabled = el.checked; }
+
+    function updateFormUI() {
+        const scope = document.getElementById('targetScope').value;
+        const solarRadio = document.querySelector('input[name="calendarType"][value="solar"]');
+        const lunarRadio = document.querySelector('input[name="calendarType"][value="lunar"]');
+        if (scope === 'year') {
+            lunarRadio.checked = true; solarRadio.disabled = true;
+            solarRadio.parentElement.style.opacity = '0.5';
+        } else {
+            solarRadio.disabled = false; solarRadio.parentElement.style.opacity = '1';
+        }
+        setText('lblYear', `${document.querySelector('input[name="calendarType"]:checked').value === 'solar' ? '西元' : '農曆'}年份`);
+        document.getElementById('monthInput').className = (scope !== 'year') ? 'input-group show' : 'input-group';
+        document.getElementById('dayInput').className = (scope === 'day' || scope === 'hour') ? 'input-group show' : 'input-group';
+        document.getElementById('hourInput').className = (scope === 'hour') ? 'input-group show' : 'input-group';
+    }
+
+    function initMap() {
+        for(let zhi in DEFAULT_STARS) {
+            const cell = document.getElementById('cell-'+zhi);
+            if(cell) {
+                const info = DEFAULT_STARS[zhi];
+                const color = getRealmColor(info.realm);
+                cell.innerHTML = `<div class="pillar-badges-container"></div><span class="cell-zhi">${zhi}</span><span class="cell-star" style="color:${color}">${info.name}</span><span class="cell-realm" style="color:${color}; opacity:0.7;">${info.realm}</span>`;
+                cell.className = 'grid-cell'; cell.style.boxShadow = 'none';
+            }
+        }
+    }
 
     async function calculate() {
         document.getElementById('loadingOverlay').style.display='flex';
-        const data = { gender: parseInt(document.getElementById('gender').value), solar_date: document.getElementById('solarDate').value, hour: document.getElementById('hour').value, target_calendar: document.querySelector('input[name="calendarType"]:checked').value, target_scope: document.getElementById('targetScope').value, target_year: parseInt(document.getElementById('tYear').value)||2026, target_month: parseInt(document.getElementById('tMonth').value)||1, target_day: parseInt(document.getElementById('tDay').value)||1, target_hour: document.getElementById('tHour').value };
+        const data = { 
+            gender: parseInt(document.getElementById('gender').value), 
+            solar_date: document.getElementById('solarDate').value, 
+            hour: document.getElementById('hour').value, 
+            target_calendar: document.querySelector('input[name="calendarType"]:checked').value, 
+            target_scope: document.getElementById('targetScope').value, 
+            target_year: parseInt(document.getElementById('tYear').value)||2026, 
+            target_month: parseInt(document.getElementById('tMonth').value)||1, 
+            target_day: parseInt(document.getElementById('tDay').value)||1, 
+            target_hour: document.getElementById('tHour').value 
+        };
         try { 
             const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); 
+            if(!res.ok) throw new Error((await res.json()).detail); 
             globalLastResult = await res.json(); 
             startAnimationSequence(globalLastResult); 
-        } catch(e) { alert("錯誤: "+e.message); document.getElementById('loadingOverlay').style.display='none'; }
+        } catch(e) { 
+            alert("❌ 排盤失敗：\n"+e.message); 
+            document.getElementById('loadingOverlay').style.display='none'; 
+        }
     }
 
     async function startAnimationSequence(result) {
-        document.getElementById('loadingOverlay').style.display='none';
-        initMap(); setHTML('pillarsArea','');
-        setText('lunarInfo', result.lunar_info); setText('targetDisplayInfo', result.target_display);
+        document.getElementById('loadingOverlay').style.display='none'; 
+        document.getElementById('animControls').style.display = isAnimEnabled ? 'flex' : 'none';
+        globalSkipAnimation=false; globalIsPaused=false; initMap(); setHTML('pillarsArea','');
+        setText('lunarInfo', `| 虛歲 ${result.age} | ${result.lunar_info}`);
+        setText('targetDisplayInfo', result.target_display);
         
         const p = result.base_chart;
-        const list = [{z:p.年柱.zhi,n:p.年柱.name,c:'var(--p-year)',k:'年'}, {z:p.月柱.zhi,n:p.月柱.name,c:'var(--p-month)',k:'月'}, {z:p.日柱.zhi,n:p.日柱.name,c:'var(--p-day)',k:'日'}, {z:p.時柱.zhi,n:p.時柱.name,c:'var(--p-hour)',k:'命'}];
+        const list = [{z:p.年柱.zhi, n:p.年柱.name, c:'var(--p-year)', k:'年'}, {z:p.月柱.zhi, n:p.月柱.name, c:'var(--p-month)', k:'月'}, {z:p.日柱.zhi, n:p.日柱.name, c:'var(--p-day)', k:'日'}, {z:p.時柱.zhi, n:p.時柱.name, c:'var(--p-hour)', k:'命'}];
         const isMale = (parseInt(document.getElementById('gender').value)===1);
         
-        for(let item of list) {
-            if(isAnimEnabled) await runRoulette(item.z, isMale);
-            addBadge(item.z, item.k, item.c);
-            document.getElementById('pillarsArea').innerHTML += `<div class="pillar-box active" style="border-color:${item.c}"><div style="color:${item.c}">${item.n}</div><div>${item.z}</div></div>`;
+        for(let item of list) { 
+            if(globalSkipAnimation) break; 
+            if (isAnimEnabled) await runRoulette(item.z, isMale); 
+            addBadgeToCell(item.z, item.k, item.c, !isAnimEnabled); 
+            document.getElementById('pillarsArea').innerHTML += `<div class="pillar-box active" style="border-color:${item.c}"><div style="color:${item.c}">${item.n}</div><div>${item.z}</div></div>`; 
         }
         renderFullView(result);
     }
 
-    function runRoulette(target, isMale) { return new Promise(r => { let i=0, max=50, idx=currentLightIndex; const tIdx=ROULETTE_PATH.indexOf(target); const step=isMale?1:-1; function next() { if(i++>max && idx===tIdx) return r(); idx=(idx+step+12)%12; document.querySelectorAll('.roulette-active').forEach(e=>e.classList.remove('roulette-active')); document.getElementById('cell-'+ROULETTE_PATH[idx]).classList.add('roulette-active'); currentLightIndex=idx; setTimeout(next, 50); } next(); }); }
-    function addBadge(z, t, c) { const el=document.getElementById('cell-'+z).querySelector('.pillar-badges-container'); if(el) el.innerHTML+=`<span class="pillar-badge show" style="background:${c}">${t}</span>`; }
+    function runRoulette(targetZhi, isMale) { return new Promise(resolve => { let rounds=0, maxRounds=1, speed=50; const targetIndex = ROULETTE_PATH.indexOf(targetZhi); const step = isMale ? 1 : -1; function nextStep() { if(globalSkipAnimation) { resolve(); return; } if(globalIsPaused) { setTimeout(nextStep, 100); return; } const prev = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(prev) prev.classList.remove('roulette-active'); currentLightIndex = (currentLightIndex + step + 12) % 12; const curr = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(curr) curr.classList.add('roulette-active'); if(rounds>=maxRounds && currentLightIndex===targetIndex) { if(curr) curr.classList.add('flash-stop'); setTimeout(()=>{ if(curr){curr.classList.remove('roulette-active'); curr.classList.remove('flash-stop');} resolve(); }, 800); return; } if(currentLightIndex===0) rounds++; if(rounds>=maxRounds) speed+=30; setTimeout(nextStep, speed); } nextStep(); }); }
+    function togglePause() { globalIsPaused = !globalIsPaused; }
+    function skipToComplete() { if(globalLastResult) { globalSkipAnimation=true; renderFullView(globalLastResult); } }
+    function replayAnimation() { if(globalLastResult) startAnimationSequence(globalLastResult); }
+    function addBadgeToCell(zhi, text, color, instant) { const cell = document.getElementById('cell-'+zhi); if(cell) { cell.classList.add('active'); const c = cell.querySelector('.pillar-badges-container'); if(c && !Array.from(c.children).some(e=>e.innerText===text)) { const b = document.createElement('span'); b.className='pillar-badge'; b.style.background=color; b.innerText=text; c.appendChild(b); if(instant) b.classList.add('show'); else setTimeout(()=>b.classList.add('show'),50); } } }
 
     function renderFullView(result) {
+        initMap();
         const h = result.hierarchy;
-        addBadge(h.big_luck.zhi, '大運', 'var(--p-luck)');
-        addBadge(h.year.zhi, '流年', 'var(--p-year)');
-        if(h.month && document.getElementById('targetScope').value!=='year') addBadge(h.month.zhi, '流月', 'var(--p-month)');
+        const pillars = [ { k:'年', c:'var(--p-year)', z:result.base_chart.年柱.zhi, n:result.base_chart.年柱.name }, { k:'月', c:'var(--p-month)', z:result.base_chart.月柱.zhi, n:result.base_chart.月柱.name }, { k:'日', c:'var(--p-day)', z:result.base_chart.日柱.zhi, n:result.base_chart.日柱.name }, { k:'命', c:'var(--p-hour)', z:result.base_chart.時柱.zhi, n:result.base_chart.時柱.name } ];
+        pillars.forEach(p => { addBadgeToCell(p.z, p.k, p.c, true); });
+        if(h.big_luck) addBadgeToCell(h.big_luck.zhi, '大運', 'var(--p-luck)', true);
+        if(h.year) addBadgeToCell(h.year.zhi, '流年', 'var(--p-year)', true);
+        if(['month','day','hour'].includes(document.getElementById('targetScope').value) && h.month) addBadgeToCell(h.month.zhi, '流月', 'var(--p-month)', true);
+        if(['day','hour'].includes(document.getElementById('targetScope').value) && h.day) addBadgeToCell(h.day.zhi, '流日', 'var(--p-day)', true);
+        if(document.getElementById('targetScope').value==='hour' && h.hour) addBadgeToCell(h.hour.zhi, '流時', 'var(--p-hour)', true);
         
         result.aspects.forEach(a => {
-            const c = document.getElementById('cell-'+a.zhi);
-            if(c) c.innerHTML += `<div class="cell-aspect-name">${a.name}</div><div style="position:absolute;top:5px;right:5px;font-size:0.7em;background:${getStatusColor(a.relation)}">${a.relation}</div>`;
+            const cell = document.getElementById('cell-'+a.zhi);
+            if(cell && !cell.querySelector('.cell-aspect-name')) {
+                cell.innerHTML += `<div class="cell-aspect-name show-content">${a.name}</div><div class="cell-relation-tag" style="background:${getStatusColor(a.relation)}; color:#1a2634;">${a.relation}</div>`;
+                if(a.is_alert) cell.classList.add('alert');
+            }
         });
-        
-        if(result.trend_data) { globalTrendData = result.trend_data; updateTrendChart('總命運'); fillLists(result); }
+        fillLists(result, h);
     }
 
-    function fillLists(result) {
-        let html = '';
-        let idx = -1;
-        // 嘗試找到對應年份的索引
-        if (globalTrendData.axis_labels) {
-            const tYear = String(document.getElementById('tYear').value);
-            idx = globalTrendData.axis_labels.findIndex(l => String(l).includes(tYear));
-            if (idx === -1) idx = Math.floor(globalTrendData.axis_labels.length / 2);
+    // 列表與圖表
+    function fillLists(result, h) {
+        let hHtml = `<div class="hierarchy-step"><span class="step-label">大運</span><span class="step-value">${result.hierarchy.big_luck.zhi}宮 ${result.hierarchy.big_luck.name}</span></div>`;
+        hHtml += `<div class="hierarchy-step"><span class="step-label">流年</span><span class="step-value">${result.hierarchy.year.zhi}宮 ${result.hierarchy.year.name}</span></div>`;
+        if(result.hierarchy.month) hHtml += `<div class="hierarchy-step"><span class="step-label">流月</span><span class="step-value">${result.hierarchy.month.zhi}宮 ${result.hierarchy.month.name}</span></div>`;
+        setHTML('hierarchyArea', hHtml);
+
+        let aHtml = '';
+        let dataIndex = -1;
+        
+        if(globalTrendData && globalTrendData.axis_labels) {
+            const currentTargetYear = String(document.getElementById('tYear').value);
+            dataIndex = globalTrendData.axis_labels.findIndex(l => {
+                let labelStr = Array.isArray(l) ? l.join("") : String(l);
+                return labelStr.includes(currentTargetYear);
+            });
+            if (dataIndex === -1 && globalTrendData.axis_labels.length > 0) {
+                dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
+            }
         }
 
         result.aspects.forEach(a => {
             let score = 50;
-            if (idx !== -1 && globalTrendData.datasets[a.name]) {
-                score = globalTrendData.datasets[a.name][idx] + (document.getElementById('gradeCheckbox').checked ? (globalTrendData.adjustments[a.name][idx]||0) : 0);
-                score = Math.max(5, Math.min(95, score));
+            if (dataIndex !== -1 && globalTrendData && globalTrendData.datasets[a.name]) {
+                const baseScores = globalTrendData.datasets[a.name];
+                const adjustments = globalTrendData.adjustments[a.name] || [];
+                const isAdjusted = document.getElementById('gradeCheckbox').checked;
+                let val = baseScores[dataIndex] + (isAdjusted ? (adjustments[dataIndex] || 0) : 0);
+                score = Math.max(5, Math.min(95, val));
             }
-            html += `<div class="aspect-row" onclick="updateTrendChart('${a.name}')">
-                <div style="width:100px; font-weight:bold; color:var(--cyan);">${a.name}</div>
-                <div style="flex:1;"><div class="progress-container"><div class="progress-bar" style="width:${score}%; background:${score>=60?'var(--status-good)':'var(--status-bad)'}"></div></div></div>
-                <div style="width:40px; text-align:right;">${score}</div>
+
+            let barColor = score>=80?'var(--status-best)':(score>=60?'var(--status-good)':'var(--status-bad)');
+            let compHtml = '';
+            if(dataIndex !== -1 && document.getElementById('gradeCheckbox').checked && globalTrendData && (globalTrendData.adjustments[a.name]||[])[dataIndex]!==0) {
+               let adj = globalTrendData.adjustments[a.name][dataIndex];
+               compHtml = `<span class="score-composition">(${score-adj}<span class="${adj>0?'score-bonus':'score-penalty'}">${adj>0?'+':''}${adj}</span>)</span>`;
+            }
+
+            aHtml += `
+            <div id="row-${a.name}" class="aspect-row clickable" onclick="updateTrendChart('${a.name}')">
+                <div style="width:110px;"><div style="display:flex;align-items:center;"><span style="color:var(--cyan);font-weight:bold;font-size:1em;">${a.name}</span></div><div style="font-size:0.75em;color:#888;">${a.zhi}|<b style="color:#ddd;">${a.star}</b></div></div>
+                <div style="flex:1;padding:0 5px;"><div style="display:flex;align-items:center;"><div style="width:70px;text-align:right;font-weight:bold;color:${barColor};">${score} ${compHtml}</div><div class="progress-container"><div class="progress-bar" style="width:${score}%;background:${barColor};"></div></div></div><div class="aspect-advice" style="font-size:0.8em;opacity:0.8;">${getStrategicAdvice(a.name, a.relation, a.star)}</div></div>
+                <div style="display:flex;align-items:center;gap:5px;"><div class="aspect-tag" style="background:${getStatusColor(a.relation)};font-size:0.7em;">${a.relation}</div><button class="mini-ai-btn" onclick="event.stopPropagation();lastActiveAspect='${a.name}';callAIWithMode('script')">🤖</button></div>
             </div>`;
         });
-        setHTML('aspectsList', html);
+        setHTML('aspectsList', aHtml);
+        setText('aiPrompt', result.ai_prompt);
+        if(result.trend_data) { globalTrendData = result.trend_data; updateTrendChart('總命運'); }
     }
 
-    function renderTrendChart(labels, scores) {
+    function renderTrendChart(labels, scores, tooltips, title) {
         const ctx = document.getElementById('trendChart').getContext('2d');
-        if(trendChartInstance) trendChartInstance.destroy();
+        if (trendChartInstance) trendChartInstance.destroy();
+        document.getElementById('trendTitle').innerHTML = `時空運勢波形圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>`;
+        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+        gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+        const targetStr = String(document.getElementById('tYear').value);
+        const pointBackgroundColors = labels.map((l) => { let s = Array.isArray(l)?l.join(""):String(l); return s.includes(targetStr)?'#ff4d4d':'#fff'; });
+        
         trendChartInstance = new Chart(ctx, {
             type: 'line',
-            data: { labels: labels, datasets: [{ label: '能量', data: scores, borderColor: '#d4af37', borderWidth: 2, tension: 0.4 }] },
-            options: { maintainAspectRatio: false, scales: { y: { min:0, max:100, grid:{color:'#333'} }, x:{ grid:{color:'#333'} } }, plugins:{legend:{display:false}} }
+            data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointBackgroundColors, pointRadius: 4, fill: true, tension: 0.4 }] },
+            options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'} }, x: { grid: {color:'#333'}, ticks: {color:'#888'} } }, plugins: { legend: {display:false}, tooltip: { callbacks: { title: i=>Array.isArray(i[0].label)?i[0].label.join(" "):i[0].label, afterLabel: ctx=>tooltips[ctx.dataIndex] }, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37' } } }
         });
     }
 
-    function updateTrendChart(name) {
-        lastActiveAspect = name;
-        if(!globalTrendData || !globalTrendData.datasets[name]) return;
-        const base = globalTrendData.datasets[name];
-        const adj = globalTrendData.adjustments[name];
-        const isAdj = document.getElementById('gradeCheckbox').checked;
-        const final = base.map((v, i) => Math.max(5, Math.min(95, v + (isAdj ? (adj[i]||0) : 0))));
-        renderTrendChart(globalTrendData.axis_labels, final);
+    function updateTrendChart(aspectName) {
+        if (!globalTrendData || !globalTrendData.datasets[aspectName]) return;
+        lastActiveAspect = aspectName;
+        if (!aspectClickCounts[aspectName]) aspectClickCounts[aspectName] = 0;
+        aspectClickCounts[aspectName]++;
         
-        // 更新列表高亮
-        document.querySelectorAll('.aspect-row').forEach(e => {
-            if(e.innerText.includes(name)) e.style.background = 'rgba(212,175,55,0.2)';
-            else e.style.background = 'transparent';
+        const isAdjusted = document.getElementById('gradeCheckbox').checked;
+        const baseScores = globalTrendData.datasets[aspectName];
+        const adjustments = globalTrendData.adjustments[aspectName] || [];
+        const finalScores = baseScores.map((score, i) => {
+            return isAdjusted ? Math.max(5, Math.min(95, score + (adjustments[i]||0))) : score;
         });
+        renderTrendChart(globalTrendData.axis_labels, finalScores, globalTrendData.tooltips[aspectName], aspectName + (isAdjusted ? " + 加權" : ""));
+        document.querySelectorAll('.aspect-row').forEach(row => row.classList.remove('active-aspect'));
+        const activeRow = document.getElementById(`row-${aspectName}`);
+        if(activeRow) activeRow.classList.add('active-aspect');
     }
 
     // CRM / AI
-    function openSaveModal() { document.getElementById('saveModal').style.display='flex'; }
-    function closeSaveModal() { document.getElementById('saveModal').style.display='none'; }
+    function openSaveModal() { document.getElementById('saveModal').style.display = 'flex'; openAiNote(); }
+    function closeSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
+    function toggleTag(el) { el.classList.toggle('selected'); }
+    function openAiNote() { const t = document.getElementById('aiResponseArea').innerText; document.getElementById('crmAiContent').value = (t.includes('請點擊')?'':t); }
+
     async function confirmSave() {
-        const d = { solar_date: document.getElementById('solarDate').value, gender: parseInt(document.getElementById('gender').value), hour: document.getElementById('hour').value, target_year: parseInt(document.getElementById('tYear').value), client_name: document.getElementById('crmName').value, phone: document.getElementById('crmPhone').value, note: document.getElementById('crmNote').value, ai_log: {saved_content: document.getElementById('crmAiContent').value} };
-        await fetch('/api/save_record', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)});
-        alert("已儲存"); closeSaveModal();
+        const data = { solar_date: document.getElementById('solarDate').value, gender: parseInt(document.getElementById('gender').value), hour: document.getElementById('hour').value, target_year: parseInt(document.getElementById('tYear').value), client_name: document.getElementById('crmName').value, phone: document.getElementById('crmPhone').value, note: document.getElementById('crmNote').value, ai_log: {saved_content: document.getElementById('crmAiContent').value, click_heatmap: aspectClickCounts} };
+        try { const res = await fetch('/api/save_record', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); if((await res.json()).status === 'success') { alert("已儲存"); closeSaveModal(); loadHistory(); } else alert("失敗"); } catch(e) { alert("錯誤"); }
     }
-    
+
+    async function loadHistory() {
+        window.location.href = '/crm'; // 跳轉至 CRM
+    }
+
+    function restoreFromHistory(item) {
+        document.getElementById('solarDate').value = item.solar_date;
+        document.getElementById('gender').value = item.gender;
+        document.getElementById('hour').value = item.hour;
+        document.getElementById('tYear').value = item.target_year || 2026;
+        document.getElementById('tMonth').value = 1; 
+        document.getElementById('tDay').value = 1;
+        document.getElementById('targetScope').value = 'year';
+        updateFormUI(); 
+        alert(`已載入：${item.client_name}\n(自動切換為流年模式)`);
+        setTimeout(() => calculate(), 200);
+    }
+
     async function callAIWithMode(mode) {
-        if(!globalTrendData) return alert("請先排盤");
-        const p = `分析${lastActiveAspect},模式${mode}`;
-        document.getElementById('aiResponseArea').innerText = "AI思考中...";
-        const res = await fetch('/api/ask_ai', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:p})});
-        const d = await res.json();
-        document.getElementById('aiResponseArea').innerText = d.reply;
+        if (!globalTrendData) { alert("請先排盤"); return; }
+        const prompt = `分析${lastActiveAspect}，模式:${mode}`;
+        document.getElementById('aiResponseArea').innerText = "AI 思考中...";
+        try { const res = await fetch('/api/ask_ai', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:prompt})}); const d = await res.json(); document.getElementById('aiResponseArea').innerText = d.reply; } catch(e) { document.getElementById('aiResponseArea').innerText = "失敗"; }
     }
 
     updateFormUI(); initMap();
+    
     window.onload = function() {
-        const s = localStorage.getItem('damo_restore_data');
-        if(s) {
-            const i = JSON.parse(s);
-            document.getElementById('solarDate').value = i.solar_date;
-            document.getElementById('gender').value = i.gender;
-            document.getElementById('hour').value = i.hour;
-            document.getElementById('tYear').value = i.target_year || 2026;
-            updateFormUI();
-            setTimeout(calculate, 200);
+        const restoreDataStr = localStorage.getItem('damo_restore_data');
+        if (restoreDataStr) {
+            const item = JSON.parse(restoreDataStr);
+            restoreFromHistory(item);
             localStorage.removeItem('damo_restore_data');
         }
-    }
+    };
 </script>
-</body>
-</html>
