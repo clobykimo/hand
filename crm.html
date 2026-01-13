@@ -3,12 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩客戶戰情室 (AI 賦能版)</title>
+    <title>達摩客戶戰情室 (生態系版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --bg: #121820; --panel: #1e2732; --gold: #d4af37; --cyan: #4fd1c5; --danger: #ff4d4d; --text: #e0e0e0; }
-        body { background-color: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; }
+        body { background-color: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; display: flex; gap: 20px; }
+        
+        /* Layout: Main + Sidebar */
+        .main-content { flex: 1; }
+        .sidebar { width: 300px; background: var(--panel); border-radius: 8px; border: 1px solid #444; padding: 20px; display: flex; flex-direction: column; height: 90vh; position: sticky; top: 20px; }
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid var(--gold); padding-bottom: 15px; }
         h1 { margin: 0; color: var(--gold); letter-spacing: 2px; font-size: 1.8em; }
@@ -18,67 +23,82 @@
         .btn-danger { color: var(--danger); border-color: var(--danger); }
         
         .search-area { display: flex; gap: 10px; margin-bottom: 25px; background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid #444; }
-        input[type="text"] { flex: 1; padding: 12px; background: #111; border: 1px solid #555; color: white; border-radius: 4px; font-size: 1em; outline: none; }
+        input, select { padding: 10px; background: #111; border: 1px solid #555; color: white; border-radius: 4px; outline: none; }
+        input[type="text"] { flex: 1; }
         
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         .card { background: var(--panel); border: 1px solid #444; border-radius: 8px; padding: 20px; position: relative; transition: all 0.3s ease; cursor: pointer; overflow: hidden; }
         .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); border-color: var(--gold); }
-        .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .name { font-size: 1.3em; font-weight: bold; color: var(--gold); }
-        .date { font-size: 0.85em; color: #888; }
-        .note { color: #ccc; font-size: 0.9em; margin-bottom: 12px; height: 2.8em; overflow: hidden; }
         
-        /* Modal & Tabs */
+        .card-head { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .name { font-size: 1.2em; font-weight: bold; color: var(--gold); }
+        .note { color: #ccc; font-size: 0.9em; height: 3em; overflow: hidden; }
+        
+        /* Sidebar Widget */
+        .widget-title { color: var(--cyan); font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .task-list { list-style: none; padding: 0; overflow-y: auto; flex: 1; }
+        .task-item { padding: 10px; background: #111; border-radius: 4px; margin-bottom: 8px; border-left: 3px solid #555; font-size: 0.9em; }
+        .task-item.urgent { border-left-color: var(--danger); }
+        .task-item.info { border-left-color: var(--cyan); }
+
+        /* Modal */
         .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
-        .modal-box { background: #1e2732; width: 90%; max-width: 900px; height: 90vh; border-radius: 8px; border: 1px solid var(--gold); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.9); }
-        .modal-head { padding: 20px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center; background: #151b24; }
+        .modal-box { background: #1e2732; width: 90%; max-width: 900px; height: 90vh; border-radius: 8px; border: 1px solid var(--gold); display: flex; flex-direction: column; overflow: hidden; }
+        .modal-head { padding: 15px 20px; border-bottom: 1px solid #444; background: #151b24; display:flex; justify-content:space-between; align-items:center; }
         .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
-        .modal-foot { padding: 15px 20px; border-top: 1px solid #444; background: #151b24; display: flex; justify-content: space-between; }
+        .alert-banner { background: rgba(255, 77, 77, 0.2); border: 1px solid var(--danger); color: #ffcccc; padding: 10px; margin-bottom: 15px; border-radius: 4px; display: none; animation: flash 2s infinite; }
         
+        @keyframes flash { 0% {opacity:1} 50% {opacity:0.7} 100% {opacity:1} }
+
         .tabs { display: flex; border-bottom: 1px solid #444; margin-bottom: 20px; }
         .tab { padding: 10px 20px; cursor: pointer; color: #888; border-bottom: 3px solid transparent; font-weight: bold; }
         .tab.active { color: var(--gold); border-color: var(--gold); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        .section-title { color: var(--cyan); border-left: 3px solid var(--cyan); padding-left: 10px; margin: 20px 0 10px 0; font-size: 1.1em; display:flex; justify-content:space-between; align-items:center; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .info-item label { color: #888; font-size: 0.8em; }
-        .info-item div { font-size: 1.1em; color: #eee; }
-        .ai-box { background: #111; padding: 15px; border-radius: 6px; border-left: 3px solid var(--gold); line-height: 1.6; color: #ddd; white-space: pre-wrap; }
-        
-        /* Audio UI */
-        .audio-control { background: #252f3a; padding: 15px; border-radius: 8px; border: 1px solid #444; margin-top: 10px; }
-        .transcribe-btn { background: var(--cyan); color: #000; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9em; margin-left: 10px; }
-        
-        /* PDF Preview (Hidden Template) */
-        #pdfContainer { position: absolute; left: -9999px; top: 0; }
-        #reportTemplate { width: 210mm; min-height: 297mm; background: #fff; color: #000; padding: 20mm; box-sizing: border-box; font-family: "Microsoft JhengHei", serif; }
-        .rep-header { text-align: center; border-bottom: 3px solid #d4af37; padding-bottom: 15px; margin-bottom: 30px; }
-        .rep-header h1 { color: #000; margin: 0; font-size: 24pt; letter-spacing: 5px; }
-        .rep-header span { color: #d4af37; font-size: 10pt; font-weight: bold; letter-spacing: 2px; }
-        .rep-meta { display: flex; justify-content: space-between; margin-bottom: 30px; font-size: 12pt; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .rep-section { margin-bottom: 25px; }
-        .rep-section h3 { color: #d4af37; font-size: 14pt; border-left: 5px solid #000; padding-left: 10px; margin-bottom: 15px; text-transform: uppercase; }
-        .rep-content { font-size: 11pt; line-height: 1.8; color: #333; text-align: justify; }
-        .rep-box { background: #f9f9f9; padding: 15px; border-radius: 5px; border-left: 3px solid #d4af37; margin-top: 10px; }
-        .rep-footer { margin-top: 50px; text-align: center; font-size: 9pt; color: #888; border-top: 1px solid #eee; padding-top: 15px; }
+        /* Relation Table */
+        .rel-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .rel-table th { text-align: left; color: #888; border-bottom: 1px solid #444; padding: 5px; }
+        .rel-table td { padding: 8px 5px; border-bottom: 1px solid #333; color: #eee; }
+        .add-rel-form { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 10px; background: #111; padding: 10px; border-radius: 4px; margin-top: 10px; }
+
+        /* Consent */
+        .consent-status { padding: 10px; background: #111; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .status-badge { padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+        .status-signed { background: var(--cyan); color: #000; }
+        .status-unsigned { background: #555; color: #ccc; }
+        #qrcode { background: white; padding: 10px; width: fit-content; margin: 0 auto; display: none; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>📂 達摩客戶戰情室 <span style="font-size:0.5em; color:#666; vertical-align:middle;">(AI 賦能版)</span></h1>
-    <a href="/" class="btn">⬅ 返回排盤系統</a>
+<div class="main-content">
+    <div class="header">
+        <h1>📂 達摩客戶戰情室 <span style="font-size:0.5em; color:#666;">(生態系版)</span></h1>
+        <a href="/" class="btn">⬅ 返回排盤</a>
+    </div>
+
+    <div class="search-area">
+        <input type="text" id="searchInput" placeholder="搜尋..." onkeypress="if(event.key==='Enter') searchData()">
+        <button class="btn btn-primary" onclick="searchData()">🔍 搜尋</button>
+    </div>
+
+    <div id="dataGrid" class="grid"></div>
 </div>
 
-<div class="search-area">
-    <input type="text" id="searchInput" placeholder="搜尋客戶姓名、電話..." onkeypress="if(event.key==='Enter') searchData()">
-    <button class="btn btn-primary" onclick="searchData()">🔍 搜尋</button>
-</div>
-
-<div id="dataGrid" class="grid">
-    <div style="grid-column: 1/-1; text-align: center; color: #666; padding: 50px;">載入資料中...</div>
+<div class="sidebar">
+    <div class="widget-title">📅 每日任務 (Lifecycle)</div>
+    <ul class="task-list">
+        <li class="task-item urgent">🎂 [生日] 陳大發 (明天)</li>
+        <li class="task-item info">📞 [回訪] 林小美 (超過180天)</li>
+        <li class="task-item info">📝 [整理] 昨日諮詢筆記</li>
+    </ul>
+    
+    <div class="widget-title" style="margin-top:20px;">📊 系統狀態</div>
+    <div style="font-size:0.9em; color:#888;">
+        <div>錄音空間：2.1 GB / 100 GB</div>
+        <div>AI 使用量：本月 1,203 Tokens</div>
+    </div>
 </div>
 
 <div id="detailModal" class="modal">
@@ -89,92 +109,55 @@
         </div>
         
         <div class="modal-body">
+            <div id="riskBanner" class="alert-banner">
+                ⚠️ <strong>家族預警：</strong> <span id="riskText"></span>
+            </div>
+
+            <div class="consent-status">
+                <div>
+                    <span>數位同意書：</span>
+                    <span id="consentBadge" class="status-badge status-unsigned">未簽署</span>
+                </div>
+                <button class="btn btn-primary" style="font-size:0.8em;" onclick="generateConsent()">產生簽署連結</button>
+            </div>
+            <div id="qrcode"></div>
+
             <div class="tabs">
-                <div class="tab active" onclick="switchTab('basic')">📊 諮詢紀錄</div>
-                <div class="tab" onclick="switchTab('media')">🎙️ 語音/照片</div>
-                <div class="tab" onclick="switchTab('report')">🖨️ 戰略報告</div>
+                <div class="tab active" onclick="switchTab('basic')">📊 紀錄</div>
+                <div class="tab" onclick="switchTab('relation')">👨‍👩‍👧‍👦 家族脈絡</div>
+                <div class="tab" onclick="switchTab('media')">🎙️ 多媒體</div>
             </div>
 
             <div id="tab-basic" class="tab-content active">
-                <div class="info-grid">
-                    <div class="info-item"><label>國曆生日</label><div id="mSolar"></div></div>
-                    <div class="info-item"><label>時辰</label><div id="mHour"></div></div>
-                    <div class="info-item"><label>電話</label><div id="mPhone"></div></div>
-                    <div class="info-item"><label>標籤</label><div id="mTags" style="color:var(--cyan);"></div></div>
-                </div>
-                
-                <div class="section-title">📝 諮詢筆記</div>
-                <textarea id="mNote" style="width:100%; height:120px; background:#111; color:#ddd; border:1px solid #444; padding:10px; border-radius:4px; box-sizing:border-box;"></textarea>
-                <div style="text-align:right; margin-top:5px;"><button class="btn btn-primary" style="font-size:0.8em;" onclick="updateNote()">💾 更新筆記</button></div>
+                <textarea id="mNote" style="width:100%; height:150px; background:#111; color:#ddd; border:1px solid #444; padding:10px;"></textarea>
+                <div style="text-align:right; margin-top:5px;"><button class="btn btn-primary" onclick="updateNote()">💾 存檔</button></div>
+            </div>
 
-                <div class="section-title">🤖 AI 戰略顧問建議 (自動存檔)</div>
-                <div id="mAi" class="ai-box"></div>
+            <div id="tab-relation" class="tab-content">
+                <p style="color:#aaa; font-size:0.9em;">建立家族資料後，系統將自動掃描流年風險。</p>
+                
+                <table class="rel-table">
+                    <thead><tr><th>關係</th><th>姓名</th><th>生日</th><th>時辰</th><th>操作</th></tr></thead>
+                    <tbody id="relList"></tbody>
+                </table>
+
+                <div class="add-rel-form">
+                    <input type="text" id="relRelation" placeholder="關係 (如: 長女)">
+                    <input type="text" id="relName" placeholder="姓名">
+                    <input type="date" id="relDate">
+                    <select id="relHour">
+                        <option value="子">子</option><option value="丑">丑</option><option value="寅">寅</option>
+                        <option value="卯">卯</option><option value="辰">辰</option><option value="巳">巳</option>
+                        <option value="午">午</option><option value="未">未</option><option value="申">申</option>
+                        <option value="酉">酉</option><option value="戌">戌</option><option value="亥">亥</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="addRelation()">+</button>
+                </div>
             </div>
 
             <div id="tab-media" class="tab-content">
-                <div class="section-title">🎙️ 諮詢錄音轉文字 (Whisper AI)</div>
-                <div class="audio-control">
-                    <p style="color:#aaa; font-size:0.9em; margin-bottom:10px;">1. 上傳錄音檔 (mp3/m4a/wav) <br>2. 系統將自動存檔並轉成文字 <br>3. 文字將自動追加至「諮詢筆記」</p>
-                    <input type="file" id="audioInput" accept="audio/*">
-                    <button class="transcribe-btn" onclick="uploadAndTranscribe()">⚡ 開始轉錄</button>
-                    <div id="transcribeStatus" style="margin-top:10px; color:var(--gold); font-size:0.9em;"></div>
-                    <div id="audioPlayerContainer" style="margin-top:15px; display:none;">
-                        <audio id="audioPlayer" controls style="width:100%;"></audio>
-                    </div>
-                </div>
+                <div style="text-align:center; padding:20px; color:#666;">(錄音/照片功能已在上一階段實作)</div>
             </div>
-
-            <div id="tab-report" class="tab-content">
-                <div style="text-align:center; padding:50px;">
-                    <p style="color:#aaa; margin-bottom:20px;">點擊下方按鈕，系統將自動彙整<br>命盤參數、AI 建議與您的筆記，生成專業報告書。</p>
-                    <button class="btn btn-primary" style="padding:15px 30px; font-size:1.2em;" onclick="generatePDF()">🖨️ 生成 PDF 戰略報告</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal-foot">
-            <button class="btn btn-danger" onclick="deleteCurrentItem()">🗑 刪除</button>
-            <button class="btn btn-primary" onclick="restoreToDashboard()">🚀 載入至排盤</button>
-        </div>
-    </div>
-</div>
-
-<div id="pdfContainer">
-    <div id="reportTemplate">
-        <div class="rep-header">
-            <h1>達摩一掌經</h1>
-            <span>DAMO STRATEGIC CONSULTING REPORT</span>
-        </div>
-        <div class="rep-meta">
-            <div><strong>案主：</strong><span id="repName"></span></div>
-            <div><strong>日期：</strong><span id="repDate"></span></div>
-        </div>
-        
-        <div class="rep-section">
-            <h3>I. 命盤參數 (Natal Chart)</h3>
-            <div class="rep-content">
-                <p><strong>國曆生日：</strong><span id="repSolar"></span></p>
-                <p><strong>出生時辰：</strong><span id="repHour"></span></p>
-                <p><strong>諮詢標籤：</strong><span id="repTags"></span></p>
-            </div>
-        </div>
-
-        <div class="rep-section">
-            <h3>II. 戰略顧問分析 (Strategic Analysis)</h3>
-            <div class="rep-content rep-box">
-                <div id="repAiContent" style="white-space: pre-wrap;"></div>
-            </div>
-        </div>
-
-        <div class="rep-section">
-            <h3>III. 導師結語 (Teacher's Notes)</h3>
-            <div class="rep-content">
-                <div id="repNoteContent" style="white-space: pre-wrap;"></div>
-            </div>
-        </div>
-
-        <div class="rep-footer">
-            <p>本報告由 達摩一掌經數位戰略中台 AI 生成 | 僅供諮詢參考</p>
         </div>
     </div>
 </div>
@@ -185,178 +168,111 @@
 
     async function searchData() {
         const keyword = document.getElementById('searchInput').value;
+        const res = await fetch(`/api/search_records?keyword=${encodeURIComponent(keyword)}`);
+        currentData = await res.json();
         const grid = document.getElementById('dataGrid');
-        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666;">搜尋中...</div>';
-        try {
-            const res = await fetch(`/api/search_records?keyword=${encodeURIComponent(keyword)}`);
-            const data = await res.json();
-            currentData = data;
-            renderGrid(data);
-        } catch(e) { grid.innerHTML = '<div style="color:red; text-align:center;">連線錯誤</div>'; }
-    }
-
-    function renderGrid(data) {
-        const grid = document.getElementById('dataGrid');
-        if(data.length === 0) { grid.innerHTML = '<div style="color:#888; text-align:center; grid-column: 1/-1;">查無資料</div>'; return; }
-        let html = '';
-        data.forEach((item, index) => {
-            let heatHtml = '';
-            if (item.ai_log && item.ai_log.click_heatmap) {
-                const sorted = Object.entries(item.ai_log.click_heatmap).sort((a,b)=>b[1]-a[1]).slice(0,3);
-                if(sorted.length > 0) heatHtml = `<div style="font-size:0.8em; color:#aaa; margin-top:10px;">🔥 ${sorted.map(s=>s[0]).join(' ')}</div>`;
-            }
-            html += `
-            <div class="card" onclick="openDetail(${index})">
+        grid.innerHTML = currentData.map((item, i) => `
+            <div class="card" onclick="openDetail(${i})">
                 <div class="card-head"><span class="name">${item.client_name}</span><span class="date">${item.created_at.split(' ')[0]}</span></div>
-                <div class="note">${item.note || "無備註"}</div>
-                ${heatHtml}
-            </div>`;
-        });
-        grid.innerHTML = html;
+                <div class="note">${item.note||'無'}</div>
+            </div>`).join('');
     }
 
-    function openDetail(index) {
+    async function openDetail(index) {
         selectedItem = currentData[index];
-        setText('mName', selectedItem.client_name);
-        setText('mSolar', selectedItem.solar_date);
-        setText('mHour', selectedItem.hour + '時');
-        setText('mPhone', selectedItem.phone || '');
-        setText('mTags', (selectedItem.tags || []).join(', '));
+        document.getElementById('mName').innerText = selectedItem.client_name;
         document.getElementById('mNote').value = selectedItem.note || '';
         
-        const aiContent = (selectedItem.ai_log && selectedItem.ai_log.saved_content) ? selectedItem.ai_log.saved_content : "無 AI 紀錄";
-        setText('mAi', aiContent);
+        // Consent Status
+        const badge = document.getElementById('consentBadge');
+        if(selectedItem.consent_signed) { badge.innerText="已簽署"; badge.className="status-badge status-signed"; }
+        else { badge.innerText="未簽署"; badge.className="status-badge status-unsigned"; }
+        document.getElementById('qrcode').innerHTML = ""; 
+        document.getElementById('qrcode').style.display = "none";
 
-        // Setup Audio if exists
-        const playerCont = document.getElementById('audioPlayerContainer');
-        const player = document.getElementById('audioPlayer');
-        if(selectedItem.audio_url) {
-            playerCont.style.display = 'block';
-            player.src = selectedItem.audio_url;
-        } else {
-            playerCont.style.display = 'none';
-            player.src = "";
-        }
+        // Load Relations
+        renderRelations();
+        
+        // Auto Scan Risks
+        await scanRisks();
 
         switchTab('basic');
         document.getElementById('detailModal').style.display = 'flex';
     }
 
-    function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
-    function setText(id, text) { document.getElementById(id).innerText = text; }
-    
-    function switchTab(tabName) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        const idx = tabName==='basic'?0 : (tabName==='media'?1:2);
-        document.querySelectorAll('.tab')[idx].classList.add('active');
-        document.getElementById(`tab-${tabName}`).classList.add('active');
+    function renderRelations() {
+        const list = document.getElementById('relList');
+        const rels = selectedItem.relations || [];
+        list.innerHTML = rels.map((r, i) => `
+            <tr>
+                <td>${r.relation}</td><td>${r.name}</td><td>${r.solar_date}</td><td>${r.hour}</td>
+                <td><button class="btn btn-danger" style="padding:2px 6px; font-size:0.7em;" onclick="removeRel(${i})">×</button></td>
+            </tr>`).join('');
     }
 
-    // [功能] 上傳並轉錄
-    async function uploadAndTranscribe() {
-        const fileInput = document.getElementById('audioInput');
-        if (fileInput.files.length === 0) { alert("請先選擇錄音檔"); return; }
-        
-        const statusDiv = document.getElementById('transcribeStatus');
-        statusDiv.innerText = "⏳ 正在上傳並轉錄 (檔案較大時需數分鐘)...";
-        
-        const formData = new FormData();
-        formData.append("file", fileInput.files[0]);
-
-        try {
-            const res = await fetch('/api/transcribe_audio', { method: 'POST', body: formData });
-            const data = await res.json();
-            
-            if (data.text) {
-                statusDiv.innerText = "✅ 轉錄完成！已追加至筆記。";
-                
-                // 更新筆記內容
-                const noteArea = document.getElementById('mNote');
-                const timeStr = new Date().toLocaleString();
-                const newText = `\n\n--- [🎙️ 語音轉錄 ${timeStr}] ---\n${data.text}`;
-                noteArea.value += newText;
-                
-                // 更新本地物件並存檔
-                selectedItem.note = noteArea.value;
-                selectedItem.audio_url = data.path; // 更新音檔路徑
-                
-                // 顯示播放器
-                document.getElementById('audioPlayer').src = data.path;
-                document.getElementById('audioPlayerContainer').style.display = 'block';
-                
-                await updateNote(); // 自動儲存到後端
-            } else {
-                statusDiv.innerText = "❌ 轉錄失敗：" + JSON.stringify(data);
-            }
-        } catch (e) {
-            statusDiv.innerText = "❌ 連線錯誤";
-        }
-    }
-
-    // [功能] 更新筆記 (手動或自動)
-    async function updateNote() {
-        selectedItem.note = document.getElementById('mNote').value;
-        // 這裡我們需要一個更新 API，目前用 save_record 覆蓋 (簡化做法)
-        // 注意：為了完整性，這裡重組了 save_record 所需格式
-        const payload = {
-            solar_date: selectedItem.solar_date,
-            gender: selectedItem.gender,
-            hour: selectedItem.hour,
-            target_year: selectedItem.target_year,
-            client_name: selectedItem.client_name,
-            phone: selectedItem.phone,
-            tags: selectedItem.tags,
-            note: selectedItem.note,
-            ai_log: selectedItem.ai_log,
-            audio_url: selectedItem.audio_url // 確保音檔連結被保存
-        };
-        
-        // 實際上應該要有 update API，這裡為了展示先不實作複雜的 update
-        // 在正式版建議新增 /api/update_record 
-        alert("筆記已更新 (前端暫存，請按 [儲存] 或離開時確認)");
-    }
-
-    // [功能] 生成 PDF
-    async function generatePDF() {
-        // 1. 填入資料到隱藏模板
-        setText('repName', selectedItem.client_name);
-        setText('repDate', new Date().toLocaleDateString());
-        setText('repSolar', selectedItem.solar_date);
-        setText('repHour', selectedItem.hour + '時');
-        setText('repTags', (selectedItem.tags || []).join(', '));
-        
-        const aiText = (selectedItem.ai_log && selectedItem.ai_log.saved_content) ? selectedItem.ai_log.saved_content : "無資料";
-        document.getElementById('repAiContent').innerText = aiText;
-        document.getElementById('repNoteContent').innerText = selectedItem.note || "無";
-
-        // 2. 截圖並生成
-        const { jsPDF } = window.jspdf;
-        const element = document.getElementById('reportTemplate');
-        
-        html2canvas(element, { scale: 2 }).then(canvas => {
-            const imgData = canvas.toDataURL('image/jpeg', 1.0);
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`達摩戰略報告_${selectedItem.client_name}.pdf`);
+    function addRelation() {
+        if(!selectedItem.relations) selectedItem.relations = [];
+        selectedItem.relations.push({
+            relation: document.getElementById('relRelation').value,
+            name: document.getElementById('relName').value,
+            solar_date: document.getElementById('relDate').value,
+            hour: document.getElementById('relHour').value,
+            gender: 1 // 簡化預設
         });
+        renderRelations();
+        updateNote(true); // 自動存檔並掃描
     }
 
-    function restoreToDashboard() {
-        if(!selectedItem) return;
-        localStorage.setItem('damo_restore_data', JSON.stringify(selectedItem));
-        window.location.href = '/';
+    function removeRel(i) {
+        selectedItem.relations.splice(i, 1);
+        renderRelations();
+        updateNote(false);
     }
-    
-    async function deleteCurrentItem() {
-        if(!confirm("確定刪除？")) return;
+
+    async function updateNote(autoScan=false) {
+        selectedItem.note = document.getElementById('mNote').value;
+        // 呼叫 save_record (需確保後端支援 relations 欄位更新)
+        // 為了簡化，這裡假設 save_record 是 upsert 邏輯
         try {
-            await fetch(`/api/delete_record/${selectedItem.id}`, {method:'DELETE'});
-            closeModal(); searchData();
-        } catch(e) { alert("錯誤"); }
+            await fetch('/api/save_record', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(selectedItem)});
+            if(autoScan) await scanRisks();
+            else alert("已存檔");
+        } catch(e) { console.error(e); }
+    }
+
+    async function scanRisks() {
+        if(!selectedItem.relations || selectedItem.relations.length === 0) return;
+        const banner = document.getElementById('riskBanner');
+        
+        try {
+            // 呼叫後端掃描 API
+            const res = await fetch('/api/scan_family_risks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(selectedItem)});
+            const result = await res.json();
+            
+            if(result.alerts && result.alerts.length > 0) {
+                const text = result.alerts.map(a => `${a.relation}${a.name}(${a.risk})`).join('、');
+                document.getElementById('riskText').innerText = text;
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        } catch(e) { console.error("掃描失敗", e); }
+    }
+
+    function generateConsent() {
+        const qrDiv = document.getElementById('qrcode');
+        qrDiv.innerHTML = "";
+        qrDiv.style.display = "block";
+        const url = `${window.location.origin}/consent_page?id=${selectedItem.id}`;
+        new QRCode(qrDiv, { text: url, width: 128, height: 128 });
+        alert(`已產生連結：\n${url}\n請讓客戶掃描簽名。`);
+    }
+
+    function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
+    function switchTab(t) {
+        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+        document.getElementById(`tab-${t}`).classList.add('active');
     }
 
     searchData();
