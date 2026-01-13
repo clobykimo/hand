@@ -291,6 +291,136 @@
 </div>
 
 <script>
+    // ... (前段變數與函數保持不變) ...
+
+    // [V3.5] 稽核表逆推邏輯 (配合 40~80 分數區間調整門檻)
+    function getInteractionDetails(meEl, score) {
+        const PRODUCING = {'水':'木', '木':'火', '火':'土', '土':'金', '金':'水'};
+        const CONTROLLING = {'水':'火', '火':'金', '金':'木', '木':'土', '土':'水'};
+        const PRODUCED_BY = Object.fromEntries(Object.entries(PRODUCING).map(a => a.reverse()));
+        const CONTROLLED_BY = Object.fromEntries(Object.entries(CONTROLLING).map(a => a.reverse()));
+
+        let targetEl = "?", relationName = "", icon = "", desc = "";
+
+        // 配合新分數調整判斷門檻
+        if (score >= 80) { // 生我 (80)
+            targetEl=PRODUCED_BY[meEl]; relationName="大吉 (生我)"; icon=`<span style="color:#888;">環境${targetEl}</span> <span style="color:var(--status-best); font-weight:bold;">滋養➝</span> <span style="color:#fff;">我${meEl}</span>`; desc="貴人相助，資源自動上門"; 
+        }
+        else if (score >= 70) { // 比旺 (70)
+            targetEl=meEl; relationName="吉 (比旺)"; icon=`<span style="color:#888;">環境${targetEl}</span> <span style="color:var(--status-good); font-weight:bold;">幫扶＝</span> <span style="color:#fff;">我${meEl}</span>`; desc="朋友相挺，順水推舟"; 
+        }
+        else if (score >= 60) { // 我生 (60)
+            targetEl=PRODUCING[meEl]; relationName="平 (我生)"; icon=`<span style="color:#fff;">我${meEl}</span> <span style="color:#aaa;">付出➝</span> <span style="color:#888;">環境${targetEl}</span>`; desc="才華展現，但會比較累"; 
+        }
+        else if (score >= 50) { // 我剋 (50)
+            targetEl=CONTROLLING[meEl]; relationName="勞 (我剋)"; icon=`<span style="color:#fff;">我${meEl}</span> <span style="color:#d69e2e;">去征服⚔️</span> <span style="color:#888;">環境${targetEl}</span>`; desc="掌控局勢，需勞心勞力"; 
+        }
+        else { // 剋我 (40)
+            targetEl=CONTROLLED_BY[meEl]; relationName="凶 (剋我)"; icon=`<span style="color:#888;">環境${targetEl}</span> <span style="color:var(--status-bad);">來打擊⚔️</span> <span style="color:#fff;">我${meEl}</span>`; desc="壓力巨大，易受傷損財"; 
+        }
+        return { targetEl, relationName, icon, desc };
+    }
+
+    function openAuditModal() {
+        if (!globalLastResult || !globalTrendData) { alert("請先排盤"); return; }
+
+        const modal = document.getElementById('auditModal');
+        const contentDiv = modal.querySelector('.modal-content');
+        
+        contentDiv.style.cssText = `background-color: #1e2732; border: 1px solid var(--gold); border-radius: 8px; width: 95%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; padding: 0; box-shadow: 0 0 50px rgba(0,0,0,0.9);`;
+
+        const currentYear = document.getElementById('tYear').value;
+        const headerHTML = `
+            <div style="padding:15px 20px; border-bottom:1px solid #444; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; background:#151b24; border-radius:8px 8px 0 0;">
+                <h3 style="margin:0; color:var(--gold);">📊 戰略算分稽核表 (年份: <span id="auditYear">${currentYear}</span>)</h3>
+                <button onclick="document.getElementById('auditModal').style.display='none'" style="background:none; border:none; color:#888; font-size:1.5em; cursor:pointer;">×</button>
+            </div>
+        `;
+
+        // [更新] 指南中的分數範圍說明 (40~80)
+        const bodyStartHTML = `
+            <div style="padding:20px; overflow-y:auto; flex:1;">
+                <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:6px; margin-bottom:15px; font-size:0.9em; color:#ccc; line-height:1.6;">
+                    <strong style="color:var(--gold);">💡 計分公式說明 (V8.1 平衡版)</strong><br>
+                    <span style="color:var(--cyan);">最終分數</span> = <span style="color:#fff;">運氣分</span> + <span style="color:#ffd700;">宮位分</span> + <span style="color:#4fd1c5;">人和分</span><br>
+                    <ul style="margin:5px 0 0 20px; padding:0; color:#aaa;">
+                        <li><strong>運氣分：</strong>流年環境生剋 (範圍：40~80分)</li>
+                        <li><strong>宮位分 (L2)：</strong>坐守星宿品階 (+30 / +10 / -20)</li>
+                        <li><strong>人和分 (L3)：</strong>歲數星動態加權 (+10 / +5 / -10)</li>
+                    </ul>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse: collapse; font-size:0.9em; color:#ddd;">
+                        <thead style="background:#252f3a; color:var(--cyan);">
+                            <tr>
+                                <th style="padding:10px; text-align:left;">項目</th>
+                                <th style="padding:10px; text-align:left;">互動</th>
+                                <th style="padding:10px; text-align:right; color:#bbb;">運氣(40-80)</th>
+                                <th style="padding:10px; text-align:right; color:#bbb;">宮位(L2)</th>
+                                <th style="padding:10px; text-align:right; color:#bbb;">人和(L3)</th>
+                                <th style="padding:10px; text-align:right; border-left:1px solid #444; color:var(--gold);">原始</th>
+                                <th style="padding:10px; text-align:right; color:var(--cyan);">最終</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditTableBody">
+        `;
+
+        // ... (後續表格生成邏輯保持不變，與 V9.9.16 相同) ...
+        let rowsHTML = '';
+        let dataIndex = -1;
+        if (globalTrendData.axis_labels) {
+            const tY = String(document.getElementById('tYear').value);
+            dataIndex = globalTrendData.axis_labels.findIndex(l => (Array.isArray(l)?l.join(""):String(l)).includes(tY));
+            if (dataIndex === -1 && globalTrendData.axis_labels.length > 0) dataIndex = Math.floor(globalTrendData.axis_labels.length/2);
+        }
+
+        if (dataIndex === -1) {
+            rowsHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">無法取得此年份數據</td></tr>';
+        } else {
+            const renheObj = globalTrendData.renhe_scores[dataIndex];
+            const renheScore = renheObj ? renheObj.score : 0;
+            const renheStar = renheObj ? renheObj.star : "-";
+
+            globalLastResult.aspects.forEach(aspect => {
+                const name = aspect.name;
+                const baseScore = globalTrendData.datasets[name][dataIndex]; 
+                const gradeScore = globalTrendData.adjustments[name][dataIndex];
+                
+                const rawSum = baseScore + gradeScore + renheScore;
+                const finalScore = Math.max(5, Math.min(95, rawSum));
+                const details = getInteractionDetails(aspect.element, baseScore);
+
+                let gradeColor = gradeScore > 0 ? '#ffd700' : (gradeScore < 0 ? '#ff4d4d' : '#666');
+                let renheColor = renheScore > 0 ? '#4fd1c5' : (renheScore < 0 ? '#ff4d4d' : '#666');
+
+                rowsHTML += `
+                    <tr style="border-bottom:1px solid #333;">
+                        <td style="padding:10px;">
+                            <div style="font-weight:bold; color:var(--cyan);">${name}</div>
+                            <div style="font-size:0.8em; color:#888;">${aspect.zhi}宮 ${aspect.star}</div>
+                        </td>
+                        <td style="padding:10px; font-family:monospace; font-size:0.9em;">${details.icon}</td>
+                        <td style="padding:10px; text-align:right; font-family:monospace; color:#bbb; font-size:1.1em;">${baseScore}</td>
+                        <td style="padding:10px; text-align:right; font-family:monospace; color:${gradeColor}; font-size:0.9em;">${gradeScore>0?'+'+gradeScore:gradeScore}</td>
+                        <td style="padding:10px; text-align:right; font-family:monospace; color:${renheColor}; font-size:0.9em;">
+                            ${renheScore>0?'+'+renheScore:renheScore}<br>
+                            <span style="font-size:0.7em; color:#888;">(${renheStar})</span>
+                        </td>
+                        <td style="padding:10px; text-align:right; border-left:1px solid #444; color:#ddd; font-family:monospace; font-size:1.1em;">${rawSum}</td>
+                        <td style="padding:10px; text-align:right;">
+                            <div style="background:${finalScore>=80?'var(--status-best)':(finalScore<=40?'var(--status-bad)':'#444')}; color:#1a2634; padding:2px 8px; border-radius:4px; font-weight:bold;">${finalScore}</div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        const bodyEndHTML = `</tbody></table></div></div>`;
+        contentDiv.innerHTML = headerHTML + bodyStartHTML + rowsHTML + bodyEndHTML;
+        modal.style.display = 'flex';
+    }
+
+    // ... (其餘腳本保持不變) ...
     // 1. 全域變數
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
     const STAR_TRAITS = { '天貴': { type: '吉', keyword: '貴人/顯赫' }, '天厄': { type: '凶', keyword: '勞碌/疾厄' }, '天權': { type: '平', keyword: '權力/社交' }, '天破': { type: '凶', keyword: '消耗/破損' }, '天奸': { type: '平', keyword: '機智/變動' }, '天文': { type: '吉', keyword: '智慧/文采' }, '天福': { type: '吉', keyword: '福氣/財祿' }, '天驛': { type: '平', keyword: '奔波/變動' }, '天孤': { type: '凶', keyword: '孤獨/獨立' }, '天刃': { type: '凶', keyword: '剛強/血光' }, '天藝': { type: '平', keyword: '才藝/技術' }, '天壽': { type: '吉', keyword: '長壽/圓融' } };
@@ -299,7 +429,7 @@
     let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
     let isAnimEnabled = false;
 
-    // 2. 基礎工具
+    // 2. 基礎工具 (略...請保持您原有的代碼，因為上方只修改了 openAuditModal)
     function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
     function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
     function toggleCard(bodyId) { const body = document.getElementById(bodyId); const arrow = body.previousElementSibling.querySelector('.arrow-icon'); if (body.classList.contains('collapsed')) { body.classList.remove('collapsed'); if(arrow) arrow.classList.remove('collapsed'); } else { body.classList.add('collapsed'); if(arrow) arrow.classList.add('collapsed'); } }
@@ -570,125 +700,11 @@
     function closeSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
     function toggleTag(el) { el.classList.toggle('selected'); }
     function openAiNote() { const t = document.getElementById('aiResponseArea').innerText; document.getElementById('crmAiContent').value = (t.includes('請點擊')?'':t); }
-    async function confirmSave() { /* ...同前... */ }
+    async function confirmSave() { const data = { solar_date: document.getElementById('solarDate').value, gender: parseInt(document.getElementById('gender').value), hour: document.getElementById('hour').value, target_year: parseInt(document.getElementById('tYear').value), client_name: document.getElementById('crmName').value, phone: document.getElementById('crmPhone').value, note: document.getElementById('crmNote').value, ai_log: {saved_content: document.getElementById('crmAiContent').value, click_heatmap: aspectClickCounts} }; try { const res = await fetch('/api/save_record', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); if((await res.json()).status === 'success') { alert("已儲存"); closeSaveModal(); loadHistory(); } else alert("失敗"); } catch(e) { alert("錯誤"); } }
     async function loadHistory() { window.location.href = '/crm'; }
-    function restoreFromHistory(item) { /* ...同前... */ }
-    async function callAIWithMode(mode) { /* ...同前... */ }
+    function restoreFromHistory(item) { document.getElementById('solarDate').value = item.solar_date; document.getElementById('gender').value = item.gender; document.getElementById('hour').value = item.hour; document.getElementById('tYear').value = item.target_year || 2026; document.getElementById('tMonth').value = 1; document.getElementById('tDay').value = 1; document.getElementById('targetScope').value = 'year'; updateFormUI(); alert(`已載入：${item.client_name}\n(自動切換為流年模式)`); setTimeout(() => calculate(), 200); }
+    async function callAIWithMode(mode) { if (!globalTrendData) { alert("請先排盤"); return; } const prompt = `分析${lastActiveAspect}，模式:${mode}`; document.getElementById('aiResponseArea').innerText = "AI 思考中..."; try { const res = await fetch('/api/ask_ai', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:prompt})}); const d = await res.json(); document.getElementById('aiResponseArea').innerText = d.reply; } catch(e) { document.getElementById('aiResponseArea').innerText = "失敗"; } }
 
-    // [V3.4] 稽核表：逆推互動邏輯 (支援雙重加權顯示)
-    function getInteractionDetails(meEl, score) {
-        // ... (同前，略) ...
-        const PRODUCING = {'水':'木', '木':'火', '火':'土', '土':'金', '金':'水'};
-        const CONTROLLING = {'水':'火', '火':'金', '金':'木', '木':'土', '土':'水'};
-        const PRODUCED_BY = Object.fromEntries(Object.entries(PRODUCING).map(a => a.reverse()));
-        const CONTROLLED_BY = Object.fromEntries(Object.entries(CONTROLLING).map(a => a.reverse()));
-        let targetEl = "?", relationName = "", icon = "", desc = "";
-        if (score >= 95) { targetEl=PRODUCED_BY[meEl]; relationName="大吉 (生我)"; icon=`<span style="color:#888;">環境${targetEl}</span> <span style="color:var(--status-best); font-weight:bold;">滋養➝</span> <span style="color:#fff;">我${meEl}</span>`; desc="貴人相助，資源自動上門"; }
-        else if (score >= 85) { targetEl=meEl; relationName="吉 (比旺)"; icon=`<span style="color:#888;">環境${targetEl}</span> <span style="color:var(--status-good); font-weight:bold;">幫扶＝</span> <span style="color:#fff;">我${meEl}</span>`; desc="朋友相挺，順水推舟"; }
-        else if (score >= 70) { targetEl=PRODUCING[meEl]; relationName="平 (我生)"; icon=`<span style="color:#fff;">我${meEl}</span> <span style="color:#aaa;">付出➝</span> <span style="color:#888;">環境${targetEl}</span>`; desc="才華展現，但會比較累"; }
-        else if (score >= 50) { targetEl=CONTROLLING[meEl]; relationName="勞 (我剋)"; icon=`<span style="color:#fff;">我${meEl}</span> <span style="color:#d69e2e;">去征服⚔️</span> <span style="color:#888;">環境${targetEl}</span>`; desc="掌控局勢，需勞心勞力"; }
-        else { targetEl=CONTROLLED_BY[meEl]; relationName="凶 (剋我)"; icon=`<span style="color:#888;">環境${targetEl}</span> <span style="color:var(--status-bad);">來打擊⚔️</span> <span style="color:#fff;">我${meEl}</span>`; desc="壓力巨大，易受傷損財"; }
-        return { targetEl, relationName, icon, desc };
-    }
-
-    function openAuditModal() {
-        if (!globalLastResult || !globalTrendData) { alert("請先排盤"); return; }
-
-        const modal = document.getElementById('auditModal');
-        const contentDiv = modal.querySelector('.modal-content');
-        
-        contentDiv.style.cssText = `background-color: #1e2732; border: 1px solid var(--gold); border-radius: 8px; width: 95%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; padding: 0; box-shadow: 0 0 50px rgba(0,0,0,0.9);`;
-
-        const currentYear = document.getElementById('tYear').value;
-        const headerHTML = `
-            <div style="padding:15px 20px; border-bottom:1px solid #444; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; background:#151b24; border-radius:8px 8px 0 0;">
-                <h3 style="margin:0; color:var(--gold);">📊 戰略算分稽核表 (年份: <span id="auditYear">${currentYear}</span>)</h3>
-                <button onclick="document.getElementById('auditModal').style.display='none'" style="background:none; border:none; color:#888; font-size:1.5em; cursor:pointer;">×</button>
-            </div>
-        `;
-
-        const bodyStartHTML = `
-            <div style="padding:20px; overflow-y:auto; flex:1;">
-                <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:6px; margin-bottom:15px; font-size:0.9em; color:#ccc; line-height:1.6;">
-                    <strong style="color:var(--gold);">💡 雙重加權公式</strong><br>
-                    <span style="color:var(--cyan);">最終分數</span> = <span style="color:#fff;">運氣分</span> + <span style="color:#ffd700;">宮位分</span> + <span style="color:#4fd1c5;">人和分</span><br>
-                    <ul style="margin:5px 0 0 20px; padding:0; color:#aaa;">
-                        <li><strong>宮位分 (Level 2)：</strong>看該宮位坐守的星宿 (天貴+30, 天厄-20...)</li>
-                        <li><strong>人和分 (Level 3)：</strong>看該年「歲數」走到哪顆星 (天貴+10, 天權+5, 天厄-10...)</li>
-                    </ul>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table style="width:100%; border-collapse: collapse; font-size:0.9em; color:#ddd;">
-                        <thead style="background:#252f3a; color:var(--cyan);">
-                            <tr>
-                                <th style="padding:10px; text-align:left;">項目</th>
-                                <th style="padding:10px; text-align:left;">互動</th>
-                                <th style="padding:10px; text-align:right; color:#bbb;">運氣</th>
-                                <th style="padding:10px; text-align:right; color:#bbb;">宮位(L2)</th>
-                                <th style="padding:10px; text-align:right; color:#bbb;">人和(L3)</th>
-                                <th style="padding:10px; text-align:right; border-left:1px solid #444; color:var(--gold);">原始</th>
-                                <th style="padding:10px; text-align:right; color:var(--cyan);">最終</th>
-                            </tr>
-                        </thead>
-                        <tbody id="auditTableBody">
-        `;
-
-        let rowsHTML = '';
-        let dataIndex = -1;
-        if (globalTrendData.axis_labels) {
-            const tY = String(document.getElementById('tYear').value);
-            dataIndex = globalTrendData.axis_labels.findIndex(l => (Array.isArray(l)?l.join(""):String(l)).includes(tY));
-            if (dataIndex === -1 && globalTrendData.axis_labels.length > 0) dataIndex = Math.floor(globalTrendData.axis_labels.length/2);
-        }
-
-        if (dataIndex === -1) {
-            rowsHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">無法取得此年份數據</td></tr>';
-        } else {
-            // 取得該年的人和分數與星宿名
-            const renheObj = globalTrendData.renhe_scores[dataIndex];
-            const renheScore = renheObj ? renheObj.score : 0;
-            const renheStar = renheObj ? renheObj.star : "-";
-
-            globalLastResult.aspects.forEach(aspect => {
-                const name = aspect.name;
-                const baseScore = globalTrendData.datasets[name][dataIndex]; 
-                const gradeScore = globalTrendData.adjustments[name][dataIndex]; // Level 2
-                
-                const rawSum = baseScore + gradeScore + renheScore;
-                const finalScore = Math.max(5, Math.min(95, rawSum));
-                const details = getInteractionDetails(aspect.element, baseScore);
-
-                let gradeColor = gradeScore > 0 ? '#ffd700' : (gradeScore < 0 ? '#ff4d4d' : '#666');
-                let renheColor = renheScore > 0 ? '#4fd1c5' : (renheScore < 0 ? '#ff4d4d' : '#666');
-
-                rowsHTML += `
-                    <tr style="border-bottom:1px solid #333;">
-                        <td style="padding:10px;">
-                            <div style="font-weight:bold; color:var(--cyan);">${name}</div>
-                            <div style="font-size:0.8em; color:#888;">${aspect.zhi}宮 ${aspect.star}</div>
-                        </td>
-                        <td style="padding:10px; font-family:monospace; font-size:0.9em;">${details.icon}</td>
-                        <td style="padding:10px; text-align:right; font-family:monospace; color:#bbb; font-size:1.1em;">${baseScore}</td>
-                        <td style="padding:10px; text-align:right; font-family:monospace; color:${gradeColor}; font-size:0.9em;">${gradeScore>0?'+'+gradeScore:gradeScore}</td>
-                        <td style="padding:10px; text-align:right; font-family:monospace; color:${renheColor}; font-size:0.9em;">
-                            ${renheScore>0?'+'+renheScore:renheScore}<br>
-                            <span style="font-size:0.7em; color:#888;">(${renheStar})</span>
-                        </td>
-                        <td style="padding:10px; text-align:right; border-left:1px solid #444; color:#ddd; font-family:monospace; font-size:1.1em;">${rawSum}</td>
-                        <td style="padding:10px; text-align:right;">
-                            <div style="background:${finalScore>=80?'var(--status-best)':(finalScore<=40?'var(--status-bad)':'#444')}; color:#1a2634; padding:2px 8px; border-radius:4px; font-weight:bold;">${finalScore}</div>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        const bodyEndHTML = `</tbody></table></div></div>`;
-        contentDiv.innerHTML = headerHTML + bodyStartHTML + rowsHTML + bodyEndHTML;
-        modal.style.display = 'flex';
-    }
-
-    updateFormUI(); initMap();
     window.onload = function() {
         const restoreDataStr = localStorage.getItem('damo_restore_data');
         if (restoreDataStr) {
@@ -700,3 +716,4 @@
 </script>
 </body>
 </html>
+
