@@ -3,9 +3,11 @@ import os
 import sys
 import datetime
 import shutil
+import json
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, HTTPException, UploadFile, File
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from borax.calendars.lunardate import LunarDate
@@ -17,7 +19,12 @@ logger = logging.getLogger("DamoSystem")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API_Key"
 
-app = FastAPI(title="達摩一掌經命理戰略中台 - V6.1")
+# 確保錄音檔儲存目錄存在
+UPLOAD_DIR = "uploads"
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
+app = FastAPI(title="達摩一掌經命理戰略中台 - V6.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,6 +32,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 掛載靜態檔案，讓前端可以讀取儲存的錄音檔
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # ---------------- 資料庫初始化 ----------------
 db = None
@@ -116,12 +126,10 @@ class OnePalmSystem:
         
         for point in loop_range:
             trend_response["axis_labels"].append(point['label'])
-            # 簡易運算邏輯
-            target_el = STARS_INFO[ZHI[get_zhi_index(hierarchy['year']['zhi'])]]['element'] # 簡化: 這裡只對流年
+            target_el = STARS_INFO[ZHI[get_zhi_index(hierarchy['year']['zhi'])]]['element'] 
             if scope=='year': target_el = STARS_INFO[ZHI[get_zhi_index(hierarchy['big_luck']['zhi'])]]['element']
-            
             for i, name in enumerate(ASPECTS_ORDER):
-                star_info = STARS_INFO[ZHI[(system_obj.hour_idx + i) % 12]] # 簡化
+                star_info = STARS_INFO[ZHI[(system_obj.hour_idx + i) % 12]]
                 rel = get_element_relation(star_info['element'], target_el)
                 trend_response["datasets"][name].append(rel["score"])
                 trend_response["adjustments"][name].append(STAR_MODIFIERS.get(star_info['name'], 0))
@@ -148,34 +156,36 @@ async def read_crm():
         with open("crm.html", "r", encoding="utf-8") as f: return f.read()
     return "<h1>CRM 頁面建置中</h1>"
 
-# [V6.1] 新增：語音轉錄 API
+# [V6.2] 語音轉錄 API (含存檔與轉錄)
 @app.post("/api/transcribe_audio")
 async def transcribe_audio(file: UploadFile = File(...)):
-    if not OPENAI_API_KEY or "請在此填入" in OPENAI_API_KEY: return {"text": "⚠️ API Key 未設定，無法轉錄"}
+    if not OPENAI_API_KEY or "請在此填入" in OPENAI_API_KEY: return {"text": "⚠️ API Key 未設定，無法轉錄", "path": ""}
     
     try:
-        # 1. 暫存檔案
-        temp_filename = f"temp_{file.filename}"
-        with open(temp_filename, "wb") as buffer:
+        # 1. 產生唯一檔名並存檔
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_filename = f"{timestamp}_{file.filename}"
+        file_path = os.path.join(UPLOAD_DIR, safe_filename)
+        
+        with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
-        # 2. 呼叫 OpenAI Whisper
+        # 2. 呼叫 Whisper 轉錄
         from openai import OpenAI
         client = OpenAI(api_key=OPENAI_API_KEY)
         
-        with open(temp_filename, "rb") as audio_file:
+        with open(file_path, "rb") as audio_file:
             transcript = client.audio.transcriptions.create(
                 model="whisper-1", 
                 file=audio_file
             )
         
-        # 3. 清理暫存
-        os.remove(temp_filename)
+        # 3. 回傳文字與檔案路徑 (供前端儲存連結)
+        return {"text": transcript.text, "path": f"/uploads/{safe_filename}"}
         
-        return {"text": transcript.text}
     except Exception as e:
         logger.error(str(e))
-        return {"text": f"轉錄失敗: {str(e)}"}
+        return {"text": f"轉錄失敗: {str(e)}", "path": ""}
 
 @app.post("/api/calculate")
 async def calculate(req: UserRequest):
