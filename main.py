@@ -159,12 +159,8 @@ class OnePalmSystem:
         hierarchy["hour"] = {**STARS_INFO[ZHI[flow_hour_idx]], "zhi": ZHI[flow_hour_idx]}
         return hierarchy
 
-    # [V8.0] 雙重加權核心運算
+# [V8.3] 趨勢運算 (修正：主客對調邏輯)
     def calculate_full_trend(self, hierarchy, scope, lunar_data, target_data, system_obj):
-        # 初始化數據結構
-        # datasets: 運氣分 (Level 1)
-        # adjustments: 宮位星宿分 (Level 2)
-        # renhe_scores: 歲數星分 (Level 3) [NEW]
         trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "renhe_scores": [], "tooltips": {} }
         
         for name in ASPECTS_ORDER: 
@@ -189,13 +185,13 @@ class OnePalmSystem:
                 loop_range.append({'type': 'month', 'val': i, 'label': label})
         
         current_fy_idx = get_zhi_index(hierarchy['year']['zhi'])
+        pillar_indices = [system_obj.year_idx, system_obj.month_idx, system_obj.day_idx, system_obj.hour_idx]
         
         for point in loop_range:
             trend_response["axis_labels"].append(point['label'])
-            target_el = "土"
-            age_star_name = "" # 當歲數(流年/月) 的星宿名稱
+            target_el = "土" # 預設
             
-            # 計算該時間點的「天時星」 (流年星/流月星)
+            # 計算「流年/流月」的五行 -> 這是「主 (我)」
             if scope == 'year':
                 offset = point['val'] - target_data['lunar_year']
                 dynamic_fy_idx = get_next_position(current_fy_idx, offset, system_obj.direction)
@@ -205,31 +201,33 @@ class OnePalmSystem:
                 fm_idx = get_next_position(current_fy_idx, offset, system_obj.direction)
                 time_star_info = STARS_INFO[ZHI[fm_idx]]
             
-            target_el = time_star_info['element']
+            # 主 (Me) = 流年總命運
+            me_el = time_star_info['element'] 
             age_star_name = time_star_info['name']
 
-            # [Level 3] 計算人和(根基)分數：看「歲數」落在哪顆星
+            # Level 3: 人和分數
             renhe_val = RENHE_MODIFIERS.get(age_star_name, 0)
-            trend_response["renhe_scores"].append({
-                "score": renhe_val,
-                "star": age_star_name
-            })
+            trend_response["renhe_scores"].append({"score": renhe_val, "star": age_star_name})
 
-            # 計算各宮位分數
             for i, name in enumerate(ASPECTS_ORDER):
                 curr_idx = (system_obj.hour_idx + i) % 12
-                star_info = STARS_INFO[ZHI[curr_idx]]
+                aspect_star_info = STARS_INFO[ZHI[curr_idx]]
                 
-                # [Level 1] 運氣分 (五行生剋)
-                rel = get_element_relation(star_info['element'], target_el)
+                # 客 (Target) = 宮位/事件
+                guest_el = aspect_star_info['element']
+                
+                # [核心修正] 參數互換：(我=流年, 對象=宮位)
+                rel = get_element_relation(me=me_el, target=guest_el)
+                
                 trend_response["datasets"][name].append(rel["score"])
                 
-                # [Level 2] 品格分 (宮位星宿)
-                grade_score = STAR_MODIFIERS.get(star_info['name'], 0)
-                trend_response["adjustments"][name].append(grade_score)
+                # Level 2 & 3 (保持不變)
+                grade_score = STAR_MODIFIERS.get(aspect_star_info['name'], 0)
+                root_score = 10 if curr_idx in pillar_indices else 0
+                trend_response["adjustments"][name].append(grade_score + root_score)
                 
-                # Tooltip
-                trend_response["tooltips"][name].append(f"{star_info['name']} {rel['type']}")
+                # Tooltip 顯示優化
+                trend_response["tooltips"][name].append(f"{aspect_star_info['name']}(客) {rel['type']} {age_star_name}(我)")
                 
         return trend_response
 
@@ -370,5 +368,6 @@ async def ask_ai(req: AIRequest):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
+
 
 
