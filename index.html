@@ -283,6 +283,11 @@
 </div>
 
 <script>
+    // ==========================================
+    // 達摩一掌經 V9.9.11 (趨勢分級增強版 Script)
+    // ==========================================
+
+    // 1. 全域變數
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
     const STAR_TRAITS = { '天貴': { type: '吉', keyword: '貴人/顯赫' }, '天厄': { type: '凶', keyword: '勞碌/疾厄' }, '天權': { type: '平', keyword: '權力/社交' }, '天破': { type: '凶', keyword: '消耗/破損' }, '天奸': { type: '平', keyword: '機智/變動' }, '天文': { type: '吉', keyword: '智慧/文采' }, '天福': { type: '吉', keyword: '福氣/財祿' }, '天驛': { type: '平', keyword: '奔波/變動' }, '天孤': { type: '凶', keyword: '孤獨/獨立' }, '天刃': { type: '凶', keyword: '剛強/血光' }, '天藝': { type: '平', keyword: '才藝/技術' }, '天壽': { type: '吉', keyword: '長壽/圓融' } };
     const ROULETTE_PATH = ['巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰'];
@@ -290,6 +295,7 @@
     let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
     let isAnimEnabled = false;
 
+    // 2. 基礎工具
     function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
     function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
     function toggleCard(bodyId) { const body = document.getElementById(bodyId); const arrow = body.previousElementSibling.querySelector('.arrow-icon'); if (body.classList.contains('collapsed')) { body.classList.remove('collapsed'); if(arrow) arrow.classList.remove('collapsed'); } else { body.classList.add('collapsed'); if(arrow) arrow.classList.add('collapsed'); } }
@@ -330,6 +336,7 @@
         }
     }
 
+    // 3. 核心計算
     async function calculate() {
         document.getElementById('loadingOverlay').style.display='flex';
         const data = { 
@@ -385,7 +392,6 @@
         const h = result.hierarchy;
         const pillars = [ { k:'年', c:'var(--p-year)', z:result.base_chart.年柱.zhi, n:result.base_chart.年柱.name }, { k:'月', c:'var(--p-month)', z:result.base_chart.月柱.zhi, n:result.base_chart.月柱.name }, { k:'日', c:'var(--p-day)', z:result.base_chart.日柱.zhi, n:result.base_chart.日柱.name }, { k:'命', c:'var(--p-hour)', z:result.base_chart.時柱.zhi, n:result.base_chart.時柱.name } ];
         pillars.forEach(p => { addBadgeToCell(p.z, p.k, p.c, true); });
-        
         if(h.big_luck) addBadgeToCell(h.big_luck.zhi, '大運', 'var(--p-luck)', true);
         if(h.year) addBadgeToCell(h.year.zhi, '流年', 'var(--p-year)', true);
         if(['month','day','hour'].includes(document.getElementById('targetScope').value) && h.month) addBadgeToCell(h.month.zhi, '流月', 'var(--p-month)', true);
@@ -402,6 +408,7 @@
         fillLists(result, h);
     }
 
+    // 4. [修復] 列表與箭頭分級邏輯 (Momentum Grading)
     function fillLists(result, h) {
         let hHtml = `<div class="hierarchy-step"><span class="step-label">大運</span><span class="step-value">${result.hierarchy.big_luck.zhi}宮 ${result.hierarchy.big_luck.name}</span></div>`;
         hHtml += `<div class="hierarchy-step"><span class="step-label">流年</span><span class="step-value">${result.hierarchy.year.zhi}宮 ${result.hierarchy.year.name}</span></div>`;
@@ -424,12 +431,27 @@
 
         result.aspects.forEach(a => {
             let score = 50, trendHtml = '-';
+            
             if (dataIndex !== -1 && globalTrendData && globalTrendData.datasets[a.name]) {
                 const baseScores = globalTrendData.datasets[a.name];
                 const adjustments = globalTrendData.adjustments[a.name] || [];
                 const isAdjusted = document.getElementById('gradeCheckbox').checked;
                 let val = baseScores[dataIndex] + (isAdjusted ? (adjustments[dataIndex] || 0) : 0);
                 score = Math.max(5, Math.min(95, val));
+                
+                // [關鍵] 箭頭分級邏輯
+                if (dataIndex < baseScores.length - 1) {
+                    let nextVal = baseScores[dataIndex + 1] + (isAdjusted ? (adjustments[dataIndex + 1] || 0) : 0);
+                    let nextScore = Math.max(5, Math.min(95, nextVal));
+                    let diff = nextScore - score;
+
+                    if (diff > 20) trendHtml = '<span class="trend-icon up">↗↗↗</span>';
+                    else if (diff > 10) trendHtml = '<span class="trend-icon up">↗↗</span>';
+                    else if (diff > 5) trendHtml = '<span class="trend-icon up">↗</span>';
+                    else if (diff < -20) trendHtml = '<span class="trend-icon down">↘↘↘</span>';
+                    else if (diff < -10) trendHtml = '<span class="trend-icon down">↘↘</span>';
+                    else if (diff < -5) trendHtml = '<span class="trend-icon down">↘</span>';
+                }
             }
 
             let barColor = score>=80?'var(--status-best)':(score>=60?'var(--status-good)':'var(--status-bad)');
@@ -441,7 +463,7 @@
 
             aHtml += `
             <div id="row-${a.name}" class="aspect-row clickable" onclick="updateTrendChart('${a.name}')">
-                <div style="width:110px;"><div style="display:flex;align-items:center;"><span style="color:var(--cyan);font-weight:bold;font-size:1em;">${a.name}</span></div><div style="font-size:0.75em;color:#888;">${a.zhi}|<b style="color:#ddd;">${a.star}</b></div></div>
+                <div style="width:110px;"><div style="display:flex;align-items:center;"><span style="color:var(--cyan);font-weight:bold;font-size:1em;">${a.name}</span> <span style="margin-left:5px;">${trendHtml}</span></div><div style="font-size:0.75em;color:#888;">${a.zhi}|<b style="color:#ddd;">${a.star}</b></div></div>
                 <div style="flex:1;padding:0 5px;"><div style="display:flex;align-items:center;"><div style="width:70px;text-align:right;font-weight:bold;color:${barColor};">${score} ${compHtml}</div><div class="progress-container"><div class="progress-bar" style="width:${score}%;background:${barColor};"></div></div></div><div class="aspect-advice" style="font-size:0.8em;opacity:0.8;">${getStrategicAdvice(a.name, a.relation, a.star)}</div></div>
                 <div style="display:flex;align-items:center;gap:5px;"><div class="aspect-tag" style="background:${getStatusColor(a.relation)};font-size:0.7em;">${a.relation}</div><button class="mini-ai-btn" onclick="event.stopPropagation();lastActiveAspect='${a.name}';callAIWithMode('script')">🤖</button></div>
             </div>`;
@@ -533,3 +555,4 @@
 </script>
 </body>
 </html>
+
