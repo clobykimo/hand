@@ -21,7 +21,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經命理戰略中台 - V8.7 總命運特案修正版")
+app = FastAPI(title="達摩一掌經命理戰略中台 - V9.0 最終定案版")
 
 app.add_middleware(
     CORSMiddleware,
@@ -71,16 +71,21 @@ BAD_STARS = ['天厄星', '天破星', '天刃星']
 def get_zhi_index(zhi_char): return ZHI.index(zhi_char) if zhi_char in ZHI else 0
 def get_next_position(start_index, steps, direction=1): return (start_index + (steps * direction)) % 12
 
-# [V8.5] 五行生剋分數 (階梯版 80/75/50/35/20)
+# [V9.0] 五行生剋分數 (定案：80/75/50/35/20)
 def get_element_relation(me, target):
     # me = 主 (流年/大運), target = 客 (宮位/流年)
     PRODUCING = {'水': '木', '木': '火', '火': '土', '土': '金', '金': '水'}
     CONTROLING = {'水': '火', '火': '金', '金': '木', '木': '土', '土': '水'}
     
+    # 1. 生我 (客生主)：大吉 80
     if PRODUCING.get(target) == me: return {"type": "生我", "score": 80} 
+    # 2. 比旺 (客同主)：強吉 75
     if me == target: return {"type": "比旺", "score": 75}
+    # 3. 我生 (主生客)：平 50
     if PRODUCING.get(me) == target: return {"type": "我生", "score": 50}  
+    # 4. 我剋 (主剋客)：勞 35
     if CONTROLING.get(me) == target: return {"type": "我剋", "score": 35}  
+    # 5. 剋我 (客剋主)：凶 20
     if CONTROLING.get(target) == me: return {"type": "剋我", "score": 20}
         
     return {"type": "未知", "score": 50}
@@ -125,22 +130,30 @@ class OnePalmSystem:
 
     def calculate_hierarchy(self, current_age, target_data, scope):
         start_luck = get_next_position(self.hour_idx, 1, self.direction)
-        luck_stage = (current_age - 1) // 7
+        
+        # [V9.0] 鎖定：7年一運 (祖制)
+        # 1-7歲=0, 8-14歲=1, 15-21歲=2 ...
+        luck_stage = (current_age - 1) // 7 
+        
         big_luck_idx = get_next_position(start_luck, luck_stage, self.direction)
         hierarchy = {"big_luck": {**STARS_INFO[ZHI[big_luck_idx]], "zhi": ZHI[big_luck_idx]}}
+        
         t_year_zhi_idx = get_zhi_index(target_data['year_zhi'])
         flow_year_idx = get_next_position(big_luck_idx, t_year_zhi_idx, self.direction)
         hierarchy["year"] = {**STARS_INFO[ZHI[flow_year_idx]], "zhi": ZHI[flow_year_idx]}
+        
         flow_month_idx = get_next_position(flow_year_idx, target_data['lunar_month'] - 1, self.direction)
         hierarchy["month"] = {**STARS_INFO[ZHI[flow_month_idx]], "zhi": ZHI[flow_month_idx]}
+        
         flow_day_idx = get_next_position(flow_month_idx, target_data['lunar_day'] - 1, self.direction)
         hierarchy["day"] = {**STARS_INFO[ZHI[flow_day_idx]], "zhi": ZHI[flow_day_idx]}
+        
         t_hour_idx = get_zhi_index(target_data['hour_zhi'])
         flow_hour_idx = get_next_position(flow_day_idx, t_hour_idx, self.direction)
         hierarchy["hour"] = {**STARS_INFO[ZHI[flow_hour_idx]], "zhi": ZHI[flow_hour_idx]}
         return hierarchy
 
-    # [V8.7] 趨勢運算 (修正：流年模式的總命運，改為 流年(客) vs 大運(主))
+    # [V9.0] 趨勢運算 (含特案：流年總命運 改對照 大運)
     def calculate_full_trend(self, hierarchy, scope, lunar_data, target_data, system_obj):
         trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "renhe_scores": [], "tooltips": {} }
         for name in ASPECTS_ORDER: 
@@ -164,7 +177,7 @@ class OnePalmSystem:
         for point in loop_range:
             trend_response["axis_labels"].append(point['label'])
             
-            # 1. 計算該時間點的流年星/流月星 (Time Star)
+            # 計算該時間點的流年星/流月星 (Time Star)
             if scope == 'year':
                 offset = point['val'] - target_data['lunar_year']
                 dynamic_fy_idx = get_next_position(current_fy_idx, offset, system_obj.direction)
@@ -174,7 +187,7 @@ class OnePalmSystem:
                 fm_idx = get_next_position(current_fy_idx, offset, system_obj.direction)
                 time_star_info = STARS_INFO[ZHI[fm_idx]]
             
-            # 標準邏輯：主 (Me) = 流年總命運 (Time Star)
+            # 標準邏輯：主 (Me) = 流年總命運
             me_el = time_star_info['element'] 
             age_star_name = time_star_info['name']
             
@@ -185,19 +198,17 @@ class OnePalmSystem:
                 curr_idx = (system_obj.hour_idx + i) % 12
                 aspect_star_info = STARS_INFO[ZHI[curr_idx]]
                 
-                # 標準邏輯：客 (Target) = 宮位
+                # 客 (Target) = 宮位/事件
                 current_guest_el = aspect_star_info['element']
                 current_guest_name = aspect_star_info['name']
                 
-                # 標準邏輯：主 (Host) = 流年
+                # 主 (Host) = 流年
                 current_host_el = me_el
                 current_host_name = age_star_name
 
-                # [特案修正 V8.7] 
+                # [特案 V9.0] 總命運特判
                 # 若是「流年模式」且項目是「總命運」
-                # 定義翻轉：
-                #   我 (主/Host) = 大運 (Big Luck)
-                #   他 (客/Guest) = 流年 (Time Star) -> 因為此時總命運就是流年
+                # 定義：主=大運, 客=流年
                 if scope == 'year' and name == "總命運":
                     current_host_el = hierarchy['big_luck']['element']
                     current_host_name = hierarchy['big_luck']['name'] + "(大運)"
@@ -205,7 +216,7 @@ class OnePalmSystem:
                     current_guest_el = time_star_info['element']
                     current_guest_name = time_star_info['name'] + "(流年)"
 
-                # 計算關係 (主客對調：Host vs Guest)
+                # 計算關係 (Host vs Guest)
                 rel = get_element_relation(me=current_host_el, target=current_guest_el)
                 
                 trend_response["datasets"][name].append(rel["score"])
@@ -213,7 +224,6 @@ class OnePalmSystem:
                 root_score = 10 if curr_idx in pillar_indices else 0
                 trend_response["adjustments"][name].append(grade_score + root_score)
                 
-                # Tooltip 優化顯示
                 trend_response["tooltips"][name].append(f"{current_guest_name} {rel['type']} {current_host_name}")
                 
         return trend_response
@@ -277,8 +287,7 @@ async def calculate(req: UserRequest):
             curr_idx = (base_idx + i) % 12 
             guest_star_info = STARS_INFO[ZHI[curr_idx]] 
             
-            # [V8.7] 列表也需同步特案：若流年+總命運 -> 主=大運, 客=流年(即 guest_star_info)
-            # 因為在列表頁，總命運已經對應到流年星了
+            # 特案：總命運列表顯示同步
             current_host_el = host_star['element']
             if req.target_scope == 'year' and name == "總命運":
                 current_host_el = hierarchy['big_luck']['element']
