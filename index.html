@@ -285,9 +285,10 @@
 
 <script>
     // ==========================================
-    // 達摩一掌經 V9.9.7 (載入修復版)
+    // 達摩一掌經 V9.9.8 (同步修復版 Script)
     // ==========================================
 
+    // 1. 全域變數
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
     const STAR_TRAITS = { '天貴': { type: '吉', keyword: '貴人/顯赫' }, '天厄': { type: '凶', keyword: '勞碌/疾厄' }, '天權': { type: '平', keyword: '權力/社交' }, '天破': { type: '凶', keyword: '消耗/破損' }, '天奸': { type: '平', keyword: '機智/變動' }, '天文': { type: '吉', keyword: '智慧/文采' }, '天福': { type: '吉', keyword: '福氣/財祿' }, '天驛': { type: '平', keyword: '奔波/變動' }, '天孤': { type: '凶', keyword: '孤獨/獨立' }, '天刃': { type: '凶', keyword: '剛強/血光' }, '天藝': { type: '平', keyword: '才藝/技術' }, '天壽': { type: '吉', keyword: '長壽/圓融' } };
     const ROULETTE_PATH = ['巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰'];
@@ -295,6 +296,7 @@
     let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
     let isAnimEnabled = false;
 
+    // 2. 基礎工具
     function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
     function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
     function toggleCard(bodyId) { const body = document.getElementById(bodyId); const arrow = body.previousElementSibling.querySelector('.arrow-icon'); if (body.classList.contains('collapsed')) { body.classList.remove('collapsed'); if(arrow) arrow.classList.remove('collapsed'); } else { body.classList.add('collapsed'); if(arrow) arrow.classList.add('collapsed'); } }
@@ -335,6 +337,7 @@
         }
     }
 
+    // 3. 核心計算
     async function calculate() {
         document.getElementById('loadingOverlay').style.display='flex';
         const data = { 
@@ -390,6 +393,7 @@
         const h = result.hierarchy;
         const pillars = [ { k:'年', c:'var(--p-year)', z:result.base_chart.年柱.zhi, n:result.base_chart.年柱.name }, { k:'月', c:'var(--p-month)', z:result.base_chart.月柱.zhi, n:result.base_chart.月柱.name }, { k:'日', c:'var(--p-day)', z:result.base_chart.日柱.zhi, n:result.base_chart.日柱.name }, { k:'命', c:'var(--p-hour)', z:result.base_chart.時柱.zhi, n:result.base_chart.時柱.name } ];
         pillars.forEach(p => { addBadgeToCell(p.z, p.k, p.c, true); });
+        
         if(h.big_luck) addBadgeToCell(h.big_luck.zhi, '大運', 'var(--p-luck)', true);
         if(h.year) addBadgeToCell(h.year.zhi, '流年', 'var(--p-year)', true);
         if(['month','day','hour'].includes(document.getElementById('targetScope').value) && h.month) addBadgeToCell(h.month.zhi, '流月', 'var(--p-month)', true);
@@ -406,38 +410,49 @@
         fillLists(result, h);
     }
 
-    // [修復] 強制渲染列表，即使 TrendData 異常也能顯示
+    // 4. [修復] 渲染列表與圖表 - 數據同步修正
     function fillLists(result, h) {
-        let hHtml = `<div class="hierarchy-step"><span class="step-label">大運</span><span class="step-value">${h.big_luck.zhi}宮 ${h.big_luck.name}</span></div><div class="hierarchy-step"><span class="step-label">流年</span><span class="step-value">${h.year.zhi}宮 ${h.year.name}</span></div>`;
-        if(h.month) hHtml += `<div class="hierarchy-step"><span class="step-label">流月</span><span class="step-value">${h.month.zhi}宮 ${h.month.name}</span></div>`;
+        let hHtml = `<div class="hierarchy-step"><span class="step-label">大運</span><span class="step-value">${result.hierarchy.big_luck.zhi}宮 ${result.hierarchy.big_luck.name}</span></div>`;
+        hHtml += `<div class="hierarchy-step"><span class="step-label">流年</span><span class="step-value">${result.hierarchy.year.zhi}宮 ${result.hierarchy.year.name}</span></div>`;
+        if(result.hierarchy.month) hHtml += `<div class="hierarchy-step"><span class="step-label">流月</span><span class="step-value">${result.hierarchy.month.zhi}宮 ${result.hierarchy.month.name}</span></div>`;
         setHTML('hierarchyArea', hHtml);
 
         let aHtml = '';
         let dataIndex = -1;
         
-        // 嘗試抓取波形圖對應的時間點
+        // [關鍵修復] 尋找對應年份的索引，若找不到則強制使用中間值或0，確保圖表顯示
         if(globalTrendData && globalTrendData.axis_labels) {
+            const currentTargetYear = String(document.getElementById('tYear').value);
             dataIndex = globalTrendData.axis_labels.findIndex(l => {
-                let labelStr = Array.isArray(l) ? l.join("") : l;
-                return labelStr.includes(document.getElementById('tYear').value);
+                let labelStr = Array.isArray(l) ? l.join("") : String(l);
+                return labelStr.includes(currentTargetYear);
             });
-            if (dataIndex === -1) dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
+            // 防呆：如果找不到年份(可能格式不同)，就預設顯示正中間的那一年(通常就是當下)
+            if (dataIndex === -1 && globalTrendData.axis_labels.length > 0) {
+                dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
+            }
         }
 
         result.aspects.forEach(a => {
             let score = 50, trendHtml = '-';
-            // 如果有波形數據，則抓取分數；否則預設 50
+            // 只要 dataIndex 有效，就能抓到分數
             if (dataIndex !== -1 && globalTrendData && globalTrendData.datasets[a.name]) {
                 const baseScores = globalTrendData.datasets[a.name];
                 const adjustments = globalTrendData.adjustments[a.name] || [];
                 const isAdjusted = document.getElementById('gradeCheckbox').checked;
                 let val = baseScores[dataIndex] + (isAdjusted ? (adjustments[dataIndex] || 0) : 0);
                 score = Math.max(5, Math.min(95, val));
+                
+                if (dataIndex < baseScores.length - 1) {
+                    let nextVal = baseScores[dataIndex + 1] + (isAdjusted ? (adjustments[dataIndex + 1] || 0) : 0);
+                    let nextScore = Math.max(5, Math.min(95, nextVal));
+                    if(nextScore > score + 5) trendHtml = '<span class="trend-icon up">↗</span>';
+                    else if(nextScore < score - 5) trendHtml = '<span class="trend-icon down">↘</span>';
+                }
             }
 
             let barColor = score>=80?'var(--status-best)':(score>=60?'var(--status-good)':'var(--status-bad)');
             let compHtml = '';
-            // 加權顯示
             if(dataIndex !== -1 && document.getElementById('gradeCheckbox').checked && globalTrendData && (globalTrendData.adjustments[a.name]||[])[dataIndex]!==0) {
                let adj = globalTrendData.adjustments[a.name][dataIndex];
                compHtml = `<span class="score-composition">(${score-adj}<span class="${adj>0?'score-bonus':'score-penalty'}">${adj>0?'+':''}${adj}</span>)</span>`;
@@ -461,8 +476,8 @@
         document.getElementById('trendTitle').innerHTML = `時空運勢波形圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>`;
         const gradient = ctx.createLinearGradient(0, 0, 0, 250);
         gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
-        const targetStr = document.getElementById('tYear').value;
-        const pointBackgroundColors = labels.map((l) => { let s = Array.isArray(l)?l.join(""):l; return s.includes(targetStr)?'#ff4d4d':'#fff'; });
+        const targetStr = String(document.getElementById('tYear').value);
+        const pointBackgroundColors = labels.map((l) => { let s = Array.isArray(l)?l.join(""):String(l); return s.includes(targetStr)?'#ff4d4d':'#fff'; });
         
         trendChartInstance = new Chart(ctx, {
             type: 'line',
@@ -489,6 +504,7 @@
         if(activeRow) activeRow.classList.add('active-aspect');
     }
 
+    // 5. CRM & AI
     function openSaveModal() { document.getElementById('saveModal').style.display = 'flex'; openAiNote(); }
     function closeSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
     function toggleTag(el) { el.classList.toggle('selected'); }
@@ -500,31 +516,29 @@
     }
 
     async function loadHistory() {
-        try {
-            const res = await fetch('/api/get_history'); const history = await res.json();
-            let html = '<ul style="padding-left:10px; list-style:none;">';
-            history.forEach(item => {
-                const jsonStr = JSON.stringify(item).replace(/"/g, '&quot;');
-                html += `<li style="margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:5px; cursor:pointer;" onclick="restoreFromHistory(${jsonStr})"><b style="color:var(--gold);">${item.client_name}</b> <span style="color:#666;">${item.created_at.split(' ')[0]}</span><br><span style="color:#aaa;font-size:0.8em;">${item.note||'無備註'}</span></li>`;
-            });
-            document.getElementById('historyList').innerHTML = html + '</ul>';
-        } catch(e) { document.getElementById('historyList').innerText = "讀取失敗"; }
+        window.location.href = '/crm'; // 跳轉至 CRM
     }
 
-    // [修復] 還原功能：加入延遲與狀態更新，確保列表能顯示
+    // [修復] 還原功能：加入完善的參數設定與緩衝
     function restoreFromHistory(item) {
+        // 1. 填寫基本資料
         document.getElementById('solarDate').value = item.solar_date;
         document.getElementById('gender').value = item.gender;
         document.getElementById('hour').value = item.hour;
-        document.getElementById('tYear').value = item.target_year;
         
-        // 關鍵：更新 UI 狀態 (如農曆/國曆切換)
+        // 2. 填寫目標資料 (CRM 只存了 target_year，其他我們預設為 1)
+        document.getElementById('tYear').value = item.target_year || 2026;
+        document.getElementById('tMonth').value = 1; 
+        document.getElementById('tDay').value = 1;
+        document.getElementById('targetScope').value = 'year'; // 強制切回流年模式，避免複雜的日期錯誤
+        
+        // 3. 更新 UI (切換國曆/農曆顯示)
         updateFormUI(); 
         
-        alert(`已載入：${item.client_name}`);
+        alert(`已載入：${item.client_name}\n(系統將自動切換為流年模式)`);
         
-        // 給予一點緩衝時間讓 DOM 渲染完成後再計算
-        setTimeout(() => calculate(), 100);
+        // 4. 延遲執行計算，確保 DOM 已經被瀏覽器渲染完畢
+        setTimeout(() => calculate(), 200);
     }
 
     async function callAIWithMode(mode) {
@@ -536,16 +550,17 @@
 
     updateFormUI(); initMap();
     
-    // CRM 跳轉還原
+    // 6. CRM 跳轉還原入口
     window.onload = function() {
         const restoreDataStr = localStorage.getItem('damo_restore_data');
         if (restoreDataStr) {
             const item = JSON.parse(restoreDataStr);
-            restoreFromHistory(item);
+            restoreFromHistory(item); // 呼叫修復後的還原函數
             localStorage.removeItem('damo_restore_data');
         }
     };
 </script>
 </body>
 </html>
+
 
