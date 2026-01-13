@@ -32,6 +32,7 @@
         .card-body { overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), opacity 0.4s ease-in-out, margin-top 0.4s; max-height: 2000px; opacity: 1; margin-top: 15px; }
         .card-body.collapsed { max-height: 0; opacity: 0; margin-top: 0; }
         
+        /* Map Styles */
         .twelve-palaces-map { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 130px); gap: 12px; padding: 15px; margin-top: 0; background: rgba(0,0,0,0.2); border: 1px solid #444; border-radius: 8px; grid-template-areas: "si wu wei shen" "chen . . you" "mao . . xu" "yin chou zi hai"; }
         .grid-cell { position: relative; background: #2a3544; border: 1px solid #3f4a5a; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
         .grid-cell.active { border-color: var(--gold); background: #3a4555; }
@@ -47,6 +48,7 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
+        /* Dashboard Components */
         .aspect-row { border-bottom: 1px solid #333; padding: 14px 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: background 0.2s; }
         .aspect-row.clickable { cursor: pointer; border-left: 3px solid transparent; }
         .aspect-row.clickable:hover { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
@@ -71,7 +73,7 @@
         .score-bonus { color: #ffd700; }
         .score-penalty { color: #ff4d4d; }
 
-        /* [V9.9.6] 動畫開關樣式 */
+        /* 動畫開關樣式 */
         .switch-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 10px; }
         .switch-label { font-size: 0.8em; color: #888; font-weight: bold; }
         .switch { position: relative; display: inline-block; width: 36px; height: 18px; }
@@ -158,6 +160,7 @@
             📂 進入客戶戰情室 (CRM)
         </button>
         <button class="ctrl-btn active" style="width:100%; margin-top:10px; padding:10px; margin-left:0;" onclick="openSaveModal()">💾 儲存本次諮詢紀錄</button>
+        <button class="ctrl-btn" style="width:100%; margin-top:10px; padding:10px; margin-left:0; background:#4a5568; border-color:#718096;" onclick="openAuditModal()">📊 核對分數明細 (Debug)</button>
     </div>
 
     <div class="info-panel" id="resultArea">
@@ -165,7 +168,6 @@
             <h3 class="card-header" style="color:var(--gold);">
                 <div style="display:flex; align-items:center; width:100%">
                     <div style="white-space:nowrap;">戰略儀表板 <span id="lunarInfo" style="font-size:0.8em; color:#a0a0a0;"></span></div>
-                    
                     <div style="display:flex; align-items:center; margin-left:auto;">
                         <div class="switch-container">
                             <span class="switch-label">動畫</span>
@@ -182,7 +184,6 @@
                     </div>
                 </div>
             </h3>
-            
             <div class="twelve-palaces-map">
                 <div class="grid-cell" id="cell-巳"><div class="pillar-badges-container"></div><span class="cell-zhi">巳</span><span class="cell-star">天文</span><span class="cell-realm">仙道</span></div>
                 <div class="grid-cell" id="cell-午"><div class="pillar-badges-container"></div><span class="cell-zhi">午</span><span class="cell-star">天福</span><span class="cell-realm">佛道</span></div>
@@ -269,12 +270,10 @@
             </div>
         </div>
         <div class="form-group"><label>諮詢筆記</label><textarea id="crmNote" rows="2" placeholder="紀錄重點..."></textarea></div>
-        
         <div class="form-group">
             <label style="color:var(--gpt-color);">🤖 AI 戰略建議 (自動帶入/可編輯)</label>
             <textarea id="crmAiContent" rows="4" style="border-color:var(--gpt-color); color:#cfd8dc; font-size:0.9em;"></textarea>
         </div>
-
         <div class="modal-footer">
             <button class="ctrl-btn" onclick="closeSaveModal()">取消</button>
             <button class="ctrl-btn active" onclick="confirmSave()">確認儲存</button>
@@ -282,11 +281,22 @@
     </div>
 </div>
 
-<script>
-    // ==========================================
-    // 達摩一掌經 V9.9.13 (標準紅點 + 10/20/30趨勢版)
-    // ==========================================
+<div id="auditModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; width: 95%;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:15px;">
+            <h3 style="margin:0; color:var(--gold);">📊 戰略算分稽核表 (年份: <span id="auditYear"></span>)</h3>
+            <button onclick="document.getElementById('auditModal').style.display='none'" style="background:none; border:none; color:#888; font-size:1.5em; cursor:pointer;">×</button>
+        </div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse: collapse; font-size:0.9em; color:#ddd;">
+                <thead style="background:#151b24; color:var(--cyan);"><tr><th>標題</th></tr></thead>
+                <tbody id="auditTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
+<script>
     // 1. 全域變數
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
     const STAR_TRAITS = { '天貴': { type: '吉', keyword: '貴人/顯赫' }, '天厄': { type: '凶', keyword: '勞碌/疾厄' }, '天權': { type: '平', keyword: '權力/社交' }, '天破': { type: '凶', keyword: '消耗/破損' }, '天奸': { type: '平', keyword: '機智/變動' }, '天文': { type: '吉', keyword: '智慧/文采' }, '天福': { type: '吉', keyword: '福氣/財祿' }, '天驛': { type: '平', keyword: '奔波/變動' }, '天孤': { type: '凶', keyword: '孤獨/獨立' }, '天刃': { type: '凶', keyword: '剛強/血光' }, '天藝': { type: '平', keyword: '才藝/技術' }, '天壽': { type: '吉', keyword: '長壽/圓融' } };
@@ -392,7 +402,6 @@
         const h = result.hierarchy;
         const pillars = [ { k:'年', c:'var(--p-year)', z:result.base_chart.年柱.zhi, n:result.base_chart.年柱.name }, { k:'月', c:'var(--p-month)', z:result.base_chart.月柱.zhi, n:result.base_chart.月柱.name }, { k:'日', c:'var(--p-day)', z:result.base_chart.日柱.zhi, n:result.base_chart.日柱.name }, { k:'命', c:'var(--p-hour)', z:result.base_chart.時柱.zhi, n:result.base_chart.時柱.name } ];
         pillars.forEach(p => { addBadgeToCell(p.z, p.k, p.c, true); });
-        
         if(h.big_luck) addBadgeToCell(h.big_luck.zhi, '大運', 'var(--p-luck)', true);
         if(h.year) addBadgeToCell(h.year.zhi, '流年', 'var(--p-year)', true);
         if(['month','day','hour'].includes(document.getElementById('targetScope').value) && h.month) addBadgeToCell(h.month.zhi, '流月', 'var(--p-month)', true);
@@ -409,7 +418,7 @@
         fillLists(result, h);
     }
 
-    // 4. 列表與動能分級箭頭 (Momentum Grading - 自定義門檻)
+    // 4. [修復] 列表與動能分級箭頭 (Momentum Grading - 自定義門檻)
     function fillLists(result, h) {
         let hHtml = `<div class="hierarchy-step"><span class="step-label">大運</span><span class="step-value">${result.hierarchy.big_luck.zhi}宮 ${result.hierarchy.big_luck.name}</span></div>`;
         hHtml += `<div class="hierarchy-step"><span class="step-label">流年</span><span class="step-value">${result.hierarchy.year.zhi}宮 ${result.hierarchy.year.name}</span></div>`;
@@ -571,6 +580,160 @@
         try { const res = await fetch('/api/ask_ai', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:prompt})}); const d = await res.json(); document.getElementById('aiResponseArea').innerText = d.reply; } catch(e) { document.getElementById('aiResponseArea').innerText = "失敗"; }
     }
 
+    // [V3.0] 小白友善版稽核邏輯 (內含逆推輔助)
+    function getInteractionDetails(meEl, score) {
+        const ELEMENTS = ['水', '木', '火', '土', '金'];
+        const PRODUCING = {'水':'木', '木':'火', '火':'土', '土':'金', '金':'水'};
+        const CONTROLLING = {'水':'火', '火':'金', '金':'木', '木':'土', '土':'水'};
+        const PRODUCED_BY = Object.fromEntries(Object.entries(PRODUCING).map(a => a.reverse()));
+        const CONTROLLED_BY = Object.fromEntries(Object.entries(CONTROLLING).map(a => a.reverse()));
+
+        let targetEl = "?";
+        let relationName = "";
+        let icon = "";
+        let desc = "";
+
+        if (score >= 95) {
+            targetEl = PRODUCED_BY[meEl];
+            relationName = "大吉 (生我)";
+            icon = `<span style="color:#888;">環境${targetEl}</span> <span style="color:var(--status-best); font-weight:bold;">滋養➝</span> <span style="color:#fff;">我${meEl}</span>`;
+            desc = "貴人相助，資源自動上門";
+        } else if (score >= 85) {
+            targetEl = meEl;
+            relationName = "吉 (比旺)";
+            icon = `<span style="color:#888;">環境${targetEl}</span> <span style="color:var(--status-good); font-weight:bold;">幫扶＝</span> <span style="color:#fff;">我${meEl}</span>`;
+            desc = "朋友相挺，順水推舟";
+        } else if (score >= 70) {
+            targetEl = PRODUCING[meEl];
+            relationName = "平 (我生)";
+            icon = `<span style="color:#fff;">我${meEl}</span> <span style="color:#aaa;">付出➝</span> <span style="color:#888;">環境${targetEl}</span>`;
+            desc = "才華展現，但會比較累";
+        } else if (score >= 50) {
+            targetEl = CONTROLLING[meEl];
+            relationName = "勞 (我剋)";
+            icon = `<span style="color:#fff;">我${meEl}</span> <span style="color:#d69e2e;">去征服⚔️</span> <span style="color:#888;">環境${targetEl}</span>`;
+            desc = "掌控局勢，需勞心勞力";
+        } else {
+            targetEl = CONTROLLED_BY[meEl];
+            relationName = "凶 (剋我)";
+            icon = `<span style="color:#888;">環境${targetEl}</span> <span style="color:var(--status-bad);">來打擊⚔️</span> <span style="color:#fff;">我${meEl}</span>`;
+            desc = "壓力巨大，易受傷損財";
+        }
+        return { targetEl, relationName, icon, desc };
+    }
+
+    function openAuditModal() {
+        if (!globalLastResult || !globalTrendData) {
+            alert("請先執行「啟動全時空推演」");
+            return;
+        }
+
+        const modal = document.getElementById('auditModal');
+        const tbody = document.getElementById('auditTableBody');
+        const currentYear = document.getElementById('tYear').value;
+        document.getElementById('auditYear').innerText = currentYear;
+        
+        // 指南區塊
+        const guideDiv = document.createElement('div');
+        guideDiv.style.cssText = "background:rgba(255,255,255,0.05); padding:15px; border-radius:6px; margin-bottom:15px; font-size:0.9em; color:#ccc; line-height:1.6;";
+        guideDiv.innerHTML = `
+            <strong style="color:var(--gold);">💡 如何看懂這張表？</strong><br>
+            這張表展示了您的運勢分數是如何計算出來的，公式如下：<br>
+            <span style="color:var(--cyan);">最終分數</span> = <span style="color:#fff;">運氣分 (天時)</span> + <span style="color:var(--gold);">底氣分 (體質)</span>
+            <ul style="margin:5px 0 0 20px; padding:0; color:#aaa;">
+                <li><strong>運氣分 (A)：</strong>看今年的「流年環境」對您好不好？(環境生我=高分，環境剋我=低分)</li>
+                <li><strong>底氣分 (B)：</strong>看您原本命盤在這個宮位的「體質」強不強？(吉星=+30，凶星=-20)</li>
+                <li><strong>溢出/過低：</strong>系統分數限制在 5~95 分，超過會顯示「溢出」，低於會顯示「過低」。</li>
+            </ul>
+        `;
+
+        const contentDiv = modal.querySelector('.modal-content');
+        const oldGuide = contentDiv.querySelector('div[style*="background:rgba(255,255,255,0.05)"]');
+        if(oldGuide) oldGuide.remove();
+        const header = contentDiv.querySelector('div'); 
+        header.insertAdjacentElement('afterend', guideDiv);
+
+        // 表頭
+        const thead = document.querySelector('#auditModal thead tr');
+        thead.innerHTML = `
+            <th style="padding:10px; text-align:left;">項目 (我是誰)</th>
+            <th style="padding:10px; text-align:left;">互動圖示 (環境 vs 我)</th>
+            <th style="padding:10px; text-align:left;">白話解讀</th>
+            <th style="padding:10px; text-align:right; color:#bbb;" title="流年對我的影響">運氣分(A)<br><span style="font-size:0.7em">流年天時</span></th>
+            <th style="padding:10px; text-align:right; color:#bbb;" title="本命星宿的等級">底氣分(B)<br><span style="font-size:0.7em">星宿體質</span></th>
+            <th style="padding:10px; text-align:right; border-left:1px solid #444; color:var(--gold);">真實總分<br><span style="font-size:0.7em">A + B</span></th>
+            <th style="padding:10px; text-align:right; color:var(--cyan);">最終顯示<br><span style="font-size:0.7em">修正後</span></th>
+        `;
+        
+        tbody.innerHTML = ''; 
+
+        let dataIndex = -1;
+        if (globalTrendData.axis_labels) {
+            dataIndex = globalTrendData.axis_labels.findIndex(l => {
+                let labelStr = Array.isArray(l) ? l.join("") : String(l);
+                return labelStr.includes(currentYear);
+            });
+            if (dataIndex === -1 && globalTrendData.axis_labels.length > 0) {
+                dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
+            }
+        }
+
+        if (dataIndex === -1) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">無法取得此年份數據</td></tr>';
+            modal.style.display = 'flex';
+            return;
+        }
+
+        globalLastResult.aspects.forEach(aspect => {
+            const name = aspect.name;
+            const zhi = aspect.zhi;
+            const star = aspect.star;
+            const element = aspect.element; 
+            
+            const baseScore = globalTrendData.datasets[name][dataIndex]; 
+            const gradeScore = globalTrendData.adjustments[name][dataIndex];
+            const rawSum = baseScore + gradeScore;
+            const finalScore = Math.max(5, Math.min(95, rawSum));
+
+            const details = getInteractionDetails(element, baseScore);
+
+            let gradeColor = gradeScore > 0 ? '#ffd700' : (gradeScore < 0 ? '#ff4d4d' : '#666');
+            let gradeText = gradeScore > 0 ? `+${gradeScore} (強)` : (gradeScore < 0 ? `${gradeScore} (弱)` : `0 (平)`);
+            
+            let rawStyle = "font-family:monospace; font-size:1.1em; color:#ddd;";
+            let overflowNote = "";
+            if (rawSum > 95) { rawStyle += "color:#a3a3ff; font-weight:bold;"; overflowNote = "<br><span style='font-size:0.7em'>(太高了! 封頂)</span>"; }
+            else if (rawSum < 5) { rawStyle += "color:#ff4d4d; font-weight:bold;"; overflowNote = "<br><span style='font-size:0.7em'>(太慘了! 保底)</span>"; }
+
+            const row = `
+                <tr style="border-bottom:1px solid #333;">
+                    <td style="padding:10px;">
+                        <div style="font-weight:bold; color:var(--cyan); font-size:1.1em;">${name}</div>
+                        <div style="font-size:0.8em; color:#888;">${zhi}宮 ${star} (<span style="color:#fff;">五行屬${element}</span>)</div>
+                    </td>
+                    <td style="padding:10px; font-family:monospace; font-size:1em;">
+                        ${details.icon}
+                    </td>
+                    <td style="padding:10px;">
+                        <div style="color:#ddd; font-weight:bold;">${details.relationName}</div>
+                        <div style="font-size:0.8em; color:#aaa;">${details.desc}</div>
+                    </td>
+                    <td style="padding:10px; text-align:right; font-family:monospace; color:#bbb; font-size:1.1em;">${baseScore}</td>
+                    <td style="padding:10px; text-align:right; font-family:monospace; color:${gradeColor}; font-size:0.9em;">${gradeText}</td>
+                    <td style="padding:10px; text-align:right; border-left:1px solid #444; background:rgba(255,255,255,0.02);">
+                        <span style="${rawStyle}">${rawSum}</span>${overflowNote}
+                    </td>
+                    <td style="padding:10px; text-align:right;">
+                        <div style="background:${finalScore>=80?'var(--status-best)':(finalScore<=40?'var(--status-bad)':'#444')}; color:#1a2634; padding:2px 8px; border-radius:4px; display:inline-block; font-weight:bold;">${finalScore}</div>
+                    </td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+
+        modal.style.display = 'flex';
+    }
+
     updateFormUI(); initMap();
     
     window.onload = function() {
@@ -582,9 +745,3 @@
         }
     };
 </script>
-</body>
-</html>
-
-
-
-
