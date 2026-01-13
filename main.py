@@ -3,7 +3,6 @@ import os
 import sys
 import datetime
 import shutil
-import json
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse
@@ -20,10 +19,14 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經命理戰略中台 - V7.1 最終版")
+app = FastAPI(title="達摩一掌經命理戰略中台 - V7.2")
 
 app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
+    CORSMiddleware,
+    allow_origins=["*"], # 允許所有來源，方便手機測試
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -35,7 +38,7 @@ try:
 except Exception as e:
     logger.warning(f"⚠️ Firestore 連線失敗: {e}")
 
-# ---------------- 知識庫 ----------------
+# --- 核心邏輯 (與 V5.6 簡單版一致，確保 index.html 能讀懂) ---
 ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
 STARS_INFO = {
     '子': {'name': '天貴星', 'element': '水'}, '丑': {'name': '天厄星', 'element': '土'},
@@ -47,20 +50,19 @@ STARS_INFO = {
 }
 ASPECTS_ORDER = ["總命運", "形象", "幸福", "事業", "變動", "健慾", "愛情", "領導", "親信", "根基", "朋友", "錢財"]
 STAR_MODIFIERS = {'天貴星': 30, '天厄星': -30, '天權星': 20, '天破星': -20, '天奸星': -30, '天文星': 0, '天福星': 30, '天驛星': 0, '天孤星': -20, '天刃星': 0, '天藝星': 0, '天壽星': 20}
-BAD_STARS = ['天厄星', '天破星', '天刃星'] # 風險星
+BAD_STARS = ['天厄星', '天破星', '天刃星']
 
-# ---------------- 核心函數 ----------------
 def get_zhi_index(zhi_char): return ZHI.index(zhi_char) if zhi_char in ZHI else 0
 def get_next_position(start_index, steps, direction=1): return (start_index + (steps * direction)) % 12
 def get_element_relation(me, target):
     PRODUCING = {'水': '木', '木': '火', '火': '土', '土': '金', '金': '水'}
     CONTROLING = {'水': '火', '火': '金', '金': '木', '木': '土', '土': '水'}
-    if me == target: return {"type": "比旺", "score": 95, "alert": False}
-    if PRODUCING.get(target) == me: return {"type": "生我", "score": 80, "alert": False} 
-    if PRODUCING.get(me) == target: return {"type": "我生", "score": 75, "alert": False}  
-    if CONTROLING.get(me) == target: return {"type": "我剋", "score": 55, "alert": True}  
-    if CONTROLING.get(target) == me: return {"type": "剋我", "score": 5, "alert": True}
-    return {"type": "未知", "score": 50, "alert": False}
+    if me == target: return {"type": "比旺", "score": 95}
+    if PRODUCING.get(target) == me: return {"type": "生我", "score": 80}
+    if PRODUCING.get(me) == target: return {"type": "我生", "score": 75}
+    if CONTROLING.get(me) == target: return {"type": "我剋", "score": 55}
+    if CONTROLING.get(target) == me: return {"type": "剋我", "score": 5}
+    return {"type": "未知", "score": 50}
 
 def solar_to_one_palm_lunar(solar_date_str):
     try:
@@ -89,12 +91,10 @@ class OnePalmSystem:
         self.month_idx = get_next_position(self.year_idx, birth_month_num - 1, self.direction)
         self.day_idx = get_next_position(self.month_idx, birth_day_num - 1, self.direction)
         self.hour_idx = get_next_position(self.day_idx, get_zhi_index(birth_hour_zhi), self.direction)
-    
     def get_base_chart(self):
         chart = {}; keys = [("年柱", self.year_idx), ("月柱", self.month_idx), ("日柱", self.day_idx), ("時柱", self.hour_idx)]
         for key, idx in keys: chart[key] = {**STARS_INFO[ZHI[idx]], "zhi": ZHI[idx], "name": STARS_INFO[ZHI[idx]]['name']}
         return chart
-
     def calculate_hierarchy(self, current_age, target_data, scope):
         start_luck = get_next_position(self.hour_idx, 1, self.direction)
         luck_stage = (current_age - 1) // 7
@@ -111,20 +111,20 @@ class OnePalmSystem:
         flow_hour_idx = get_next_position(flow_day_idx, t_hour_idx, self.direction)
         hierarchy["hour"] = {**STARS_INFO[ZHI[flow_hour_idx]], "zhi": ZHI[flow_hour_idx]}
         return hierarchy
-
     def calculate_full_trend(self, hierarchy, scope, lunar_data, target_data, system_obj):
         trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "tooltips": {} }
         for name in ASPECTS_ORDER: trend_response["datasets"][name] = []; trend_response["adjustments"][name] = []; trend_response["tooltips"][name] = []
         loop_range = []
         if scope == 'year':
             for y in range(target_data['lunar_year'] - 6, target_data['lunar_year'] + 7): loop_range.append({'type': 'year', 'val': y, 'label': f"{y}"})
-        else: 
+        else:
             for i in range(1, 13): loop_range.append({'type': 'month', 'val': i, 'label': f"{i}月"})
         
         for point in loop_range:
             trend_response["axis_labels"].append(point['label'])
-            target_el = STARS_INFO[ZHI[get_zhi_index(hierarchy['year']['zhi'])]]['element'] 
+            target_el = STARS_INFO[ZHI[get_zhi_index(hierarchy['year']['zhi'])]]['element']
             if scope=='year': target_el = STARS_INFO[ZHI[get_zhi_index(hierarchy['big_luck']['zhi'])]]['element']
+            
             for i, name in enumerate(ASPECTS_ORDER):
                 star_info = STARS_INFO[ZHI[(system_obj.hour_idx + i) % 12]]
                 rel = get_element_relation(star_info['element'], target_el)
@@ -132,62 +132,31 @@ class OnePalmSystem:
                 trend_response["adjustments"][name].append(STAR_MODIFIERS.get(star_info['name'], 0))
                 trend_response["tooltips"][name].append(f"{star_info['name']} {rel['type']}")
         return trend_response
-
-    def check_risk(self, current_lunar_year):
+    def check_risk(self, target_year):
+        # 簡單風險檢查：若命宮(時柱)為凶星
         risks = []
         star = STARS_INFO[ZHI[self.hour_idx]]['name']
-        if star in BAD_STARS: risks.append(f"本命帶{star}")
+        if star in BAD_STARS: risks.append(f"命帶{star}")
         return risks
 
-# ---------------- API 模型 ----------------
+# --- API ---
 class UserRequest(BaseModel):
     gender: int; solar_date: str; hour: str; target_calendar: str = 'lunar'; target_scope: str = 'year'; target_year: int; target_month: int = 1; target_day: int = 1; target_hour: str = '子'
 class AIRequest(BaseModel): prompt: str
 class SaveRequest(BaseModel):
-    solar_date: str; gender: int; hour: str; target_year: int; client_name: str; phone: str = ""; tags: List[str] = []; note: str = ""; ai_log: Dict[str, Any] = {}
-    image_urls: List[str] = []; audio_url: str = ""; transcript: str = ""
-    relations: List[Dict[str, Any]] = [] 
-    consent_signed: bool = False; consent_date: str = ""
+    solar_date: Optional[str] = None; gender: Optional[int] = None; hour: Optional[str] = None; target_year: Optional[int] = None
+    client_name: Optional[str] = None; phone: Optional[str] = ""; tags: Optional[List[str]] = []
+    note: Optional[str] = ""; ai_log: Optional[Dict[str, Any]] = {}
+    image_urls: Optional[List[str]] = []; audio_url: Optional[str] = ""; transcript: Optional[str] = ""
+    relations: Optional[List[Dict[str, Any]]] = []; consent_signed: Optional[bool] = False; consent_date: Optional[str] = ""
 
-# ---------------- 路由 ----------------
 @app.get("/", response_class=HTMLResponse)
-async def read_root(): return open("index.html", "r", encoding="utf-8").read() if os.path.exists("index.html") else "<h1>Error</h1>"
-
+async def read_root(): return open("index.html", "r", encoding="utf-8").read() if os.path.exists("index.html") else "<h1>Error: Missing index.html</h1>"
 @app.get("/crm", response_class=HTMLResponse)
-async def read_crm(): return open("crm.html", "r", encoding="utf-8").read() if os.path.exists("crm.html") else "<h1>Error</h1>"
-
+async def read_crm(): return open("crm.html", "r", encoding="utf-8").read() if os.path.exists("crm.html") else "<h1>Error: Missing crm.html</h1>"
 @app.get("/consent_page", response_class=HTMLResponse)
-async def read_consent_page(): return open("consent.html", "r", encoding="utf-8").read() if os.path.exists("consent.html") else "<h1>Error</h1>"
+async def read_consent_page(): return open("consent.html", "r", encoding="utf-8").read() if os.path.exists("consent.html") else "<h1>Error: Missing consent.html</h1>"
 
-# [核心] 排盤 API (已修復：不再是佔位符)
-@app.post("/api/calculate")
-async def calculate(req: UserRequest):
-    try:
-        lunar_data = solar_to_one_palm_lunar(req.solar_date)
-        target_data = parse_target_date(req.target_scope, req.target_calendar, req.target_year, req.target_month, req.target_day, req.target_hour)
-        age = target_data['lunar_year'] - lunar_data['lunar_year_num'] + 1
-        system = OnePalmSystem(req.gender, lunar_data['year_zhi'], lunar_data['month'], lunar_data['day'], req.hour)
-        base_chart = system.get_base_chart()
-        hierarchy = system.calculate_hierarchy(age, target_data, req.target_scope)
-        aspects = []
-        base_idx = get_zhi_index(hierarchy['year']['zhi']) if req.target_scope == 'year' else get_zhi_index(hierarchy['year']['zhi']) # 簡化
-        target_env_star = hierarchy['big_luck'] if req.target_scope == 'year' else hierarchy['year']
-
-        for i, name in enumerate(ASPECTS_ORDER):
-            curr_idx = (base_idx + i) % 12 
-            star_info = STARS_INFO[ZHI[curr_idx]]
-            rel = get_element_relation(star_info['element'], target_env_star['element'])
-            aspects.append({"name": name, "star": star_info['name'], "element": star_info['element'], "zhi": ZHI[curr_idx], "relation": rel['type'], "is_alert": rel['alert']})
-        
-        trend_data = system.calculate_full_trend(hierarchy, req.target_scope, lunar_data, target_data, system)
-        scope_map = {'year': '流年', 'month': '流月', 'day': '流日', 'hour': '流時'}
-        ai_prompt = (f"案主{age}歲，目標{target_data['display_info']}，層級{scope_map.get(req.target_scope)}。")
-        
-        return {"lunar_info": lunar_data['lunar_str'], "age": age, "base_chart": base_chart, "hierarchy": hierarchy, "target_display": target_data['display_info'], "aspects": aspects, "ai_prompt": ai_prompt, "trend_data": trend_data}
-    except Exception as e:
-        logger.error(str(e)); raise HTTPException(status_code=500, detail=str(e))
-
-# [新增] 語音轉錄
 @app.post("/api/transcribe_audio")
 async def transcribe_audio(file: UploadFile = File(...)):
     if not OPENAI_API_KEY or "請在此" in OPENAI_API_KEY: return {"text": "API Key Error", "path": ""}
@@ -202,37 +171,69 @@ async def transcribe_audio(file: UploadFile = File(...)):
         return {"text": transcript.text, "path": f"/uploads/{safe_filename}"}
     except Exception as e: return {"text": str(e), "path": ""}
 
-# [新增] 家族風險掃描
+@app.post("/api/calculate")
+async def calculate(req: UserRequest):
+    try:
+        lunar_data = solar_to_one_palm_lunar(req.solar_date)
+        target_data = parse_target_date(req.target_scope, req.target_calendar, req.target_year, req.target_month, req.target_day, req.target_hour)
+        age = target_data['lunar_year'] - lunar_data['lunar_year_num'] + 1
+        system = OnePalmSystem(req.gender, lunar_data['year_zhi'], lunar_data['month'], lunar_data['day'], req.hour)
+        base_chart = system.get_base_chart()
+        hierarchy = system.calculate_hierarchy(age, target_data, req.target_scope)
+        aspects = []
+        base_idx = get_zhi_index(hierarchy['year']['zhi']) if req.target_scope == 'year' else get_zhi_index(hierarchy['year']['zhi'])
+        target_env_star = hierarchy['big_luck'] if req.target_scope == 'year' else hierarchy['year']
+        
+        for i, name in enumerate(ASPECTS_ORDER):
+            curr_idx = (base_idx + i) % 12 
+            star_info = STARS_INFO[ZHI[curr_idx]]
+            rel = get_element_relation(star_info['element'], target_env_star['element'])
+            aspects.append({"name": name, "star": star_info['name'], "element": star_info['element'], "zhi": ZHI[curr_idx], "relation": rel['type'], "is_alert": (rel['type'] in ['我剋','剋我'])})
+        
+        trend_data = system.calculate_full_trend(hierarchy, req.target_scope, lunar_data, target_data, system)
+        scope_map = {'year': '流年', 'month': '流月', 'day': '流日', 'hour': '流時'}
+        ai_prompt = (f"案主{age}歲，目標{target_data['display_info']}，層級{scope_map.get(req.target_scope)}。")
+        return {"lunar_info": lunar_data['lunar_str'], "age": age, "base_chart": base_chart, "hierarchy": hierarchy, "target_display": target_data['display_info'], "aspects": aspects, "ai_prompt": ai_prompt, "trend_data": trend_data}
+    except Exception as e: logger.error(str(e)); raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/scan_family_risks")
 async def scan_family_risks(req: SaveRequest):
     alerts = []
     target_year = req.target_year or 2026
+    if not req.relations: return {"alerts": []}
     for p in req.relations:
         try:
             if not p.get('solar_date'): continue
             lunar = solar_to_one_palm_lunar(p['solar_date'])
             if not lunar: continue
-            sys = OnePalmSystem(int(p.get('gender', 1)), lunar['year_zhi'], lunar['month'], lunar['day'], p['hour'])
+            sys = OnePalmSystem(int(p.get('gender', 1)), lunar['year_zhi'], lunar['month'], lunar['day'], p.get('hour', '子'))
             risks = sys.check_risk(target_year)
             if risks: alerts.append({"name": p['name'], "relation": p['relation'], "risk": ", ".join(risks)})
         except: continue
     return {"alerts": alerts}
 
-# [新增] 同意書簽署
+@app.post("/api/save_record")
+async def save_record(req: SaveRequest):
+    if not db: return {"status": "error"}
+    doc_ref = db.collection('consultations').document()
+    data = req.dict(); data['created_at'] = firestore.SERVER_TIMESTAMP
+    doc_ref.set(data)
+    return {"status": "success", "id": doc_ref.id}
+
+# [重要修正] 更新資料時，排除未設定的欄位 (exclude_unset=True)
+@app.post("/api/update_record/{doc_id}")
+async def update_record(doc_id: str, req: SaveRequest):
+    if not db: return {"status": "error"}
+    # merge=True 搭配 exclude_unset=True 確保不會把原本的資料洗成空值
+    db.collection('consultations').document(doc_id).set(req.dict(exclude_unset=True), merge=True)
+    return {"status": "success"}
+
 @app.post("/api/sign_consent/{doc_id}")
 async def sign_consent(doc_id: str):
     if not db: return {"status": "error"}
     db.collection('consultations').document(doc_id).update({"consent_signed": True, "consent_date": datetime.datetime.now().strftime("%Y-%m-%d")})
     return {"status": "success"}
 
-# [新增] 更新紀錄 (避免重複存檔)
-@app.post("/api/update_record/{doc_id}")
-async def update_record(doc_id: str, req: SaveRequest):
-    if not db: return {"status": "error"}
-    db.collection('consultations').document(doc_id).set(req.dict(), merge=True)
-    return {"status": "success"}
-
-# [原有] 搜尋
 @app.get("/api/search_records")
 async def search_records(keyword: str = ""):
     if not db: return []
@@ -249,14 +250,12 @@ async def search_records(keyword: str = ""):
         return results
     except: return []
 
-# [原有] 刪除
 @app.delete("/api/delete_record/{doc_id}")
 async def delete_record(doc_id: str):
     if not db: return {"status": "error"}
     db.collection('consultations').document(doc_id).delete()
     return {"status": "success"}
 
-# [原有] AI
 @app.post("/api/ask_ai")
 async def ask_ai(req: AIRequest):
     if "請在此" in OPENAI_API_KEY: return {"error": "Key Error"}
@@ -266,15 +265,6 @@ async def ask_ai(req: AIRequest):
         res = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": req.prompt}])
         return {"reply": res.choices[0].message.content}
     except Exception as e: return {"error": str(e)}
-
-# [原有] 新增 (僅用於第一次建立)
-@app.post("/api/save_record")
-async def save_record(req: SaveRequest):
-    if not db: return {"status": "error"}
-    doc_ref = db.collection('consultations').document()
-    data = req.dict(); data['created_at'] = firestore.SERVER_TIMESTAMP
-    doc_ref.set(data)
-    return {"status": "success", "id": doc_ref.id}
 
 if __name__ == "__main__":
     import uvicorn
