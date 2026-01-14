@@ -291,6 +291,10 @@
 </div>
 
 <script>
+    // ==========================================
+    // 達摩一掌經 V9.9.21 (我生 60分 同步版)
+    // ==========================================
+
     // 1. 全域變數
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
     const STAR_TRAITS = { '天貴': { type: '吉', keyword: '貴人/顯赫' }, '天厄': { type: '凶', keyword: '勞碌/疾厄' }, '天權': { type: '平', keyword: '權力/社交' }, '天破': { type: '凶', keyword: '消耗/破損' }, '天奸': { type: '平', keyword: '機智/變動' }, '天文': { type: '吉', keyword: '智慧/文采' }, '天福': { type: '吉', keyword: '福氣/財祿' }, '天驛': { type: '平', keyword: '奔波/變動' }, '天孤': { type: '凶', keyword: '孤獨/獨立' }, '天刃': { type: '凶', keyword: '剛強/血光' }, '天藝': { type: '平', keyword: '才藝/技術' }, '天壽': { type: '吉', keyword: '長壽/圓融' } };
@@ -412,9 +416,9 @@
         fillLists(result, h);
     }
 
-    // 4. [列表與動能箭頭] (V9.9.20 修正：資料賦值順序)
+    // 4. [列表與動能箭頭]
     function fillLists(result, h) {
-        // [FIX] 立即更新全域資料，確保計算迴圈能抓到最新數據
+        // [FIX] 立即更新全域資料
         if (result.trend_data) {
             globalTrendData = result.trend_data;
         }
@@ -576,9 +580,9 @@
     function restoreFromHistory(item) { document.getElementById('solarDate').value = item.solar_date; document.getElementById('gender').value = item.gender; document.getElementById('hour').value = item.hour; document.getElementById('tYear').value = item.target_year || 2026; document.getElementById('tMonth').value = 1; document.getElementById('tDay').value = 1; document.getElementById('targetScope').value = 'year'; updateFormUI(); alert(`已載入：${item.client_name}\n(自動切換為流年模式)`); setTimeout(() => calculate(), 200); }
     async function callAIWithMode(mode) { if (!globalTrendData) { alert("請先排盤"); return; } const prompt = `分析${lastActiveAspect}，模式:${mode}`; document.getElementById('aiResponseArea').innerText = "AI 思考中..."; try { const res = await fetch('/api/ask_ai', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:prompt})}); const d = await res.json(); document.getElementById('aiResponseArea').innerText = d.reply; } catch(e) { document.getElementById('aiResponseArea').innerText = "失敗"; } }
 
-    // [V3.8] 稽核表：逆推互動邏輯 (支援比旺 75分判斷)
+    // [V3.9] 稽核表：逆推互動邏輯 (支援我生 60分判斷)
     function getInteractionDetails(guestEl, score) {
-        // [對照 V8.5 分數] 80, 75, 50, 35, 20
+        // [對照 V9.1 分數] 80, 75, 60, 35, 20
         let icon = "", desc = "";
         if (score >= 80) { 
             icon = `<span style="color:#888;">客(${guestEl})</span> <span style="color:var(--status-best); font-weight:bold;">滋養➝</span> <span style="color:#fff;">我(主)</span>`; 
@@ -586,9 +590,9 @@
         } else if (score >= 75) { 
             icon = `<span style="color:#888;">客(${guestEl})</span> <span style="color:var(--status-good); font-weight:bold;">幫扶＝</span> <span style="color:#fff;">我(主)</span>`; 
             desc = "運氣平順：此宮位與我同心協力"; 
-        } else if (score >= 50) { 
+        } else if (score >= 60) { // [更新] 我生門檻改為 60
             icon = `<span style="color:#fff;">我(主)</span> <span style="color:#aaa;">洩氣➝</span> <span style="color:#888;">客(${guestEl})</span>`; 
-            desc = "會很累：我在滋養這個宮位，消耗能量"; 
+            desc = "平運(及格)：我在滋養這個宮位，才華展現"; 
         } else if (score >= 35) { 
             icon = `<span style="color:#fff;">我(主)</span> <span style="color:#d69e2e;">壓制⚔️</span> <span style="color:#888;">客(${guestEl})</span>`; 
             desc = "驚濤駭浪：我要去奮鬥、掌控局面"; 
@@ -623,7 +627,7 @@
                         <li><strong>主角 (我/Host)：</strong>流年總命運 (當年的本命能量)。</li>
                         <li><strong>客人 (他/Guest)：</strong>各個宮位 (事業、健康、財運...)。</li>
                         <li><strong>吉凶判斷：</strong>看「客人」對「我」做了什麼？(客生我=吉，客剋我=凶)。</li>
-                        <li><strong>分數範圍：</strong>80(生我), 75(比旺), 50(我生), 35(我剋), 20(剋我)。</li>
+                        <li><strong>分數範圍：</strong>80(生我), 75(比旺), 60(我生), 35(我剋), 20(剋我)。</li>
                     </ul>
                 </div>
                 <div style="overflow-x:auto;">
@@ -710,3 +714,4 @@
 </script>
 </body>
 </html>
+
