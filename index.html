@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V9.9.24)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V9.9.25)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -492,32 +492,46 @@
                 let labelStr = Array.isArray(l) ? l.join("") : String(l);
                 return labelStr.includes(currentTargetYear);
             });
-            if (dataIndex === -1 && globalTrendData.axis_labels.length > 0) dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
+            if (dataIndex === -1 && globalTrendData.axis_labels.length > 0) {
+                dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
+            }
         }
 
         result.aspects.forEach(a => {
             let score = 50; 
             let trendHtml = '<span class="trend-icon flat" style="color:#666; font-size:0.8em;">➡</span>'; 
+            
             if (dataIndex !== -1 && globalTrendData && globalTrendData.datasets[a.name]) {
                 const baseScores = globalTrendData.datasets[a.name];
                 const adjustments = globalTrendData.adjustments[a.name] || [];
                 const renheScores = globalTrendData.renhe_scores || [];
+                
                 const useGrade = document.getElementById('gradeCheckbox').checked;
                 const useRenhe = document.getElementById('renheCheckbox').checked;
+
                 const calculateTotal = (idx) => {
                     let s = baseScores[idx];
                     if (useGrade) s += (adjustments[idx] || 0);
                     if (useRenhe) s += (renheScores[idx] ? renheScores[idx].score : 0);
                     return Math.max(5, Math.min(95, s));
                 };
+
                 score = calculateTotal(dataIndex);
+                
                 let compareIndex = -1;
                 let isLookingForward = true;
-                if (dataIndex < baseScores.length - 1) { compareIndex = dataIndex + 1; } else if (dataIndex > 0) { compareIndex = dataIndex - 1; isLookingForward = false; }
+                if (dataIndex < baseScores.length - 1) {
+                    compareIndex = dataIndex + 1;
+                } else if (dataIndex > 0) {
+                    compareIndex = dataIndex - 1;
+                    isLookingForward = false;
+                }
+
                 if (compareIndex !== -1) {
                     let nextScore = calculateTotal(compareIndex);
                     let diff = nextScore - score;
                     if (!isLookingForward) diff = score - nextScore;
+
                     if (diff >= 20) trendHtml = '<span class="trend-icon up" style="color:#ff4d4d; font-weight:900;">↗↗↗</span>';
                     else if (diff >= 10) trendHtml = '<span class="trend-icon up" style="color:#ff6b6b; font-weight:bold;">↗↗</span>';
                     else if (diff >= 3) trendHtml = '<span class="trend-icon up" style="color:#ff8787;">↗</span>';
@@ -526,14 +540,20 @@
                     else if (diff <= -3) trendHtml = '<span class="trend-icon down" style="color:#b2f5ea;">↘</span>';
                 }
             }
+
             let barColor = score>=80?'var(--status-best)':(score>=60?'var(--status-good)':'var(--status-bad)');
             let compHtml = '';
+            
             if(dataIndex !== -1 && globalTrendData) {
                 let extra = 0;
                 if(document.getElementById('gradeCheckbox').checked) extra += (globalTrendData.adjustments[a.name][dataIndex]||0);
                 if(document.getElementById('renheCheckbox').checked && globalTrendData.renhe_scores[dataIndex]) extra += (globalTrendData.renhe_scores[dataIndex].score||0);
-                if (extra !== 0) compHtml = `<span class="score-composition">(${score-extra}<span class="${extra>0?'score-bonus':'score-penalty'}">${extra>0?'+':''}${extra}</span>)</span>`;
+                
+                if (extra !== 0) {
+                    compHtml = `<span class="score-composition">(${score-extra}<span class="${extra>0?'score-bonus':'score-penalty'}">${extra>0?'+':''}${extra}</span>)</span>`;
+                }
             }
+
             aHtml += `
             <div id="row-${a.name}" class="aspect-row clickable" onclick="updateTrendChart('${a.name}')">
                 <div style="width:115px;">
@@ -552,6 +572,7 @@
         if(globalTrendData) updateTrendChart('總命運');
     }
 
+    // Chart 渲染
     function renderTrendChart(labels, scores, tooltips, title) {
         const ctx = document.getElementById('trendChart').getContext('2d');
         if (trendChartInstance) trendChartInstance.destroy();
