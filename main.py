@@ -71,7 +71,7 @@ BAD_STARS = ['天厄星', '天破星', '天刃星']
 def get_zhi_index(zhi_char): return ZHI.index(zhi_char) if zhi_char in ZHI else 0
 def get_next_position(start_index, steps, direction=1): return (start_index + (steps * direction)) % 12
 
-# [V9.0] 五行生剋分數 (定案：80/75/50/35/20)
+# [V9.1] 五行生剋分數 (修正：我生上調至 60)
 def get_element_relation(me, target):
     # me = 主 (流年/大運), target = 客 (宮位/流年)
     PRODUCING = {'水': '木', '木': '火', '火': '土', '土': '金', '金': '水'}
@@ -79,16 +79,21 @@ def get_element_relation(me, target):
     
     # 1. 生我 (客生主)：大吉 80
     if PRODUCING.get(target) == me: return {"type": "生我", "score": 80} 
+    
     # 2. 比旺 (客同主)：強吉 75
     if me == target: return {"type": "比旺", "score": 75}
-    # 3. 我生 (主生客)：平 50
-    if PRODUCING.get(me) == target: return {"type": "我生", "score": 50}  
-    # 4. 我剋 (主剋客)：勞 35
+    
+    # 3. 我生 (主生客)：平吉 60 (原 50)
+    # 說明：雖洩氣但為才華展現，視為及格。
+    if PRODUCING.get(me) == target: return {"type": "我生", "score": 60}  
+    
+    # 4. 我剋 (主剋客)：勞碌 35
     if CONTROLING.get(me) == target: return {"type": "我剋", "score": 35}  
-    # 5. 剋我 (客剋主)：凶 20
+    
+    # 5. 剋我 (客剋主)：凶險 20
     if CONTROLING.get(target) == me: return {"type": "剋我", "score": 20}
         
-    return {"type": "未知", "score": 50}
+    return {"type": "未知", "score": 60}
 
 def solar_to_one_palm_lunar(solar_date_str):
     try:
@@ -380,3 +385,4 @@ async def ask_ai(req: AIRequest):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
+
