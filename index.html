@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．全時空戰略中台 (V9.9.23)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V9.9.24)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -94,7 +94,6 @@
         .export-section-title { color: var(--cyan); border-left: 5px solid var(--gold); padding-left: 15px; margin-bottom: 15px; font-size: 1.5em; font-weight: bold; }
         .export-chart-img { width: 100%; border-radius: 8px; border: 1px solid #444; background: #1e2732; }
         
-        /* 導出時的列表樣式 (更緊湊) */
         .export-list-item { 
             display: flex; align-items: center; justify-content: space-between; 
             padding: 8px 0; border-bottom: 1px solid #333; font-size: 1.1em; 
@@ -109,7 +108,6 @@
             padding: 20px; border-radius: 8px; margin-top: 20px;
         }
 
-        /* ... 其他樣式保持不變 ... */
         .switch-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 10px; }
         .switch-label { font-size: 0.8em; color: #888; font-weight: bold; }
         .switch { position: relative; display: inline-block; width: 36px; height: 18px; }
@@ -144,7 +142,7 @@
 </head>
 <body>
 <div id="loadingOverlay"><div class="spinner"></div></div>
-<h1>達摩一掌經．全時空戰略中台</h1>
+<h1>達摩一掌經．生命藍圖導航系統</h1>
 <div class="dashboard">
     <div class="control-panel">
         <h3 style="color:var(--cyan); border-bottom:1px solid #444;">1. 設定案主本命</h3>
@@ -161,7 +159,7 @@
             </div>
         </div>
         <label>國曆出生日期</label><input type="date" id="solarDate" value="1985-03-27">
-        <h3 style="color:var(--gold); border-bottom:1px solid #444; margin-top:20px;">2. 設定戰略目標</h3>
+        <h3 style="color:var(--gold); border-bottom:1px solid #444; margin-top:20px;">2. 設定推算目標</h3>
         <div style="display:flex; gap:20px; margin-bottom:10px;">
             <label style="color:white; cursor:pointer;"><input type="radio" name="calendarType" value="lunar" checked onchange="updateFormUI()"> 農曆</label>
             <label style="color:white; cursor:pointer;"><input type="radio" name="calendarType" value="solar" onchange="updateFormUI()"> 西元曆</label>
@@ -185,10 +183,10 @@
                 <option value="酉">酉時 (17:00-19:00)</option><option value="戌">戌時 (19:00-21:00)</option><option value="亥">亥時 (21:00-23:00)</option>
             </select>
         </div>
-        <button class="btn-main" onclick="calculate()">啟動全時空推演</button>
+        <button class="btn-main" onclick="calculate()">開啟運勢導航</button>
         
         <button class="btn-main" style="background: linear-gradient(135deg, #1a2634, #2d3748); border: 1px solid var(--gold); margin-top:15px; color:var(--gold);" onclick="exportToImage()">
-            📸 下載戰略圖卡 (JPG)
+            📸 下載運勢分析卡 (JPG)
         </button>
 
         <button class="btn-main" style="background: #2d3748; border: 1px solid #4a5568; margin-top:10px; color:var(--cyan);" onclick="window.location.href='/crm'">
@@ -202,7 +200,7 @@
         <div class="card" style="border-left:5px solid var(--gold); overflow:hidden;">
             <h3 class="card-header" style="color:var(--gold);">
                 <div style="display:flex; align-items:center; width:100%">
-                    <div style="white-space:nowrap;">戰略儀表板 <span id="lunarInfo" style="font-size:0.8em; color:#a0a0a0;"></span></div>
+                    <div style="white-space:nowrap;">命盤全息圖 <span id="lunarInfo" style="font-size:0.8em; color:#a0a0a0;"></span></div>
                     <div style="display:flex; align-items:center; margin-left:auto;">
                         <div class="switch-container">
                             <span class="switch-label">動畫</span>
@@ -251,7 +249,7 @@
         
         <div class="card" style="border-left: 5px solid var(--gold);">
             <h3 class="card-header" onclick="toggleCard('trendBody')">
-                <span id="trendTitle">時空運勢波形圖 <span style="font-size:0.7em; color:#888;">(預設: 總命運)</span></span>
+                <span id="trendTitle">運勢能量走勢圖 <span style="font-size:0.7em; color:#888;">(預設: 總命運)</span></span>
                 <span class="arrow-icon">▼</span>
             </h3>
             <div id="trendBody" class="card-body">
@@ -271,7 +269,7 @@
 
         <div class="card">
             <h3 class="card-header" onclick="toggleCard('aspectsBody')">
-                十二運程戰略指導 <span style="font-size:0.7em; color:var(--cyan);">(點擊項目切換波形)</span>
+                十二宮位運程詳解 <span style="font-size:0.7em; color:var(--cyan);">(點擊項目切換波形)</span>
                 <span class="arrow-icon">▼</span>
             </h3>
             <div id="aspectsBody" class="card-body"><div id="aspectsList"></div></div>
@@ -279,7 +277,7 @@
 
         <div class="card" style="background:#161625; border-color:var(--gpt-color);">
             <h3 class="card-header" onclick="toggleCard('aiBody')" style="color:var(--gpt-color);">
-                🤖 AI 戰略顧問 <button class="ai-btn" onclick="event.stopPropagation(); callAIWithMode('general');">🔮 綜合分析</button>
+                🤖 AI 運勢解讀師 <button class="ai-btn" onclick="event.stopPropagation(); callAIWithMode('general');">🔮 綜合分析</button>
                 <span class="arrow-icon collapsed">▼</span>
             </h3>
             <div id="aiBody" class="card-body collapsed">
@@ -289,7 +287,7 @@
                     <button class="ai-shortcut-btn" onclick="callAIWithMode('script')">🗣️ 求話術</button>
                 </div>
                 <div id="aiPrompt" style="display:none;"></div>
-                <div id="aiResponseArea" style="min-height:100px; padding:10px; color:#ddd;">(請點擊上方按鈕，啟動戰略分析...)</div>
+                <div id="aiResponseArea" style="min-height:100px; padding:10px; color:#ddd;">(請點擊上方按鈕，啟動運勢分析...)</div>
             </div>
         </div>
     </div>
@@ -297,34 +295,34 @@
 
 <div id="exportContainer">
     <div class="export-header">
-        <div class="export-title">達摩一掌經．時空戰略</div>
+        <div class="export-title">達摩一掌經．生命藍圖導航</div>
         <div class="export-info" id="exportInfo"></div>
     </div>
     
     <div class="export-grid">
         <div>
-            <div class="export-section-title">戰略儀表板 (本命盤)</div>
+            <div class="export-section-title">本命全息圖 (十二宮)</div>
             <div id="exportMapContainer" style="transform: scale(0.9); transform-origin: top left;"></div>
         </div>
         <div>
-            <div class="export-section-title">十二運程戰略指導</div>
+            <div class="export-section-title">十二宮位運程分析</div>
             <div id="exportAspectList"></div>
         </div>
     </div>
 
-    <div class="export-section-title">時空運勢波形圖</div>
+    <div class="export-section-title">運勢能量走勢圖</div>
     <div class="export-chart-area">
         <h4 style="color:var(--gold); text-align:center; margin:0 0 10px 0;" id="exportChartTitle"></h4>
         <img id="exportChartImg" style="width:100%; border-radius:4px;">
     </div>
 
     <div class="highlight-box">
-        <h4 style="color:var(--gold); margin:0 0 10px 0;">🔮 吉凶年份戰略提示</h4>
+        <h4 style="color:var(--gold); margin:0 0 10px 0;">🔮 運勢重點提示</h4>
         <div id="exportHighlights" style="font-size:1.1em; color:#ddd; line-height:1.6;"></div>
     </div>
 
     <div class="export-footer">
-        徐峰老師 戰略指導 | 命理戰略中台 V9.0
+        徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V9.0
     </div>
 </div>
 
@@ -343,7 +341,7 @@
         </div>
         <div class="form-group"><label>諮詢筆記</label><textarea id="crmNote" rows="2" placeholder="紀錄重點..."></textarea></div>
         <div class="form-group">
-            <label style="color:var(--gpt-color);">🤖 AI 戰略建議 (自動帶入/可編輯)</label>
+            <label style="color:var(--gpt-color);">🤖 AI 建議摘要 (自動帶入)</label>
             <textarea id="crmAiContent" rows="4" style="border-color:var(--gpt-color); color:#cfd8dc; font-size:0.9em;"></textarea>
         </div>
         <div class="modal-footer">
@@ -557,7 +555,7 @@
     function renderTrendChart(labels, scores, tooltips, title) {
         const ctx = document.getElementById('trendChart').getContext('2d');
         if (trendChartInstance) trendChartInstance.destroy();
-        document.getElementById('trendTitle').innerHTML = `時空運勢波形圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>`;
+        document.getElementById('trendTitle').innerHTML = `運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>`;
         const gradient = ctx.createLinearGradient(0, 0, 0, 250);
         gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); 
         gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
@@ -605,7 +603,6 @@
         if(activeRow) activeRow.classList.add('active-aspect');
     }
 
-    // [V9.9.23] 全能結案神器：生成戰略圖卡
     async function exportToImage() {
         if (!globalLastResult || !trendChartInstance) { alert("請先排盤"); return; }
         document.getElementById('loadingOverlay').style.display = 'flex';
@@ -614,42 +611,36 @@
         const clientInfo = `姓名: ${document.getElementById('crmName').value || '貴賓'} | 生辰: ${document.getElementById('solarDate').value} ${document.getElementById('hour').value}時 | 性別: ${document.getElementById('gender').value==1?'男':'女'}`;
         setText('exportInfo', clientInfo);
         
-        // 2. 複製 12 宮格 (左側戰情)
+        // 2. 複製 12 宮格
         const mapHtml = document.getElementById('mainMap').innerHTML;
         const exportMap = document.getElementById('exportMapContainer');
         exportMap.innerHTML = mapHtml;
-        exportMap.className = 'twelve-palaces-map'; // 套用 CSS
+        exportMap.className = 'twelve-palaces-map';
 
-        // 3. 複製 12 運程列表 (右側數據 - 移除按鈕)
+        // 3. 複製 12 運程列表
         const listHtml = document.getElementById('aspectsList').innerHTML;
         const exportList = document.getElementById('exportAspectList');
         exportList.innerHTML = listHtml;
-        // 清理按鈕
         exportList.querySelectorAll('button').forEach(btn => btn.remove());
         exportList.querySelectorAll('.aspect-row').forEach(row => {
             row.style.borderBottom = '1px solid #444';
             row.style.padding = '5px 0';
         });
 
-        // 4. 抓取波形圖 (底部)
-        setText('exportChartTitle', `【${lastActiveAspect}】時空戰略波形 (${document.getElementById('tYear').value}年)`);
+        // 4. 抓取波形圖
+        setText('exportChartTitle', `【${lastActiveAspect}】運勢能量走勢 (${document.getElementById('tYear').value}年)`);
         const chartBase64 = trendChartInstance.toBase64Image();
         document.getElementById('exportChartImg').src = chartBase64;
 
-        // 5. 計算吉凶年份 (核心戰略提示)
+        // 5. 計算吉凶年份
         if (globalTrendData && globalTrendData.datasets[lastActiveAspect]) {
             const scores = globalTrendData.datasets[lastActiveAspect];
             let maxS = -1, minS = 101, maxYear = "", minYear = "";
-            
-            // 簡單遍歷找高低點 (使用原始分數或加權分數均可，這裡示範原始)
             scores.forEach((s, i) => {
                 if (s > maxS) { maxS = s; maxYear = globalTrendData.axis_labels[i]; }
                 if (s < minS) { minS = s; minYear = globalTrendData.axis_labels[i]; }
             });
-            
-            // 處理標籤可能是陣列的情況
             const fmtYear = (lbl) => Array.isArray(lbl) ? lbl.join(" ") : lbl;
-            
             const highlights = `
                 <ul>
                     <li><span style="color:#ffd700;">★ 運勢高點：</span> ${fmtYear(maxYear)} (能量指數: ${maxS}) - 適合進攻、擴張。</li>
@@ -664,7 +655,7 @@
         setTimeout(() => {
             const container = document.getElementById('exportContainer');
             html2canvas(container, {
-                scale: 2, // 提高解析度
+                scale: 2,
                 backgroundColor: "#101015"
             }).then(canvas => {
                 const link = document.createElement('a');
@@ -676,7 +667,6 @@
         }, 800);
     }
 
-    // (其餘輔助函數保持不變)
     function openSaveModal() { document.getElementById('saveModal').style.display = 'flex'; openAiNote(); }
     function closeSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
     function toggleTag(el) { el.classList.toggle('selected'); }
