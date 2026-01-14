@@ -21,7 +21,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經命理戰略中台 - V9.2 全維度戰略版")
+app = FastAPI(title="達摩一掌經命理戰略中台 - V9.3 用詞優化版")
 
 app.add_middleware(
     CORSMiddleware,
@@ -49,7 +49,9 @@ STARS_INFO = {
     '申': {'name': '天孤星', 'element': '金'}, '酉': {'name': '天刃星', 'element': '金'},
     '戌': {'name': '天藝星', 'element': '土'}, '亥': {'name': '天壽星', 'element': '水'}
 }
-ASPECTS_ORDER = ["總命運", "形象", "幸福", "事業", "變動", "健慾", "愛情", "領導", "親信", "根基", "朋友", "錢財"]
+
+# [V9.3] 用詞優化：將 "健慾" 改為 "健康"
+ASPECTS_ORDER = ["總命運", "形象", "幸福", "事業", "變動", "健康", "愛情", "領導", "親信", "根基", "朋友", "錢財"]
 
 # [Level 2] 十二宮三品格
 STAR_MODIFIERS = {
@@ -148,87 +150,55 @@ class OnePalmSystem:
         for name in ASPECTS_ORDER: 
             trend_response["datasets"][name] = []; trend_response["adjustments"][name] = []; trend_response["tooltips"][name] = []
         
-        # 1. 定義時間迴圈範圍 (X軸)
         loop_items = []
         
         if scope == 'year':
-            # 流年模式：前後 6 年
             current_idx = get_zhi_index(hierarchy['year']['zhi'])
             base_year = target_data['lunar_year']
             for i in range(-6, 7):
                 loop_items.append({'offset': i, 'label': f"{base_year + i}", 'type': 'year'})
-                
         elif scope == 'month':
-            # 流月模式：1-12 月
-            # 基準點：當年流年星
             for i in range(1, 13):
-                # offset 是相對於 "正月" 的偏移，所以是 i-1
-                # 但這裡為了方便，我們直接記錄月份數，計算時再處理
                 loop_items.append({'val': i, 'label': f"{i}月", 'type': 'month'})
-                
         elif scope == 'day':
-            # [新增] 流日模式：1-30 日 (簡單模擬農曆大小月，統一跑30天顯示趨勢)
             for i in range(1, 31):
                 loop_items.append({'val': i, 'label': f"{i}日", 'type': 'day'})
-                
         elif scope == 'hour':
-            # [新增] 流時模式：12 時辰
             for z in ZHI:
                 loop_items.append({'val': z, 'label': f"{z}時", 'type': 'hour'})
 
-        # 2. 獲取定位基準點 (Base Anchor)
-        # 用於推算 X 軸每個點的星宿
-        current_fy_idx = get_zhi_index(hierarchy['year']['zhi']) # 流年星位置
-        current_fm_idx = get_zhi_index(hierarchy['month']['zhi']) # 流月星位置
-        current_fd_idx = get_zhi_index(hierarchy['day']['zhi'])   # 流日星位置
+        current_fy_idx = get_zhi_index(hierarchy['year']['zhi']) 
+        current_fm_idx = get_zhi_index(hierarchy['month']['zhi'])
+        current_fd_idx = get_zhi_index(hierarchy['day']['zhi'])   
         
         pillar_indices = [system_obj.year_idx, system_obj.month_idx, system_obj.day_idx, system_obj.hour_idx]
         
-        # 3. 執行迴圈運算
         for point in loop_items:
             trend_response["axis_labels"].append(point['label'])
-            
-            # --- A. 計算當前時間點的主星 (Time Star) ---
             time_star_info = None
             
             if scope == 'year':
-                # 推算每年的流年星
                 dynamic_idx = get_next_position(current_fy_idx, point['offset'], system_obj.direction)
                 time_star_info = STARS_INFO[ZHI[dynamic_idx]]
-                
             elif scope == 'month':
-                # 推算每月的流月星 (基準: 流年)
-                # 流月 = 流年 + (月-1)
-                # current_fy_idx 已經是當年的流年位置
-                # 但 hierarchy['month'] 是目標月。我們需要重算 loop 中的月。
-                # 重新依據流年推算：
                 offset = point['val'] - 1
                 dynamic_idx = get_next_position(current_fy_idx, offset, system_obj.direction)
                 time_star_info = STARS_INFO[ZHI[dynamic_idx]]
-                
             elif scope == 'day':
-                # 推算每日的流日星 (基準: 流月)
-                # 流日 = 流月 + (日-1)
                 offset = point['val'] - 1
                 dynamic_idx = get_next_position(current_fm_idx, offset, system_obj.direction)
                 time_star_info = STARS_INFO[ZHI[dynamic_idx]]
-                
             elif scope == 'hour':
-                # 推算每時的流時星 (基準: 流日)
-                # 流時 = 流日 + 時辰Index
                 h_idx = get_zhi_index(point['val'])
                 dynamic_idx = get_next_position(current_fd_idx, h_idx, system_obj.direction)
                 time_star_info = STARS_INFO[ZHI[dynamic_idx]]
 
-            # 標準邏輯：主 (Me) = 當下的時間星 (Time Star)
             me_el = time_star_info['element'] 
             age_star_name = time_star_info['name']
             
-            # 人和分 (L3)
             renhe_val = RENHE_MODIFIERS.get(age_star_name, 0)
             trend_response["renhe_scores"].append({"score": renhe_val, "star": age_star_name})
 
-            # --- B. 計算十二宮位的互動 ---
             for i, name in enumerate(ASPECTS_ORDER):
                 curr_idx = (system_obj.hour_idx + i) % 12
                 aspect_star_info = STARS_INFO[ZHI[curr_idx]]
@@ -239,38 +209,29 @@ class OnePalmSystem:
                 current_host_el = me_el
                 current_host_name = age_star_name
 
-                # [特案 V9.2] 層級遞進主客法則 (Total Destiny Cascade)
-                # 只有在項目為「總命運」時，我們切換「主 (Host)」為上一層級的環境
                 if name == "總命運":
                     upper_level_star = None
                     upper_level_label = ""
                     
                     if scope == 'year':
-                        # 年模式：主=大運
                         upper_level_star = hierarchy['big_luck']
                         upper_level_label = "(大運)"
                     elif scope == 'month':
-                        # 月模式：主=流年
                         upper_level_star = hierarchy['year']
                         upper_level_label = "(流年)"
                     elif scope == 'day':
-                        # 日模式：主=流月
                         upper_level_star = hierarchy['month']
                         upper_level_label = "(流月)"
                     elif scope == 'hour':
-                        # 時模式：主=流日
                         upper_level_star = hierarchy['day']
                         upper_level_label = "(流日)"
                         
                     if upper_level_star:
                         current_host_el = upper_level_star['element']
                         current_host_name = upper_level_star['name'] + upper_level_label
-                        
-                        # 此時的客 (Guest) 就是當下的時間星 (因為總命運=當下)
                         current_guest_el = time_star_info['element']
                         current_guest_name = time_star_info['name'] + "(值星)"
 
-                # 計算關係
                 rel = get_element_relation(me=current_host_el, target=current_guest_el)
                 
                 trend_response["datasets"][name].append(rel["score"])
@@ -287,7 +248,7 @@ class OnePalmSystem:
         if star in BAD_STARS: risks.append(f"命帶{star}")
         return risks
 
-# ---------------- API 模型 (保持不變) ----------------
+# ---------------- API 模型 ----------------
 class UserRequest(BaseModel):
     gender: int; solar_date: str; hour: str; target_calendar: str = 'lunar'; target_scope: str = 'year'; target_year: int; target_month: int = 1; target_day: int = 1; target_hour: str = '子'
 class AIRequest(BaseModel): prompt: str
@@ -298,7 +259,7 @@ class SaveRequest(BaseModel):
     image_urls: Optional[List[str]] = []; audio_url: Optional[str] = ""; transcript: Optional[str] = ""
     relations: Optional[List[Dict[str, Any]]] = []; consent_signed: Optional[bool] = False; consent_date: Optional[str] = ""
 
-# ---------------- API 路由 (保持不變) ----------------
+# ---------------- API 路由 ----------------
 @app.get("/", response_class=HTMLResponse)
 async def read_root(): return open("index.html", "r", encoding="utf-8").read() if os.path.exists("index.html") else "<h1>Error</h1>"
 @app.get("/crm", response_class=HTMLResponse)
@@ -332,7 +293,6 @@ async def calculate(req: UserRequest):
         aspects = []
         base_idx = get_zhi_index(hierarchy['year']['zhi']) if req.target_scope == 'year' else get_zhi_index(hierarchy['year']['zhi'])
         
-        # 列表顯示的主客邏輯 (靜態顯示)
         host_star = hierarchy['year'] 
         if req.target_scope == 'month': host_star = hierarchy['month']
         elif req.target_scope == 'day': host_star = hierarchy['day']
@@ -342,7 +302,6 @@ async def calculate(req: UserRequest):
             curr_idx = (base_idx + i) % 12 
             guest_star_info = STARS_INFO[ZHI[curr_idx]] 
             
-            # 靜態列表的特案邏輯 (與波形圖同步)
             current_host_el = host_star['element']
             if name == "總命運":
                 if req.target_scope == 'year': current_host_el = hierarchy['big_luck']['element']
@@ -367,7 +326,73 @@ async def calculate(req: UserRequest):
         return {"lunar_info": lunar_data['lunar_str'], "age": age, "base_chart": base_chart, "hierarchy": hierarchy, "target_display": target_data['display_info'], "aspects": aspects, "ai_prompt": ai_prompt, "trend_data": trend_data}
     except Exception as e: logger.error(str(e)); raise HTTPException(status_code=500, detail=str(e))
 
-# ... (其餘 API 保持不變) ...
+@app.post("/api/scan_family_risks")
+async def scan_family_risks(req: SaveRequest):
+    alerts = []
+    target_year = req.target_year or 2026
+    if not req.relations: return {"alerts": []}
+    for p in req.relations:
+        try:
+            if not p.get('solar_date'): continue
+            lunar = solar_to_one_palm_lunar(p['solar_date'])
+            if not lunar: continue
+            sys = OnePalmSystem(int(p.get('gender', 1)), lunar['year_zhi'], lunar['month'], lunar['day'], p.get('hour', '子'))
+            risks = sys.check_risk(target_year)
+            if risks: alerts.append({"name": p['name'], "relation": p['relation'], "risk": ", ".join(risks)})
+        except: continue
+    return {"alerts": alerts}
+
+@app.post("/api/save_record")
+async def save_record(req: SaveRequest):
+    if not db: return {"status": "error"}
+    doc_ref = db.collection('consultations').document()
+    data = req.dict(); data['created_at'] = firestore.SERVER_TIMESTAMP
+    doc_ref.set(data)
+    return {"status": "success", "id": doc_ref.id}
+
+@app.post("/api/update_record/{doc_id}")
+async def update_record(doc_id: str, req: SaveRequest):
+    if not db: return {"status": "error"}
+    db.collection('consultations').document(doc_id).set(req.dict(exclude_unset=True), merge=True)
+    return {"status": "success"}
+
+@app.post("/api/sign_consent/{doc_id}")
+async def sign_consent(doc_id: str):
+    if not db: return {"status": "error"}
+    db.collection('consultations').document(doc_id).update({"consent_signed": True, "consent_date": datetime.datetime.now().strftime("%Y-%m-%d")})
+    return {"status": "success"}
+
+@app.get("/api/search_records")
+async def search_records(keyword: str = ""):
+    if not db: return []
+    try:
+        docs = db.collection('consultations').order_by('created_at', direction=firestore.Query.DESCENDING).limit(50).stream()
+        results = []
+        for doc in docs:
+            data = doc.to_dict(); data['id'] = doc.id
+            if data.get('created_at'): data['created_at'] = datetime.datetime.fromtimestamp(data['created_at'].timestamp()).strftime("%Y-%m-%d")
+            if keyword:
+                search_target = f"{data.get('client_name','')} {data.get('note','')} {data.get('phone','')}"
+                if keyword.lower() in search_target.lower(): results.append(data)
+            else: results.append(data)
+        return results
+    except: return []
+
+@app.delete("/api/delete_record/{doc_id}")
+async def delete_record(doc_id: str):
+    if not db: return {"status": "error"}
+    db.collection('consultations').document(doc_id).delete()
+    return {"status": "success"}
+
+@app.post("/api/ask_ai")
+async def ask_ai(req: AIRequest):
+    if "請在此" in OPENAI_API_KEY: return {"error": "Key Error"}
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        res = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": req.prompt}])
+        return {"reply": res.choices[0].message.content}
+    except Exception as e: return {"error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
