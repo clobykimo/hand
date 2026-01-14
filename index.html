@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．全時空戰略中台 (V9.9.18)</title>
+    <title>達摩一掌經．全時空戰略中台 (V9.9.20)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         :root {
@@ -412,8 +412,13 @@
         fillLists(result, h);
     }
 
-    // 4. [列表與動能箭頭] (V9.9.18 靈敏度優化: 3/10/20)
+    // 4. [列表與動能箭頭] (V9.9.20 修正：資料賦值順序)
     function fillLists(result, h) {
+        // [FIX] 立即更新全域資料，確保計算迴圈能抓到最新數據
+        if (result.trend_data) {
+            globalTrendData = result.trend_data;
+        }
+
         let hHtml = `<div class="hierarchy-step"><span class="step-label">大運</span><span class="step-value">${result.hierarchy.big_luck.zhi}宮 ${result.hierarchy.big_luck.name}</span></div>`;
         hHtml += `<div class="hierarchy-step"><span class="step-label">流年</span><span class="step-value">${result.hierarchy.year.zhi}宮 ${result.hierarchy.year.name}</span></div>`;
         if(result.hierarchy.month) hHtml += `<div class="hierarchy-step"><span class="step-label">流月</span><span class="step-value">${result.hierarchy.month.zhi}宮 ${result.hierarchy.month.name}</span></div>`;
@@ -506,7 +511,7 @@
         });
         setHTML('aspectsList', aHtml);
         setText('aiPrompt', result.ai_prompt);
-        if(result.trend_data) { globalTrendData = result.trend_data; updateTrendChart('總命運'); }
+        if(globalTrendData) updateTrendChart('總命運');
     }
 
     // Chart 渲染
@@ -571,14 +576,14 @@
     function restoreFromHistory(item) { document.getElementById('solarDate').value = item.solar_date; document.getElementById('gender').value = item.gender; document.getElementById('hour').value = item.hour; document.getElementById('tYear').value = item.target_year || 2026; document.getElementById('tMonth').value = 1; document.getElementById('tDay').value = 1; document.getElementById('targetScope').value = 'year'; updateFormUI(); alert(`已載入：${item.client_name}\n(自動切換為流年模式)`); setTimeout(() => calculate(), 200); }
     async function callAIWithMode(mode) { if (!globalTrendData) { alert("請先排盤"); return; } const prompt = `分析${lastActiveAspect}，模式:${mode}`; document.getElementById('aiResponseArea').innerText = "AI 思考中..."; try { const res = await fetch('/api/ask_ai', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:prompt})}); const d = await res.json(); document.getElementById('aiResponseArea').innerText = d.reply; } catch(e) { document.getElementById('aiResponseArea').innerText = "失敗"; } }
 
-    // [V3.7 稽核表 - 主客對調版]
+    // [V3.8] 稽核表：逆推互動邏輯 (支援比旺 75分判斷)
     function getInteractionDetails(guestEl, score) {
-        // [對照 V8.2 階梯分數] 80, 65, 50, 35, 20
+        // [對照 V8.5 分數] 80, 75, 50, 35, 20
         let icon = "", desc = "";
         if (score >= 80) { 
             icon = `<span style="color:#888;">客(${guestEl})</span> <span style="color:var(--status-best); font-weight:bold;">滋養➝</span> <span style="color:#fff;">我(主)</span>`; 
             desc = "運氣好：此宮位的人事物來成就我"; 
-        } else if (score >= 65) { 
+        } else if (score >= 75) { 
             icon = `<span style="color:#888;">客(${guestEl})</span> <span style="color:var(--status-good); font-weight:bold;">幫扶＝</span> <span style="color:#fff;">我(主)</span>`; 
             desc = "運氣平順：此宮位與我同心協力"; 
         } else if (score >= 50) { 
@@ -618,6 +623,7 @@
                         <li><strong>主角 (我/Host)：</strong>流年總命運 (當年的本命能量)。</li>
                         <li><strong>客人 (他/Guest)：</strong>各個宮位 (事業、健康、財運...)。</li>
                         <li><strong>吉凶判斷：</strong>看「客人」對「我」做了什麼？(客生我=吉，客剋我=凶)。</li>
+                        <li><strong>分數範圍：</strong>80(生我), 75(比旺), 50(我生), 35(我剋), 20(剋我)。</li>
                     </ul>
                 </div>
                 <div style="overflow-x:auto;">
@@ -693,7 +699,6 @@
     }
 
     updateFormUI(); initMap();
-    
     window.onload = function() {
         const restoreDataStr = localStorage.getItem('damo_restore_data');
         if (restoreDataStr) {
