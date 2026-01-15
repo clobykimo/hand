@@ -30,7 +30,7 @@ SYSTEM_BASE_URL = "https://hand-316288530636.asia-east1.run.app"
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V9.6.1 修復版")
+app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V9.6.2 穩定版")
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -99,7 +99,6 @@ def parse_target_date(mode, calendar_type, year, month, day, hour_zhi):
             display_info = f"國曆 {dual_info['solar']} (農曆 {dual_info['lunar']})"
         else:
             try:
-                # 嘗試計算農曆對應的國曆，若失敗(例如無效日期)則忽略
                 lunar_obj = LunarDate(year, month, day)
                 solar_obj = lunar_obj.to_solar_date()
                 dual_info["solar"] = f"{solar_obj.year}-{solar_obj.month}-{solar_obj.day}"
@@ -115,7 +114,6 @@ def parse_target_date(mode, calendar_type, year, month, day, hour_zhi):
             "dual_info": dual_info
         }
     except Exception as e:
-        # 回傳安全預設值，避免後續取值崩潰
         return {
             "lunar_year": year, "lunar_month": month, "lunar_day": day, 
             "year_zhi": ZHI[(year-4)%12], "hour_zhi": hour_zhi, 
@@ -157,9 +155,13 @@ class OnePalmSystem:
         return hierarchy
 
     def calculate_full_trend(self, hierarchy, scope, lunar_data, target_data, system_obj):
-        trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "renhe_scores": [], "tooltips": [], "target_index": -1 }
+        # [Bug Fix] tooltips 必須初始化為字典 {}, 不是列表 []
+        trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "renhe_scores": [], "tooltips": {}, "target_index": -1 }
+        
         for name in ASPECTS_ORDER: 
-            trend_response["datasets"][name] = []; trend_response["adjustments"][name] = []; trend_response["tooltips"][name] = []
+            trend_response["datasets"][name] = []
+            trend_response["adjustments"][name] = []
+            trend_response["tooltips"][name] = [] # 這裡存取字典 key
         
         loop_items = []
         target_val_match = -1
@@ -191,14 +193,12 @@ class OnePalmSystem:
             t_month = target_data['lunar_month']
             days_in_month = 30 
             try: 
-                # [Fix] 防止月份溢位導致 crash
                 valid_month = max(1, min(12, t_month))
                 days_in_month = LunarDate(t_year, valid_month, 1).days_in_month 
             except: pass
             
             for i in range(1, days_in_month + 1):
                 try:
-                    # [Fix] 防止日期運算錯誤
                     valid_month = max(1, min(12, t_month))
                     l_date = LunarDate(t_year, valid_month, i)
                     s_date = l_date.to_solar_date()
@@ -429,7 +429,6 @@ async def calculate(req: UserRequest):
         return {"lunar_info": lunar_data['lunar_str'], "age": age, "base_chart": base_chart, "hierarchy": hierarchy, "target_display": target_data['display_info'], "dual_info": target_data.get('dual_info', {}), "aspects": aspects, "ai_prompt": "", "trend_data": trend_data}
     except Exception as e: 
         logger.error(f"Calculate Error: {str(e)}")
-        # 回傳 400 而不是 500，方便前端除錯，且不會讓瀏覽器認為伺服器掛了
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/scan_family_risks")
