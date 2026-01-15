@@ -15,44 +15,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from borax.calendars.lunardate import LunarDate
 from google.cloud import firestore
 
-# [自動化模組]
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from playwright.async_api import async_playwright
 
-# 設定 Log 格式
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("DamoSystem")
 
-# ---------------- 設定區 (Configuration) ----------------
-
-# API Key 設定
+# ---------------- 設定區 ----------------
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API_Key"
-
-# [設定] 郵件伺服器 (請修改為您的真實資訊)
-SMTP_CONFIG = {
-    "server": "smtp.gmail.com",
-    "port": 587,
-    "user": "your_email@gmail.com",       # 請替換為您的 Gmail
-    "password": "xxxx xxxx xxxx xxxx"     # 請替換為您的應用程式密碼
-}
-
-# [設定] 系統網址 (自動化機器人訪問用)
-# 本地測試用 "http://127.0.0.1:8000" (注意 Port 要對應)
-# 上線後請改為 "https://您的專案名稱.a.run.app"
-SYSTEM_BASE_URL = "http://127.0.0.1:8000"
-
+SMTP_CONFIG = { "server": "smtp.gmail.com", "port": 587, "user": "your_email@gmail.com", "password": "xxxx xxxx xxxx xxxx" }
+SYSTEM_BASE_URL = "https://hand-316288530636.asia-east1.run.app"
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V9.5 閏月修正版")
+app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V9.6 雙軌戰略版")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 db = None
@@ -60,9 +38,9 @@ try:
     db = firestore.Client()
     logger.info("✅ Firestore 連線成功")
 except Exception as e:
-    logger.warning(f"⚠️ Firestore 連線失敗 (本機測試可忽略): {e}")
+    logger.warning(f"⚠️ Firestore 連線失敗: {e}")
 
-# ---------------- 知識庫 (Knowledge Base) ----------------
+# ---------------- 知識庫 ----------------
 ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
 STARS_INFO = {
     '子': {'name': '天貴星', 'element': '水'}, '丑': {'name': '天厄星', 'element': '土'},
@@ -72,47 +50,23 @@ STARS_INFO = {
     '申': {'name': '天孤星', 'element': '金'}, '酉': {'name': '天刃星', 'element': '金'},
     '戌': {'name': '天藝星', 'element': '土'}, '亥': {'name': '天壽星', 'element': '水'}
 }
-
-# [V9.3] 用詞優化：將 "健慾" 改為 "健康"
 ASPECTS_ORDER = ["總命運", "形象", "幸福", "事業", "變動", "健康", "愛情", "領導", "親信", "根基", "朋友", "錢財"]
-
-# [Level 2] 十二宮三品格
-STAR_MODIFIERS = {
-    '天貴星': 30, '天福星': 30, '天文星': 30, '天壽星': 30,
-    '天權星': 10, '天藝星': 10, '天驛星': 10, '天奸星': 10,
-    '天孤星': -20, '天破星': -20, '天刃星': -20, '天厄星': -20
-}
-
-# [Level 3] 根基人和 (歲數星加權)
-RENHE_MODIFIERS = {
-    '天貴星': 10, '天福星': 10, '天文星': 10, '天壽星': 10,
-    '天權星': 5, '天藝星': 5, '天驛星': 5, '天奸星': 5,
-    '天孤星': -10, '天破星': -10, '天刃星': -10, '天厄星': -10
-}
-
+STAR_MODIFIERS = {'天貴星': 30, '天福星': 30, '天文星': 30, '天壽星': 30, '天權星': 10, '天藝星': 10, '天驛星': 10, '天奸星': 10, '天孤星': -20, '天破星': -20, '天刃星': -20, '天厄星': -20}
+RENHE_MODIFIERS = {'天貴星': 10, '天福星': 10, '天文星': 10, '天壽星': 10, '天權星': 5, '天藝星': 5, '天驛星': 5, '天奸星': 5, '天孤星': -10, '天破星': -10, '天刃星': -10, '天厄星': -10}
 BAD_STARS = ['天厄星', '天破星', '天刃星']
 
-# ---------------- 核心函數 (Core Logic) ----------------
+# ---------------- 核心函數 ----------------
 def get_zhi_index(zhi_char): return ZHI.index(zhi_char) if zhi_char in ZHI else 0
 def get_next_position(start_index, steps, direction=1): return (start_index + (steps * direction)) % 12
 
-# [V9.1] 五行生剋分數 (80/75/60/35/20)
 def get_element_relation(me, target):
-    # me = 主 (流年/大運), target = 客 (宮位/流年)
     PRODUCING = {'水': '木', '木': '火', '火': '土', '土': '金', '金': '水'}
     CONTROLING = {'水': '火', '火': '金', '金': '木', '木': '土', '土': '水'}
-    
-    # 1. 生我 (客生主)：大吉 80
     if PRODUCING.get(target) == me: return {"type": "生我", "score": 80} 
-    # 2. 比旺 (客同主)：強吉 75
     if me == target: return {"type": "比旺", "score": 75}
-    # 3. 我生 (主生客)：平吉 60 (原 50)
     if PRODUCING.get(me) == target: return {"type": "我生", "score": 60}  
-    # 4. 我剋 (主剋客)：勞碌 35
     if CONTROLING.get(me) == target: return {"type": "我剋", "score": 35}  
-    # 5. 剋我 (客剋主)：凶險 20
     if CONTROLING.get(target) == me: return {"type": "剋我", "score": 20}
-        
     return {"type": "未知", "score": 60}
 
 def solar_to_one_palm_lunar(solar_date_str):
@@ -121,64 +75,44 @@ def solar_to_one_palm_lunar(solar_date_str):
         lunar = LunarDate.from_solar_date(y, m, d)
         year_zhi_idx = (lunar.year - 4) % 12
         final_month = lunar.month
-        # 本命排盤的閏月邏輯
         if lunar.leap and lunar.day > 15: final_month += 1
         return {"year_zhi": ZHI[year_zhi_idx], "month": final_month, "day": lunar.day, "lunar_year_num": lunar.year, "lunar_str": f"農曆 {lunar.year}年 {('閏' if lunar.leap else '')}{lunar.month}月 {lunar.day}日"}
     except: return None
 
-# [V9.5] 修正：parse_target_date 增加閏月判斷，與本命排盤邏輯同步
 def parse_target_date(mode, calendar_type, year, month, day, hour_zhi):
     try:
-        target_lunar_year = year
-        target_lunar_month = month
-        target_lunar_day = day
-        display_info = ""
+        target_lunar_year = year; target_lunar_month = month; target_lunar_day = day; display_info = ""
+        # 雙曆對照資料
+        dual_info = {"solar": "", "lunar": ""}
         
         if calendar_type == 'solar':
-            # 西元轉農曆
             lunar = LunarDate.from_solar_date(year, month, day)
-            target_lunar_year = lunar.year
-            target_lunar_month = lunar.month
-            target_lunar_day = lunar.day
+            target_lunar_year = lunar.year; target_lunar_month = lunar.month; target_lunar_day = lunar.day
+            leap_str = "閏" if lunar.leap else ""
+            if lunar.leap and lunar.day > 15: 
+                target_lunar_month += 1; leap_str = "閏(進)"
             
-            # [修正點] 加入閏月判斷：若為閏月且超過15日，歸入下個月
-            # 這確保了「推算目標」與「本命排盤」的邏輯一致性
-            leap_str = ""
-            if lunar.leap:
-                leap_str = "閏"
-                if lunar.day > 15:
-                    target_lunar_month += 1
-                    leap_str = "閏(進)" # 標示已進位
-            
-            display_info = f"國曆 {year}-{month}-{day} ({leap_str}農曆 {lunar.year}年{target_lunar_month}月{lunar.day}日)"
+            dual_info["solar"] = f"{year}-{month}-{day}"
+            dual_info["lunar"] = f"{lunar.year}年{leap_str}{lunar.month}月{lunar.day}日"
+            display_info = f"國曆 {dual_info['solar']} (農曆 {dual_info['lunar']})"
         else:
-            # 純農曆輸入
             try:
                 lunar_obj = LunarDate(year, month, day)
                 solar_obj = lunar_obj.to_solar_date()
-                display_info = f"農曆 {year}年{month}月{day}日 (國曆 {solar_obj.year}-{solar_obj.month}-{solar_obj.day})"
+                dual_info["solar"] = f"{solar_obj.year}-{solar_obj.month}-{solar_obj.day}"
+                dual_info["lunar"] = f"{year}年{month}月{day}日"
+                display_info = f"農曆 {dual_info['lunar']} (國曆 {dual_info['solar']})"
             except:
+                dual_info["lunar"] = f"{year}年{month}月{day}日"
                 display_info = f"農曆 {year}年{month}月{day}日"
 
         return {
-            "lunar_year": target_lunar_year,
-            "lunar_month": target_lunar_month,
-            "lunar_day": target_lunar_day,
-            # [重要] 年柱地支計算：(年 - 4) % 12
-            "year_zhi": ZHI[(target_lunar_year - 4) % 12],
-            "hour_zhi": hour_zhi,
-            "display_info": display_info
+            "lunar_year": target_lunar_year, "lunar_month": target_lunar_month, "lunar_day": target_lunar_day,
+            "year_zhi": ZHI[(target_lunar_year - 4) % 12], "hour_zhi": hour_zhi, "display_info": display_info,
+            "dual_info": dual_info
         }
     except Exception as e:
-        # 錯誤處理
-        return {
-            "lunar_year": year, 
-            "lunar_month": month, 
-            "lunar_day": day, 
-            "year_zhi": ZHI[(year-4)%12], 
-            "hour_zhi": hour_zhi, 
-            "display_info": f"日期格式錯誤: {str(e)}"
-        }
+        return {"lunar_year": year, "lunar_month": month, "lunar_day": day, "year_zhi": ZHI[(year-4)%12], "hour_zhi": hour_zhi, "display_info": f"日期錯誤", "dual_info": {}}
 
 class OnePalmSystem:
     def __init__(self, gender, birth_year_zhi, birth_month_num, birth_day_num, birth_hour_zhi):
@@ -195,7 +129,6 @@ class OnePalmSystem:
 
     def calculate_hierarchy(self, current_age, target_data, scope):
         start_luck = get_next_position(self.hour_idx, 1, self.direction)
-        # [V9.0] 鎖定：7年一運 (祖制)
         luck_stage = (current_age - 1) // 7 
         big_luck_idx = get_next_position(start_luck, luck_stage, self.direction)
         hierarchy = {"big_luck": {**STARS_INFO[ZHI[big_luck_idx]], "zhi": ZHI[big_luck_idx]}}
@@ -215,29 +148,69 @@ class OnePalmSystem:
         hierarchy["hour"] = {**STARS_INFO[ZHI[flow_hour_idx]], "zhi": ZHI[flow_hour_idx]}
         return hierarchy
 
-    # [V9.2] 趨勢運算 (全維度支援 + 層級遞進主客法則)
+    # [V9.6] 雙軌標籤與靶點鎖定
     def calculate_full_trend(self, hierarchy, scope, lunar_data, target_data, system_obj):
-        trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "renhe_scores": [], "tooltips": {} }
+        trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "renhe_scores": [], "tooltips": [], "target_index": -1 }
         for name in ASPECTS_ORDER: 
             trend_response["datasets"][name] = []; trend_response["adjustments"][name] = []; trend_response["tooltips"][name] = []
         
         loop_items = []
+        target_val_match = -1
         
+        # 建立時間軸與雙軌標籤
         if scope == 'year':
             current_idx = get_zhi_index(hierarchy['year']['zhi'])
             base_year = target_data['lunar_year']
+            # 範圍：前後6年
             for i in range(-6, 7):
-                loop_items.append({'offset': i, 'label': f"{base_year + i}", 'type': 'year'})
-        elif scope == 'month':
-            for i in range(1, 13):
-                loop_items.append({'val': i, 'label': f"{i}月", 'type': 'month'})
-        elif scope == 'day':
-            for i in range(1, 31):
-                loop_items.append({'val': i, 'label': f"{i}日", 'type': 'day'})
-        elif scope == 'hour':
-            for z in ZHI:
-                loop_items.append({'val': z, 'label': f"{z}時", 'type': 'hour'})
+                year_val = base_year + i
+                y_zhi = ZHI[(year_val - 4) % 12]
+                label = [f"{year_val}", f"({y_zhi}年)"] # 雙軌標籤
+                loop_items.append({'offset': i, 'label': label, 'type': 'year', 'val': year_val})
+                if i == 0: target_val_match = len(loop_items) - 1 # 鎖定中間那一年
 
+        elif scope == 'month':
+            # 範圍：1-12月 (嘗試轉換西元)
+            t_year = target_data['lunar_year']
+            for i in range(1, 13):
+                try:
+                    l_date = LunarDate(t_year, i, 1)
+                    s_date = l_date.to_solar_date()
+                    s_label = f"{s_date.month}/{s_date.day}~"
+                except: s_label = "推算中"
+                label = [f"{i}月", f"{s_label}"]
+                loop_items.append({'val': i, 'label': label, 'type': 'month'})
+            target_val_match = target_data['lunar_month'] - 1
+
+        elif scope == 'day':
+            # 範圍：1-30日 (精確雙曆)
+            t_year = target_data['lunar_year']
+            t_month = target_data['lunar_month']
+            days_in_month = 30 # 簡化處理
+            try: days_in_month = LunarDate(t_year, t_month, 1).days_in_month 
+            except: pass
+            
+            for i in range(1, days_in_month + 1):
+                try:
+                    l_date = LunarDate(t_year, t_month, i)
+                    s_date = l_date.to_solar_date()
+                    label = [f"{s_date.month}/{s_date.day}", f"(初{i})" if i < 11 else f"({i})"]
+                except: label = [f"{i}日", ""]
+                loop_items.append({'val': i, 'label': label, 'type': 'day'})
+            target_val_match = target_data['lunar_day'] - 1
+
+        elif scope == 'hour':
+            # 範圍：12時辰
+            for i, z in enumerate(ZHI):
+                # 簡單時辰對照
+                time_range = f"{((i-1)*2+24)%24:02}-{((i*2)+1)%24:02}"
+                label = [f"{time_range}", f"({z}時)"]
+                loop_items.append({'val': z, 'label': label, 'type': 'hour'})
+            target_val_match = get_zhi_index(target_data['hour_zhi'])
+
+        trend_response["target_index"] = target_val_match # 回傳靶點索引
+
+        # 開始運算
         current_fy_idx = get_zhi_index(hierarchy['year']['zhi']) 
         current_fm_idx = get_zhi_index(hierarchy['month']['zhi'])
         current_fd_idx = get_zhi_index(hierarchy['day']['zhi'])   
@@ -250,20 +223,17 @@ class OnePalmSystem:
             
             if scope == 'year':
                 dynamic_idx = get_next_position(current_fy_idx, point['offset'], system_obj.direction)
-                time_star_info = STARS_INFO[ZHI[dynamic_idx]]
             elif scope == 'month':
                 offset = point['val'] - 1
                 dynamic_idx = get_next_position(current_fy_idx, offset, system_obj.direction)
-                time_star_info = STARS_INFO[ZHI[dynamic_idx]]
             elif scope == 'day':
                 offset = point['val'] - 1
                 dynamic_idx = get_next_position(current_fm_idx, offset, system_obj.direction)
-                time_star_info = STARS_INFO[ZHI[dynamic_idx]]
             elif scope == 'hour':
-                h_idx = get_zhi_index(point['val'])
+                h_idx = get_zhi_index(point['val']) if isinstance(point['val'], str) else point['val']
                 dynamic_idx = get_next_position(current_fd_idx, h_idx, system_obj.direction)
-                time_star_info = STARS_INFO[ZHI[dynamic_idx]]
-
+            
+            time_star_info = STARS_INFO[ZHI[dynamic_idx]]
             me_el = time_star_info['element'] 
             age_star_name = time_star_info['name']
             
@@ -276,27 +246,17 @@ class OnePalmSystem:
                 
                 current_guest_el = aspect_star_info['element']
                 current_guest_name = aspect_star_info['name']
-                
                 current_host_el = me_el
                 current_host_name = age_star_name
 
-                # [特案 V9.2] 層級遞進主客法則
+                # 遞進主客法則
                 if name == "總命運":
                     upper_level_star = None
                     upper_level_label = ""
-                    
-                    if scope == 'year':
-                        upper_level_star = hierarchy['big_luck']
-                        upper_level_label = "(大運)"
-                    elif scope == 'month':
-                        upper_level_star = hierarchy['year']
-                        upper_level_label = "(流年)"
-                    elif scope == 'day':
-                        upper_level_star = hierarchy['month']
-                        upper_level_label = "(流月)"
-                    elif scope == 'hour':
-                        upper_level_star = hierarchy['day']
-                        upper_level_label = "(流日)"
+                    if scope == 'year': upper_level_star = hierarchy['big_luck']; upper_level_label = "(大運)"
+                    elif scope == 'month': upper_level_star = hierarchy['year']; upper_level_label = "(流年)"
+                    elif scope == 'day': upper_level_star = hierarchy['month']; upper_level_label = "(流月)"
+                    elif scope == 'hour': upper_level_star = hierarchy['day']; upper_level_label = "(流日)"
                         
                     if upper_level_star:
                         current_host_el = upper_level_star['element']
@@ -305,12 +265,13 @@ class OnePalmSystem:
                         current_guest_name = time_star_info['name'] + "(值星)"
 
                 rel = get_element_relation(me=current_host_el, target=current_guest_el)
-                
                 trend_response["datasets"][name].append(rel["score"])
                 grade_score = STAR_MODIFIERS.get(aspect_star_info['name'], 0)
                 root_score = 10 if curr_idx in pillar_indices else 0
                 trend_response["adjustments"][name].append(grade_score + root_score)
-                trend_response["tooltips"][name].append(f"{current_guest_name} {rel['type']} {current_host_name}")
+                # Tooltip 增強：加入日期資訊
+                date_str = point['label'][0] + point['label'][1]
+                trend_response["tooltips"][name].append(f"[{date_str}] {current_guest_name} {rel['type']} {current_host_name}")
                 
         return trend_response
 
@@ -320,33 +281,20 @@ class OnePalmSystem:
         if star in BAD_STARS: risks.append(f"命帶{star}")
         return risks
 
-# ---------------- 自動化排程核心 (Automation Core) ----------------
-
+# ---------------- 自動化排程核心 ----------------
 async def generate_screenshot(user_data):
-    """
-    啟動隱形瀏覽器 -> 跑運勢 -> 截取戰略圖卡
-    """
     if not user_data.get('client_name'): return None
     screenshot_path = f"uploads/daily_{user_data['client_name']}_{datetime.datetime.now().strftime('%Y%m%d')}.jpg"
-    
     try:
         async with async_playwright() as p:
-            # 啟動瀏覽器
             browser = await p.chromium.launch(headless=True)
             context = await browser.new_context(viewport={'width': 1200, 'height': 1600})
             page = await context.new_page()
-            
-            # 組裝自動執行網址
             query = f"?auto_run=true&date={user_data.get('solar_date')}&gender={user_data.get('gender')}&hour={user_data.get('hour')}"
             target_url = f"{SYSTEM_BASE_URL}/{query}"
-            
             logger.info(f"🤖 機器人前往：{target_url}")
             await page.goto(target_url)
-            
-            # 等待前端運算完成
             await page.wait_for_selector("#trendChart", timeout=20000) 
-            
-            # 強制呼叫前端的截圖準備邏輯 (注入 JS)
             await page.evaluate("""async () => {
                 document.getElementById('loadingOverlay').style.display = 'none';
                 await exportToImage();
@@ -357,49 +305,27 @@ async def generate_screenshot(user_data):
                 container.style.zIndex = '9999';
                 container.style.visibility = 'visible';
             }""")
-            
-            # 等待圖片渲染
             await asyncio.sleep(2)
-            
-            # 截圖
             await page.locator("#exportContainer").screenshot(path=screenshot_path)
             logger.info(f"📸 截圖成功：{screenshot_path}")
             return screenshot_path
-            
     except Exception as e:
         logger.error(f"❌ 截圖失敗 ({user_data.get('client_name')}): {str(e)}")
         return None
 
 def send_daily_email(to_email, user_name, image_path):
-    """
-    發送帶有圖片附件的 Email
-    """
     if not to_email or "@" not in to_email: return
-    
     msg = EmailMessage()
     today_str = datetime.datetime.now().strftime("%Y/%m/%d")
     msg['Subject'] = f"【達摩戰略】{today_str} 每日運勢導航 - {user_name} 專屬"
     msg['From'] = SMTP_CONFIG["user"]
     msg['To'] = to_email
-    
-    content = f"""
-    {user_name} 您好，
-    
-    這是徐峰老師為您準備的今日運勢戰略圖卡。
-    請參考附檔圖片中的「能量走勢」與「戰略建議」。
-    
-    祝您 今日運籌帷幄，決勝千里！
-    
-    --------------------------------
-    徐峰老師 命理戰略團隊 敬上
-    """
+    content = f"""{user_name} 您好，這是徐峰老師為您準備的今日運勢戰略圖卡。請參考附檔圖片中的「能量走勢」與「戰略建議」。祝您 今日運籌帷幄，決勝千里！"""
     msg.set_content(content)
-
     if image_path and os.path.exists(image_path):
         with open(image_path, 'rb') as f:
             img_data = f.read()
             msg.add_attachment(img_data, maintype='image', subtype='jpeg', filename='daily_fortune.jpg')
-
     try:
         with smtplib.SMTP(SMTP_CONFIG["server"], SMTP_CONFIG["port"]) as server:
             server.starttls()
@@ -410,53 +336,38 @@ def send_daily_email(to_email, user_name, image_path):
         logger.error(f"❌ 發信失敗：{str(e)}")
 
 async def daily_batch_job():
-    """
-    每日批次任務：撈取資料庫 -> 截圖 -> 寄信
-    """
     logger.info("⏰ 開始執行每日運勢批次任務...")
-    
-    if not db: 
-        logger.warning("⚠️ 無資料庫連線，跳過批次任務")
-        return
-
+    if not db: return
     try:
         users_ref = db.collection('consultations')
         docs = users_ref.stream()
         count = 0
         for doc in docs:
             data = doc.to_dict()
-            # 條件：必須有 Email 且有完整生辰
             if data.get('email') and data.get('solar_date') and data.get('hour'):
                 logger.info(f"處理客戶：{data.get('client_name')}")
-                
-                # 生成截圖
                 img_path = await generate_screenshot(data)
-                
-                # 寄信
                 if img_path:
                     send_daily_email(data['email'], data.get('client_name', '貴賓'), img_path)
                     try: os.remove(img_path) 
                     except: pass
-                    
                 count += 1
         logger.info(f"✅ 批次任務完成，共發送 {count} 封郵件")
     except Exception as e:
         logger.error(f"❌ 批次任務執行錯誤：{str(e)}")
 
-# ---------------- API 模型 (Pydantic Models) ----------------
+# ---------------- API 模型 ----------------
 class UserRequest(BaseModel):
     gender: int; solar_date: str; hour: str; target_calendar: str = 'lunar'; target_scope: str = 'year'; target_year: int; target_month: int = 1; target_day: int = 1; target_hour: str = '子'
 class AIRequest(BaseModel): prompt: str
 class SaveRequest(BaseModel):
     solar_date: Optional[str] = None; gender: Optional[int] = None; hour: Optional[str] = None; target_year: Optional[int] = None
-    client_name: Optional[str] = None; 
-    email: Optional[str] = None; # [新增] Email 欄位
-    phone: Optional[str] = ""; tags: Optional[List[str]] = []
+    client_name: Optional[str] = None; email: Optional[str] = None; phone: Optional[str] = ""; tags: Optional[List[str]] = []
     note: Optional[str] = ""; ai_log: Optional[Dict[str, Any]] = {}
     image_urls: Optional[List[str]] = []; audio_url: Optional[str] = ""; transcript: Optional[str] = ""
     relations: Optional[List[Dict[str, Any]]] = []; consent_signed: Optional[bool] = False; consent_date: Optional[str] = ""
 
-# ---------------- API 路由 (Routes) ----------------
+# ---------------- API 路由 ----------------
 @app.get("/", response_class=HTMLResponse)
 async def read_root(): return open("index.html", "r", encoding="utf-8").read() if os.path.exists("index.html") else "<h1>Error</h1>"
 @app.get("/crm", response_class=HTMLResponse)
@@ -498,29 +409,18 @@ async def calculate(req: UserRequest):
         for i, name in enumerate(ASPECTS_ORDER):
             curr_idx = (base_idx + i) % 12 
             guest_star_info = STARS_INFO[ZHI[curr_idx]] 
-            
             current_host_el = host_star['element']
             if name == "總命運":
                 if req.target_scope == 'year': current_host_el = hierarchy['big_luck']['element']
                 elif req.target_scope == 'month': current_host_el = hierarchy['year']['element']
                 elif req.target_scope == 'day': current_host_el = hierarchy['month']['element']
                 elif req.target_scope == 'hour': current_host_el = hierarchy['day']['element']
-
             rel = get_element_relation(me=current_host_el, target=guest_star_info['element'])
-            
-            aspects.append({
-                "name": name, 
-                "star": guest_star_info['name'], 
-                "element": guest_star_info['element'], 
-                "zhi": ZHI[curr_idx], 
-                "relation": rel['type'], 
-                "is_alert": (rel['type'] in ['我剋','剋我'])
-            })
+            aspects.append({ "name": name, "star": guest_star_info['name'], "element": guest_star_info['element'], "zhi": ZHI[curr_idx], "relation": rel['type'], "is_alert": (rel['type'] in ['我剋','剋我']) })
         
         trend_data = system.calculate_full_trend(hierarchy, req.target_scope, lunar_data, target_data, system)
-        scope_map = {'year': '流年', 'month': '流月', 'day': '流日', 'hour': '流時'}
-        ai_prompt = (f"案主{age}歲，目標{target_data['display_info']}，層級{scope_map.get(req.target_scope)}。")
-        return {"lunar_info": lunar_data['lunar_str'], "age": age, "base_chart": base_chart, "hierarchy": hierarchy, "target_display": target_data['display_info'], "aspects": aspects, "ai_prompt": ai_prompt, "trend_data": trend_data}
+        
+        return {"lunar_info": lunar_data['lunar_str'], "age": age, "base_chart": base_chart, "hierarchy": hierarchy, "target_display": target_data['display_info'], "dual_info": target_data.get('dual_info', {}), "aspects": aspects, "ai_prompt": "", "trend_data": trend_data}
     except Exception as e: logger.error(str(e)); raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/scan_family_risks")
@@ -591,12 +491,9 @@ async def ask_ai(req: AIRequest):
         return {"reply": res.choices[0].message.content}
     except Exception as e: return {"error": str(e)}
 
-# ---------------- 啟動排程器 (Startup Event) ----------------
 scheduler = AsyncIOScheduler()
-
 @app.on_event("startup")
 async def start_scheduler_event():
-    # 每天早上 07:00 執行
     scheduler.add_job(daily_batch_job, 'cron', hour=7, minute=0)
     scheduler.start()
     logger.info("🚀 系統啟動：每日運勢自動化排程已就緒")
