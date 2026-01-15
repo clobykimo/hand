@@ -32,19 +32,19 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API
 SMTP_CONFIG = {
     "server": "smtp.gmail.com",
     "port": 587,
-    "user": "clobykimo@gmail.com",       # 請替換為您的 Gmail
-    "password": "saqr paks fvcl verw"     # 請替換為您的應用程式密碼
+    "user": "your_email@gmail.com",       # 請替換為您的 Gmail
+    "password": "xxxx xxxx xxxx xxxx"     # 請替換為您的應用程式密碼
 }
 
 # [設定] 系統網址 (自動化機器人訪問用)
-# 本地測試用 "http://127.0.0.1:8000"
+# 本地測試用 "http://127.0.0.1:8000" (注意 Port 要對應)
 # 上線後請改為 "https://您的專案名稱.a.run.app"
 SYSTEM_BASE_URL = "http://127.0.0.1:8000"
 
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V9.4 完整旗艦版")
+app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V9.5 閏月修正版")
 
 app.add_middleware(
     CORSMiddleware,
@@ -121,24 +121,64 @@ def solar_to_one_palm_lunar(solar_date_str):
         lunar = LunarDate.from_solar_date(y, m, d)
         year_zhi_idx = (lunar.year - 4) % 12
         final_month = lunar.month
+        # 本命排盤的閏月邏輯
         if lunar.leap and lunar.day > 15: final_month += 1
         return {"year_zhi": ZHI[year_zhi_idx], "month": final_month, "day": lunar.day, "lunar_year_num": lunar.year, "lunar_str": f"農曆 {lunar.year}年 {('閏' if lunar.leap else '')}{lunar.month}月 {lunar.day}日"}
     except: return None
 
+# [V9.5] 修正：parse_target_date 增加閏月判斷，與本命排盤邏輯同步
 def parse_target_date(mode, calendar_type, year, month, day, hour_zhi):
     try:
-        target_lunar_year = year; target_lunar_month = month; target_lunar_day = day; display_info = ""
+        target_lunar_year = year
+        target_lunar_month = month
+        target_lunar_day = day
+        display_info = ""
+        
         if calendar_type == 'solar':
+            # 西元轉農曆
             lunar = LunarDate.from_solar_date(year, month, day)
-            target_lunar_year = lunar.year; target_lunar_month = lunar.month; target_lunar_day = lunar.day
-            display_info = f"國曆 {year}-{month}-{day} (農曆 {lunar.year}年{lunar.month}月{lunar.day}日)"
+            target_lunar_year = lunar.year
+            target_lunar_month = lunar.month
+            target_lunar_day = lunar.day
+            
+            # [修正點] 加入閏月判斷：若為閏月且超過15日，歸入下個月
+            # 這確保了「推算目標」與「本命排盤」的邏輯一致性
+            leap_str = ""
+            if lunar.leap:
+                leap_str = "閏"
+                if lunar.day > 15:
+                    target_lunar_month += 1
+                    leap_str = "閏(進)" # 標示已進位
+            
+            display_info = f"國曆 {year}-{month}-{day} ({leap_str}農曆 {lunar.year}年{target_lunar_month}月{lunar.day}日)"
         else:
-            lunar_obj = LunarDate(year, month, day)
-            solar_obj = lunar_obj.to_solar_date()
-            target_lunar_year = year; target_lunar_month = month; target_lunar_day = day
-            display_info = f"農曆 {year}年{month}月{day}日 (國曆 {solar_obj.year}-{solar_obj.month}-{solar_obj.day})"
-        return {"lunar_year": target_lunar_year, "lunar_month": target_lunar_month, "lunar_day": target_lunar_day, "year_zhi": ZHI[(target_lunar_year - 4) % 12], "hour_zhi": hour_zhi, "display_info": display_info}
-    except: return {"lunar_year": year, "lunar_month": month, "lunar_day": day, "year_zhi": ZHI[(year-4)%12], "hour_zhi": hour_zhi, "display_info": f"日期錯誤"}
+            # 純農曆輸入
+            try:
+                lunar_obj = LunarDate(year, month, day)
+                solar_obj = lunar_obj.to_solar_date()
+                display_info = f"農曆 {year}年{month}月{day}日 (國曆 {solar_obj.year}-{solar_obj.month}-{solar_obj.day})"
+            except:
+                display_info = f"農曆 {year}年{month}月{day}日"
+
+        return {
+            "lunar_year": target_lunar_year,
+            "lunar_month": target_lunar_month,
+            "lunar_day": target_lunar_day,
+            # [重要] 年柱地支計算：(年 - 4) % 12
+            "year_zhi": ZHI[(target_lunar_year - 4) % 12],
+            "hour_zhi": hour_zhi,
+            "display_info": display_info
+        }
+    except Exception as e:
+        # 錯誤處理
+        return {
+            "lunar_year": year, 
+            "lunar_month": month, 
+            "lunar_day": day, 
+            "year_zhi": ZHI[(year-4)%12], 
+            "hour_zhi": hour_zhi, 
+            "display_info": f"日期格式錯誤: {str(e)}"
+        }
 
 class OnePalmSystem:
     def __init__(self, gender, birth_year_zhi, birth_month_num, birth_day_num, birth_hour_zhi):
@@ -556,8 +596,8 @@ scheduler = AsyncIOScheduler()
 
 @app.on_event("startup")
 async def start_scheduler_event():
-# 啟動後 10 秒就執行一次，方便測試
-    scheduler.add_job(daily_batch_job, 'date', run_date=datetime.datetime.now() + datetime.timedelta(seconds=10))
+    # 每天早上 07:00 執行
+    scheduler.add_job(daily_batch_job, 'cron', hour=7, minute=0)
     scheduler.start()
     logger.info("🚀 系統啟動：每日運勢自動化排程已就緒")
 
