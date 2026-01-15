@@ -8,12 +8,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ======================================================
-# 4. [GCP 專用] 安裝 Playwright 瀏覽器與系統相依套件
-# 這是最關鍵的一步，相當於 Render 的 Build Command
-# ======================================================
-RUN playwright install chromium
-RUN playwright install-deps
+# --- 請刪除或註解以下這幾行 ---
+# RUN pip install playwright
+# RUN playwright install chromium
+# RUN playwright install-deps
+# ---------------------------
 
 # 5. 複製所有程式碼到容器內
 COPY . .
@@ -24,3 +23,4 @@ ENV PYTHONUNBUFFERED=1
 # 7. 啟動服務 (GCP Cloud Run 預設 Port 為 8080)
 # 注意：這裡必須用 0.0.0.0 和 port 8080
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+
