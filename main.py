@@ -2,10 +2,7 @@ import logging
 import os
 import sys
 import datetime
-import shutil
-import smtplib
 from typing import Optional, List, Dict, Any
-from email.message import EmailMessage
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse
@@ -15,9 +12,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from borax.calendars.lunardate import LunarDate
 from google.cloud import firestore
 
-# [自動化模組]
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from playwright.async_api import async_playwright
+# [輕量版] 移除自動化模組
+# from apscheduler.schedulers.asyncio import AsyncIOScheduler
+# from playwright.async_api import async_playwright
+# import smtplib
+# from email.message import EmailMessage
 
 # 設定 Log 格式
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -25,12 +24,13 @@ logger = logging.getLogger("DamoSystem")
 
 # ---------------- 設定區 ----------------
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API_Key"
-SMTP_CONFIG = { "server": "smtp.gmail.com", "port": 587, "user": "your_email@gmail.com", "password": "xxxx xxxx xxxx xxxx" }
+# [輕量版] SMTP 設定暫時移除
+# SMTP_CONFIG = { ... } 
 SYSTEM_BASE_URL = "https://hand-316288530636.asia-east1.run.app"
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V10.0 AI 戰略顧問版")
+app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V10.0 Lite 輕量競速版")
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -42,7 +42,7 @@ try:
 except Exception as e:
     logger.warning(f"⚠️ Firestore 連線失敗: {e}")
 
-# ---------------- 知識庫 ----------------
+# ---------------- 知識庫 (保留完整邏輯) ----------------
 ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
 STARS_INFO = {
     '子': {'name': '天貴星', 'element': '水'}, '丑': {'name': '天厄星', 'element': '土'},
@@ -57,7 +57,7 @@ STAR_MODIFIERS = {'天貴星': 30, '天福星': 30, '天文星': 30, '天壽星'
 RENHE_MODIFIERS = {'天貴星': 10, '天福星': 10, '天文星': 10, '天壽星': 10, '天權星': 5, '天藝星': 5, '天驛星': 5, '天奸星': 5, '天孤星': -10, '天破星': -10, '天刃星': -10, '天厄星': -10}
 BAD_STARS = ['天厄星', '天破星', '天刃星']
 
-# ---------------- 核心函數 ----------------
+# ---------------- 核心函數 (保留 V9.6 雙軌邏輯) ----------------
 def get_zhi_index(zhi_char): return ZHI.index(zhi_char) if zhi_char in ZHI else 0
 def get_next_position(start_index, steps, direction=1): return (start_index + (steps * direction)) % 12
 
@@ -283,83 +283,8 @@ class OnePalmSystem:
         if star in BAD_STARS: risks.append(f"命帶{star}")
         return risks
 
-# ---------------- 自動化排程核心 ----------------
-async def generate_screenshot(user_data):
-    if not user_data.get('client_name'): return None
-    screenshot_path = f"uploads/daily_{user_data['client_name']}_{datetime.datetime.now().strftime('%Y%m%d')}.jpg"
-    try:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            context = await browser.new_context(viewport={'width': 1200, 'height': 1600})
-            page = await context.new_page()
-            query = f"?auto_run=true&date={user_data.get('solar_date')}&gender={user_data.get('gender')}&hour={user_data.get('hour')}"
-            target_url = f"{SYSTEM_BASE_URL}/{query}"
-            logger.info(f"🤖 機器人前往：{target_url}")
-            await page.goto(target_url)
-            await page.wait_for_selector("#trendChart", timeout=20000) 
-            await page.evaluate("""async () => {
-                document.getElementById('loadingOverlay').style.display = 'none';
-                await exportToImage();
-                const container = document.getElementById('exportContainer');
-                container.style.position = 'absolute';
-                container.style.left = '0px';
-                container.style.top = '0px';
-                container.style.zIndex = '9999';
-                container.style.visibility = 'visible';
-            }""")
-            await asyncio.sleep(2)
-            await page.locator("#exportContainer").screenshot(path=screenshot_path)
-            logger.info(f"📸 截圖成功：{screenshot_path}")
-            return screenshot_path
-    except Exception as e:
-        logger.error(f"❌ 截圖失敗 ({user_data.get('client_name')}): {str(e)}")
-        return None
-
-def send_daily_email(to_email, user_name, image_path):
-    if not to_email or "@" not in to_email: return
-    msg = EmailMessage()
-    today_str = datetime.datetime.now().strftime("%Y/%m/%d")
-    msg['Subject'] = f"【達摩戰略】{today_str} 每日運勢導航 - {user_name} 專屬"
-    msg['From'] = SMTP_CONFIG["user"]
-    msg['To'] = to_email
-    content = f"""{user_name} 您好，這是徐峰老師為您準備的今日運勢戰略圖卡。請參考附檔圖片中的「能量走勢」與「戰略建議」。祝您 今日運籌帷幄，決勝千里！"""
-    msg.set_content(content)
-    if image_path and os.path.exists(image_path):
-        with open(image_path, 'rb') as f:
-            img_data = f.read()
-            msg.add_attachment(img_data, maintype='image', subtype='jpeg', filename='daily_fortune.jpg')
-    try:
-        with smtplib.SMTP(SMTP_CONFIG["server"], SMTP_CONFIG["port"]) as server:
-            server.starttls()
-            server.login(SMTP_CONFIG["user"], SMTP_CONFIG["password"])
-            server.send_message(msg)
-        logger.info(f"📧 信件已發送：{to_email}")
-    except Exception as e:
-        logger.error(f"❌ 發信失敗：{str(e)}")
-
-async def daily_batch_job():
-    logger.info("⏰ 開始執行每日運勢批次任務...")
-    if not db: return
-    try:
-        users_ref = db.collection('consultations')
-        docs = users_ref.stream()
-        count = 0
-        for doc in docs:
-            data = doc.to_dict()
-            if data.get('email') and data.get('solar_date') and data.get('hour'):
-                logger.info(f"處理客戶：{data.get('client_name')}")
-                img_path = await generate_screenshot(data)
-                if img_path:
-                    send_daily_email(data['email'], data.get('client_name', '貴賓'), img_path)
-                    try: os.remove(img_path) 
-                    except: pass
-                count += 1
-        logger.info(f"✅ 批次任務完成，共發送 {count} 封郵件")
-    except Exception as e:
-        logger.error(f"❌ 批次任務執行錯誤：{str(e)}")
-
 # ---------------- API 模型 ----------------
-# [V10.0] AI 請求模型升級
+# [V10.0] AI 請求模型
 class AIRequest(BaseModel):
     message: str  
     history: List[Dict[str, str]] = []  
@@ -542,16 +467,10 @@ async def ask_ai(req: AIRequest):
         logger.error(f"AI Error: {str(e)}")
         return {"reply": f"AI 思考過載中，請稍後再試。({str(e)})"}
 
-scheduler = AsyncIOScheduler()
-@app.on_event("startup")
-async def start_scheduler_event():
-    scheduler.add_job(daily_batch_job, 'cron', hour=7, minute=0)
-    scheduler.start()
-    logger.info("🚀 系統啟動：每日運勢自動化排程已就緒")
-
-@app.on_event("shutdown")
-async def shutdown_scheduler_event():
-    scheduler.shutdown()
+# [輕量版] 自動化排程暫時移除 (若日後需要可再開啟)
+# scheduler = AsyncIOScheduler()
+# @app.on_event("startup")
+# async def start_scheduler_event(): ...
 
 if __name__ == "__main__":
     import uvicorn
