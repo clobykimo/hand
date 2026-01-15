@@ -1,5 +1,41 @@
-# ... (您的 steps 區塊在上面) ...
+# ---------------------------------------------------------
+# Cloud Build 部署腳本 (For Google Cloud Run)
+# ---------------------------------------------------------
 
-# [新增] 強制使用 Cloud Logging，解決權限錯誤
+steps:
+  # =====================================================
+  # 步驟 1: 建置 Docker 映像檔 (Build)
+  # 這一步會讀取您的 Dockerfile，並安裝 Python、Playwright 和瀏覽器
+  # =====================================================
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/damo-strategy-system', '.']
+
+  # =====================================================
+  # 步驟 2: 推送映像檔到容器登錄庫 (Push)
+  # 把做好的映像檔上傳到 Google Container Registry
+  # =====================================================
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/damo-strategy-system']
+
+  # =====================================================
+  # 步驟 3: 部署到 Cloud Run (Deploy)
+  # 指揮 Cloud Run 使用剛剛上傳的映像檔進行更新
+  # =====================================================
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'damo-strategy-system'                 # 您的服務名稱 (需對應 GCP 上的名稱)
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/damo-strategy-system'
+      - '--region'
+      - 'asia-east1'                           # 您的伺服器區域 (台灣/亞洲)
+      - '--allow-unauthenticated'              # 允許公開存取 (讓網頁能被看見)
+
+# =====================================================
+# 選項設定 (Options)
+# 這裡就是解決 "服務帳戶權限錯誤" 的關鍵設定
+# =====================================================
 options:
   logging: CLOUD_LOGGING_ONLY
