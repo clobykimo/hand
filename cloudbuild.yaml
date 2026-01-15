@@ -1,0 +1,5 @@
+# ... (您的 steps 區塊在上面) ...
+
+# [新增] 強制使用 Cloud Logging，解決權限錯誤
+options:
+  logging: CLOUD_LOGGING_ONLY
