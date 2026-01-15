@@ -3,7 +3,10 @@ import os
 import sys
 import datetime
 import shutil
+import smtplib
 from typing import Optional, List, Dict, Any
+from email.message import EmailMessage
+
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,16 +15,36 @@ from fastapi.middleware.cors import CORSMiddleware
 from borax.calendars.lunardate import LunarDate
 from google.cloud import firestore
 
+# [自動化模組]
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from playwright.async_api import async_playwright
+
 # 設定 Log 格式
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("DamoSystem")
 
+# ---------------- 設定區 (Configuration) ----------------
+
 # API Key 設定
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API_Key"
+
+# [設定] 郵件伺服器 (請修改為您的真實資訊)
+SMTP_CONFIG = {
+    "server": "smtp.gmail.com",
+    "port": 587,
+    "user": "clobykimo@gmail.com",       # 請替換為您的 Gmail
+    "password": "saqr paks fvcl verw"     # 請替換為您的應用程式密碼
+}
+
+# [設定] 系統網址 (自動化機器人訪問用)
+# 本地測試用 "http://127.0.0.1:8000"
+# 上線後請改為 "https://您的專案名稱.a.run.app"
+SYSTEM_BASE_URL = "http://127.0.0.1:8000"
+
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經命理戰略中台 - V9.3 用詞優化版")
+app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V9.4 完整旗艦版")
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,9 +60,9 @@ try:
     db = firestore.Client()
     logger.info("✅ Firestore 連線成功")
 except Exception as e:
-    logger.warning(f"⚠️ Firestore 連線失敗: {e}")
+    logger.warning(f"⚠️ Firestore 連線失敗 (本機測試可忽略): {e}")
 
-# ---------------- 知識庫 ----------------
+# ---------------- 知識庫 (Knowledge Base) ----------------
 ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
 STARS_INFO = {
     '子': {'name': '天貴星', 'element': '水'}, '丑': {'name': '天厄星', 'element': '土'},
@@ -69,20 +92,27 @@ RENHE_MODIFIERS = {
 
 BAD_STARS = ['天厄星', '天破星', '天刃星']
 
-# ---------------- 核心函數 ----------------
+# ---------------- 核心函數 (Core Logic) ----------------
 def get_zhi_index(zhi_char): return ZHI.index(zhi_char) if zhi_char in ZHI else 0
 def get_next_position(start_index, steps, direction=1): return (start_index + (steps * direction)) % 12
 
 # [V9.1] 五行生剋分數 (80/75/60/35/20)
 def get_element_relation(me, target):
+    # me = 主 (流年/大運), target = 客 (宮位/流年)
     PRODUCING = {'水': '木', '木': '火', '火': '土', '土': '金', '金': '水'}
     CONTROLING = {'水': '火', '火': '金', '金': '木', '木': '土', '土': '水'}
     
+    # 1. 生我 (客生主)：大吉 80
     if PRODUCING.get(target) == me: return {"type": "生我", "score": 80} 
+    # 2. 比旺 (客同主)：強吉 75
     if me == target: return {"type": "比旺", "score": 75}
+    # 3. 我生 (主生客)：平吉 60 (原 50)
     if PRODUCING.get(me) == target: return {"type": "我生", "score": 60}  
+    # 4. 我剋 (主剋客)：勞碌 35
     if CONTROLING.get(me) == target: return {"type": "我剋", "score": 35}  
+    # 5. 剋我 (客剋主)：凶險 20
     if CONTROLING.get(target) == me: return {"type": "剋我", "score": 20}
+        
     return {"type": "未知", "score": 60}
 
 def solar_to_one_palm_lunar(solar_date_str):
@@ -125,7 +155,8 @@ class OnePalmSystem:
 
     def calculate_hierarchy(self, current_age, target_data, scope):
         start_luck = get_next_position(self.hour_idx, 1, self.direction)
-        luck_stage = (current_age - 1) // 7 # 7年一運
+        # [V9.0] 鎖定：7年一運 (祖制)
+        luck_stage = (current_age - 1) // 7 
         big_luck_idx = get_next_position(start_luck, luck_stage, self.direction)
         hierarchy = {"big_luck": {**STARS_INFO[ZHI[big_luck_idx]], "zhi": ZHI[big_luck_idx]}}
         
@@ -209,6 +240,7 @@ class OnePalmSystem:
                 current_host_el = me_el
                 current_host_name = age_star_name
 
+                # [特案 V9.2] 層級遞進主客法則
                 if name == "總命運":
                     upper_level_star = None
                     upper_level_label = ""
@@ -248,18 +280,143 @@ class OnePalmSystem:
         if star in BAD_STARS: risks.append(f"命帶{star}")
         return risks
 
-# ---------------- API 模型 ----------------
+# ---------------- 自動化排程核心 (Automation Core) ----------------
+
+async def generate_screenshot(user_data):
+    """
+    啟動隱形瀏覽器 -> 跑運勢 -> 截取戰略圖卡
+    """
+    if not user_data.get('client_name'): return None
+    screenshot_path = f"uploads/daily_{user_data['client_name']}_{datetime.datetime.now().strftime('%Y%m%d')}.jpg"
+    
+    try:
+        async with async_playwright() as p:
+            # 啟動瀏覽器
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context(viewport={'width': 1200, 'height': 1600})
+            page = await context.new_page()
+            
+            # 組裝自動執行網址
+            query = f"?auto_run=true&date={user_data.get('solar_date')}&gender={user_data.get('gender')}&hour={user_data.get('hour')}"
+            target_url = f"{SYSTEM_BASE_URL}/{query}"
+            
+            logger.info(f"🤖 機器人前往：{target_url}")
+            await page.goto(target_url)
+            
+            # 等待前端運算完成
+            await page.wait_for_selector("#trendChart", timeout=20000) 
+            
+            # 強制呼叫前端的截圖準備邏輯 (注入 JS)
+            await page.evaluate("""async () => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+                await exportToImage();
+                const container = document.getElementById('exportContainer');
+                container.style.position = 'absolute';
+                container.style.left = '0px';
+                container.style.top = '0px';
+                container.style.zIndex = '9999';
+                container.style.visibility = 'visible';
+            }""")
+            
+            # 等待圖片渲染
+            await asyncio.sleep(2)
+            
+            # 截圖
+            await page.locator("#exportContainer").screenshot(path=screenshot_path)
+            logger.info(f"📸 截圖成功：{screenshot_path}")
+            return screenshot_path
+            
+    except Exception as e:
+        logger.error(f"❌ 截圖失敗 ({user_data.get('client_name')}): {str(e)}")
+        return None
+
+def send_daily_email(to_email, user_name, image_path):
+    """
+    發送帶有圖片附件的 Email
+    """
+    if not to_email or "@" not in to_email: return
+    
+    msg = EmailMessage()
+    today_str = datetime.datetime.now().strftime("%Y/%m/%d")
+    msg['Subject'] = f"【達摩戰略】{today_str} 每日運勢導航 - {user_name} 專屬"
+    msg['From'] = SMTP_CONFIG["user"]
+    msg['To'] = to_email
+    
+    content = f"""
+    {user_name} 您好，
+    
+    這是徐峰老師為您準備的今日運勢戰略圖卡。
+    請參考附檔圖片中的「能量走勢」與「戰略建議」。
+    
+    祝您 今日運籌帷幄，決勝千里！
+    
+    --------------------------------
+    徐峰老師 命理戰略團隊 敬上
+    """
+    msg.set_content(content)
+
+    if image_path and os.path.exists(image_path):
+        with open(image_path, 'rb') as f:
+            img_data = f.read()
+            msg.add_attachment(img_data, maintype='image', subtype='jpeg', filename='daily_fortune.jpg')
+
+    try:
+        with smtplib.SMTP(SMTP_CONFIG["server"], SMTP_CONFIG["port"]) as server:
+            server.starttls()
+            server.login(SMTP_CONFIG["user"], SMTP_CONFIG["password"])
+            server.send_message(msg)
+        logger.info(f"📧 信件已發送：{to_email}")
+    except Exception as e:
+        logger.error(f"❌ 發信失敗：{str(e)}")
+
+async def daily_batch_job():
+    """
+    每日批次任務：撈取資料庫 -> 截圖 -> 寄信
+    """
+    logger.info("⏰ 開始執行每日運勢批次任務...")
+    
+    if not db: 
+        logger.warning("⚠️ 無資料庫連線，跳過批次任務")
+        return
+
+    try:
+        users_ref = db.collection('consultations')
+        docs = users_ref.stream()
+        count = 0
+        for doc in docs:
+            data = doc.to_dict()
+            # 條件：必須有 Email 且有完整生辰
+            if data.get('email') and data.get('solar_date') and data.get('hour'):
+                logger.info(f"處理客戶：{data.get('client_name')}")
+                
+                # 生成截圖
+                img_path = await generate_screenshot(data)
+                
+                # 寄信
+                if img_path:
+                    send_daily_email(data['email'], data.get('client_name', '貴賓'), img_path)
+                    try: os.remove(img_path) 
+                    except: pass
+                    
+                count += 1
+        logger.info(f"✅ 批次任務完成，共發送 {count} 封郵件")
+    except Exception as e:
+        logger.error(f"❌ 批次任務執行錯誤：{str(e)}")
+
+# ---------------- API 模型 (Pydantic Models) ----------------
 class UserRequest(BaseModel):
     gender: int; solar_date: str; hour: str; target_calendar: str = 'lunar'; target_scope: str = 'year'; target_year: int; target_month: int = 1; target_day: int = 1; target_hour: str = '子'
 class AIRequest(BaseModel): prompt: str
 class SaveRequest(BaseModel):
     solar_date: Optional[str] = None; gender: Optional[int] = None; hour: Optional[str] = None; target_year: Optional[int] = None
-    client_name: Optional[str] = None; phone: Optional[str] = ""; tags: Optional[List[str]] = []
+    client_name: Optional[str] = None; 
+    email: Optional[str] = None; # [新增] Email 欄位
+    phone: Optional[str] = ""; tags: Optional[List[str]] = []
     note: Optional[str] = ""; ai_log: Optional[Dict[str, Any]] = {}
     image_urls: Optional[List[str]] = []; audio_url: Optional[str] = ""; transcript: Optional[str] = ""
     relations: Optional[List[Dict[str, Any]]] = []; consent_signed: Optional[bool] = False; consent_date: Optional[str] = ""
 
-# ---------------- API 路由 ----------------
+# ---------------- API 路由 (Routes) ----------------
 @app.get("/", response_class=HTMLResponse)
 async def read_root(): return open("index.html", "r", encoding="utf-8").read() if os.path.exists("index.html") else "<h1>Error</h1>"
 @app.get("/crm", response_class=HTMLResponse)
@@ -393,6 +550,20 @@ async def ask_ai(req: AIRequest):
         res = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": req.prompt}])
         return {"reply": res.choices[0].message.content}
     except Exception as e: return {"error": str(e)}
+
+# ---------------- 啟動排程器 (Startup Event) ----------------
+scheduler = AsyncIOScheduler()
+
+@app.on_event("startup")
+async def start_scheduler_event():
+# 啟動後 10 秒就執行一次，方便測試
+    scheduler.add_job(daily_batch_job, 'date', run_date=datetime.datetime.now() + datetime.timedelta(seconds=10))
+    scheduler.start()
+    logger.info("🚀 系統啟動：每日運勢自動化排程已就緒")
+
+@app.on_event("shutdown")
+async def shutdown_scheduler_event():
+    scheduler.shutdown()
 
 if __name__ == "__main__":
     import uvicorn
