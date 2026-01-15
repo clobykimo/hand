@@ -576,69 +576,91 @@
         if(globalTrendData) updateTrendChart('總命運');
     }
 
-    function renderTrendChart(labels, scores, tooltips, title) {
-        const ctx = document.getElementById('trendChart').getContext('2d');
-        if (trendChartInstance) trendChartInstance.destroy();
-        document.getElementById('trendTitle').innerHTML = `運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>
-        <div id="headerTimeInfo" class="hud-time-info" style="${globalLastResult.dual_info ? 'display:flex' : 'display:none'}">
-            <span class="hud-val-solar">${globalLastResult.dual_info ? globalLastResult.dual_info.solar : '-'}</span>
-            <span class="hud-icon">⇄</span>
-            <span class="hud-val-lunar">${globalLastResult.dual_info ? globalLastResult.dual_info.lunar : '-'}</span>
+    // 請覆蓋原本的 renderTrendChart 函數
+function renderTrendChart(labels, scores, tooltips, title) {
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    if (trendChartInstance) trendChartInstance.destroy();
+
+    // [防呆修正] 強制重寫標題 HTML，確保不會出現重複的 HUD
+    // 這裡使用 flex 佈局，讓 標題(左) - HUD(右) - 箭頭(最右) 排列整齊
+    const hudDisplay = (globalLastResult && globalLastResult.dual_info) ? 'flex' : 'none';
+    const solarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.solar : '-';
+    const lunarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.lunar : '-';
+
+    document.getElementById('trendTitle').innerHTML = `
+        <div style="display:flex; align-items:center; width:100%; justify-content: space-between;">
+            <span style="white-space:nowrap;">運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span></span>
+            
+            <div id="headerTimeInfo" class="hud-container" style="display:${hudDisplay};">
+                <div class="hud-capsule solar">
+                    <span class="hud-label solar-bg">國</span>
+                    <span class="hud-value">${solarVal}</span>
+                </div>
+                <span class="hud-transfer-icon">⇄</span>
+                <div class="hud-capsule lunar">
+                    <span class="hud-label lunar-bg">農</span>
+                    <span class="hud-value">${lunarVal}</span>
+                </div>
+            </div>
+
+            <span class="arrow-icon" style="margin-left:10px;">▼</span>
         </div>
-        <span class="arrow-icon">▼</span>`;
-        
-        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-        gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); 
-        gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
-        
-        const radarPulsePlugin = {
-            id: 'radarPulse',
-            afterDatasetsDraw(chart, args, options) {
-                const { ctx, data } = chart;
-                const activeIndex = globalTrendData.target_index; 
-                if (activeIndex === -1) return;
+    `;
+    
+    // ... 以下是原本的 Chart.js 繪圖邏輯 (保持不變) ...
+    const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+    gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); 
+    gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+    
+    const radarPulsePlugin = {
+        id: 'radarPulse',
+        afterDatasetsDraw(chart, args, options) {
+            const { ctx, data } = chart;
+            const activeIndex = globalTrendData.target_index; 
+            if (activeIndex === -1 || activeIndex === undefined) return;
 
-                const meta = chart.getDatasetMeta(0);
-                const x = meta.data[activeIndex].x;
-                const y = meta.data[activeIndex].y;
+            const meta = chart.getDatasetMeta(0);
+            if (!meta.data[activeIndex]) return; // 防呆：避免索引越界
 
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(x, y, 15, 0, 2 * Math.PI);
-                ctx.fillStyle = 'rgba(255, 77, 77, 0.3)'; 
-                ctx.fill();
-                ctx.restore();
+            const x = meta.data[activeIndex].x;
+            const y = meta.data[activeIndex].y;
 
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(x, y, 22, 0, 2 * Math.PI);
-                ctx.strokeStyle = 'rgba(255, 77, 77, 0.6)';
-                ctx.lineWidth = 1;
-                ctx.setLineDash([2, 4]); 
-                ctx.stroke();
-                ctx.restore();
-            }
-        };
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, 15, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(255, 77, 77, 0.3)'; 
+            ctx.fill();
+            ctx.restore();
 
-        const targetStr = String(document.getElementById('tYear').value);
-        const pointColors = labels.map((l, i) => i === globalTrendData.target_index ? '#ff4d4d' : '#fff');
-        const pointRadii = labels.map((l, i) => i === globalTrendData.target_index ? 8 : 4);
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, 22, 0, 2 * Math.PI);
+            ctx.strokeStyle = 'rgba(255, 77, 77, 0.6)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 4]); 
+            ctx.stroke();
+            ctx.restore();
+        }
+    };
 
-        trendChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointColors, pointRadius: pointRadii, pointHoverRadius: 10, fill: true, tension: 0.4 }] },
-            options: { 
-                maintainAspectRatio: false, 
-                scales: { 
-                    y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, 
-                    x: { grid: {color:'#333'}, ticks: {color:'#888', autoSkip: false, maxRotation: 0} } 
-                }, 
-                plugins: { legend: {display:false}, tooltip: { callbacks: { title: i=>Array.isArray(i[0].label)?i[0].label.join(" "):i[0].label, afterLabel: ctx=>tooltips[ctx.dataIndex] }, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37' } } 
-            },
-            plugins: [radarPulsePlugin] 
-        });
-    }
+    const targetStr = String(document.getElementById('tYear').value);
+    const pointColors = labels.map((l, i) => i === globalTrendData.target_index ? '#ff4d4d' : '#fff');
+    const pointRadii = labels.map((l, i) => i === globalTrendData.target_index ? 8 : 4);
 
+    trendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointColors, pointRadius: pointRadii, pointHoverRadius: 10, fill: true, tension: 0.4 }] },
+        options: { 
+            maintainAspectRatio: false, 
+            scales: { 
+                y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, 
+                x: { grid: {color:'#333'}, ticks: {color:'#888', autoSkip: false, maxRotation: 0} } 
+            }, 
+            plugins: { legend: {display:false}, tooltip: { callbacks: { title: i=>Array.isArray(i[0].label)?i[0].label.join(" "):i[0].label, afterLabel: ctx=>tooltips[ctx.dataIndex] }, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37' } } 
+        },
+        plugins: [radarPulsePlugin] 
+    });
+}
     function updateTrendChart(aspectName) {
         if (!globalTrendData || !globalTrendData.datasets[aspectName]) return;
         lastActiveAspect = aspectName;
@@ -799,3 +821,4 @@
 </script>
 </body>
 </html>
+
