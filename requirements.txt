@@ -1,10 +1,19 @@
+# --- 核心框架 (必須) ---
 fastapi
 uvicorn
-pydantic
-borax
-openai
-google-cloud-firestore
 python-multipart
-apscheduler
-aiosmtplib
+pydantic
+
+# --- 命理運算核心 (必須) ---
+borax
+
+# --- Google 資料庫 (必須) ---
+google-cloud-firestore
+
+# --- AI 大腦 (必須) ---
+openai
+
+# --- 輕量化處理：以下套件已停用 ---
+# playwright        <-- [已移除] 瀏覽器自動化 (造成部署變慢的元兇)
+# apscheduler       <-- [已移除] 定時排程 (輕量版暫不執行背景任務)
 
