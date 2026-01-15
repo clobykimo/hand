@@ -30,7 +30,7 @@ SYSTEM_BASE_URL = "https://hand-316288530636.asia-east1.run.app"
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V9.6.2 穩定版")
+app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V10.0 AI 戰略顧問版")
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -155,13 +155,12 @@ class OnePalmSystem:
         return hierarchy
 
     def calculate_full_trend(self, hierarchy, scope, lunar_data, target_data, system_obj):
-        # [Bug Fix] tooltips 必須初始化為字典 {}, 不是列表 []
         trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "renhe_scores": [], "tooltips": {}, "target_index": -1 }
         
         for name in ASPECTS_ORDER: 
             trend_response["datasets"][name] = []
             trend_response["adjustments"][name] = []
-            trend_response["tooltips"][name] = [] # 這裡存取字典 key
+            trend_response["tooltips"][name] = [] 
         
         loop_items = []
         target_val_match = -1
@@ -360,9 +359,14 @@ async def daily_batch_job():
         logger.error(f"❌ 批次任務執行錯誤：{str(e)}")
 
 # ---------------- API 模型 ----------------
+# [V10.0] AI 請求模型升級
+class AIRequest(BaseModel):
+    message: str  
+    history: List[Dict[str, str]] = []  
+    context_data: Optional[Dict[str, Any]] = {} 
+
 class UserRequest(BaseModel):
     gender: int; solar_date: str; hour: str; target_calendar: str = 'lunar'; target_scope: str = 'year'; target_year: int; target_month: int = 1; target_day: int = 1; target_hour: str = '子'
-class AIRequest(BaseModel): prompt: str
 class SaveRequest(BaseModel):
     solar_date: Optional[str] = None; gender: Optional[int] = None; hour: Optional[str] = None; target_year: Optional[int] = None
     client_name: Optional[str] = None; email: Optional[str] = None; phone: Optional[str] = ""; tags: Optional[List[str]] = []
@@ -489,15 +493,54 @@ async def delete_record(doc_id: str):
     db.collection('consultations').document(doc_id).delete()
     return {"status": "success"}
 
+# [V10.0] AI 大腦核心：注入達摩邏輯與商業導購
 @app.post("/api/ask_ai")
 async def ask_ai(req: AIRequest):
-    if "請在此" in OPENAI_API_KEY: return {"error": "Key Error"}
+    if "請在此" in OPENAI_API_KEY: return {"error": "API Key 未設定"}
+    
     try:
         from openai import OpenAI
         client = OpenAI(api_key=OPENAI_API_KEY)
-        res = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": req.prompt}])
+
+        # 1. 建構「系統人設」 (System Prompt) - 這是 AI 的靈魂
+        ctx = req.context_data
+        system_prompt = f"""
+        你現在是「達摩一掌經」的專業戰略顧問，輔助「徐峰老師」進行命理諮詢。
+        
+        【你的核心邏輯】：
+        1. 依據分數判斷吉凶 (底層邏輯)：
+           - 80分 (生我)：大吉，貴人相助，輕鬆得利。
+           - 75分 (比旺)：中吉，同伴合作，順水推舟。
+           - 60分 (我生)：平運，才華展現，但需付出努力。
+           - 35分 (我剋)：勞碌，雖然有掌控權，但過程辛苦，需親力親為。
+           - 20分 (剋我)：凶險，壓力極大，受制於人，易有災禍。
+        2. 說話風格：專業、理性、帶有戰略高度，不要過於迷信，用現代管理學術語解釋命理。
+        3. 【商業導購指令】：若你發現某個重要宮位 (如總命運、事業、錢財) 分數低於 40 分 (35或20)，請務必在分析結尾加上：「⚠ 偵測到此處能量波動較大，建議預約徐峰老師進行一對一深度佈局，以化解風險。」
+
+        【當前案主數據】：
+        - 年齡：{ctx.get('age', '未知')}
+        - 目標時間：{ctx.get('target_display', '未知')}
+        - 命盤重點數據：{str(ctx.get('aspects', []))}
+        """
+
+        # 2. 組合對話歷史
+        messages = [{"role": "system", "content": system_prompt}]
+        recent_history = req.history[-6:] 
+        messages.extend(recent_history)
+        messages.append({"role": "user", "content": req.message})
+
+        # 3. 發送請求
+        res = client.chat.completions.create(
+            model="gpt-4o", 
+            messages=messages,
+            temperature=0.7 
+        )
+        
         return {"reply": res.choices[0].message.content}
-    except Exception as e: return {"error": str(e)}
+
+    except Exception as e:
+        logger.error(f"AI Error: {str(e)}")
+        return {"reply": f"AI 思考過載中，請稍後再試。({str(e)})"}
 
 scheduler = AsyncIOScheduler()
 @app.on_event("startup")
