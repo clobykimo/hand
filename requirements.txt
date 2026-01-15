@@ -5,3 +5,6 @@ borax
 openai
 google-cloud-firestore
 python-multipart
+apscheduler
+playwright
+aiosmtplib
