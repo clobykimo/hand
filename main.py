@@ -15,9 +15,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from borax.calendars.lunardate import LunarDate
 from google.cloud import firestore
 
+# [自動化模組]
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from playwright.async_api import async_playwright
 
+# 設定 Log 格式
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("DamoSystem")
 
@@ -28,7 +30,7 @@ SYSTEM_BASE_URL = "https://hand-316288530636.asia-east1.run.app"
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V9.6 雙軌戰略版")
+app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V9.6.1 修復版")
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -70,6 +72,7 @@ def get_element_relation(me, target):
     return {"type": "未知", "score": 60}
 
 def solar_to_one_palm_lunar(solar_date_str):
+    if not solar_date_str: return None
     try:
         y, m, d = map(int, solar_date_str.split('-'))
         lunar = LunarDate.from_solar_date(y, m, d)
@@ -82,7 +85,6 @@ def solar_to_one_palm_lunar(solar_date_str):
 def parse_target_date(mode, calendar_type, year, month, day, hour_zhi):
     try:
         target_lunar_year = year; target_lunar_month = month; target_lunar_day = day; display_info = ""
-        # 雙曆對照資料
         dual_info = {"solar": "", "lunar": ""}
         
         if calendar_type == 'solar':
@@ -97,6 +99,7 @@ def parse_target_date(mode, calendar_type, year, month, day, hour_zhi):
             display_info = f"國曆 {dual_info['solar']} (農曆 {dual_info['lunar']})"
         else:
             try:
+                # 嘗試計算農曆對應的國曆，若失敗(例如無效日期)則忽略
                 lunar_obj = LunarDate(year, month, day)
                 solar_obj = lunar_obj.to_solar_date()
                 dual_info["solar"] = f"{solar_obj.year}-{solar_obj.month}-{solar_obj.day}"
@@ -112,7 +115,12 @@ def parse_target_date(mode, calendar_type, year, month, day, hour_zhi):
             "dual_info": dual_info
         }
     except Exception as e:
-        return {"lunar_year": year, "lunar_month": month, "lunar_day": day, "year_zhi": ZHI[(year-4)%12], "hour_zhi": hour_zhi, "display_info": f"日期錯誤", "dual_info": {}}
+        # 回傳安全預設值，避免後續取值崩潰
+        return {
+            "lunar_year": year, "lunar_month": month, "lunar_day": day, 
+            "year_zhi": ZHI[(year-4)%12], "hour_zhi": hour_zhi, 
+            "display_info": f"日期錯誤", "dual_info": {"solar":"-", "lunar":"-"}
+        }
 
 class OnePalmSystem:
     def __init__(self, gender, birth_year_zhi, birth_month_num, birth_day_num, birth_hour_zhi):
@@ -148,7 +156,6 @@ class OnePalmSystem:
         hierarchy["hour"] = {**STARS_INFO[ZHI[flow_hour_idx]], "zhi": ZHI[flow_hour_idx]}
         return hierarchy
 
-    # [V9.6] 雙軌標籤與靶點鎖定
     def calculate_full_trend(self, hierarchy, scope, lunar_data, target_data, system_obj):
         trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "renhe_scores": [], "tooltips": [], "target_index": -1 }
         for name in ASPECTS_ORDER: 
@@ -157,20 +164,17 @@ class OnePalmSystem:
         loop_items = []
         target_val_match = -1
         
-        # 建立時間軸與雙軌標籤
         if scope == 'year':
             current_idx = get_zhi_index(hierarchy['year']['zhi'])
             base_year = target_data['lunar_year']
-            # 範圍：前後6年
             for i in range(-6, 7):
                 year_val = base_year + i
                 y_zhi = ZHI[(year_val - 4) % 12]
-                label = [f"{year_val}", f"({y_zhi}年)"] # 雙軌標籤
+                label = [f"{year_val}", f"({y_zhi}年)"]
                 loop_items.append({'offset': i, 'label': label, 'type': 'year', 'val': year_val})
-                if i == 0: target_val_match = len(loop_items) - 1 # 鎖定中間那一年
+                if i == 0: target_val_match = len(loop_items) - 1
 
         elif scope == 'month':
-            # 範圍：1-12月 (嘗試轉換西元)
             t_year = target_data['lunar_year']
             for i in range(1, 13):
                 try:
@@ -183,16 +187,20 @@ class OnePalmSystem:
             target_val_match = target_data['lunar_month'] - 1
 
         elif scope == 'day':
-            # 範圍：1-30日 (精確雙曆)
             t_year = target_data['lunar_year']
             t_month = target_data['lunar_month']
-            days_in_month = 30 # 簡化處理
-            try: days_in_month = LunarDate(t_year, t_month, 1).days_in_month 
+            days_in_month = 30 
+            try: 
+                # [Fix] 防止月份溢位導致 crash
+                valid_month = max(1, min(12, t_month))
+                days_in_month = LunarDate(t_year, valid_month, 1).days_in_month 
             except: pass
             
             for i in range(1, days_in_month + 1):
                 try:
-                    l_date = LunarDate(t_year, t_month, i)
+                    # [Fix] 防止日期運算錯誤
+                    valid_month = max(1, min(12, t_month))
+                    l_date = LunarDate(t_year, valid_month, i)
                     s_date = l_date.to_solar_date()
                     label = [f"{s_date.month}/{s_date.day}", f"(初{i})" if i < 11 else f"({i})"]
                 except: label = [f"{i}日", ""]
@@ -200,17 +208,14 @@ class OnePalmSystem:
             target_val_match = target_data['lunar_day'] - 1
 
         elif scope == 'hour':
-            # 範圍：12時辰
             for i, z in enumerate(ZHI):
-                # 簡單時辰對照
                 time_range = f"{((i-1)*2+24)%24:02}-{((i*2)+1)%24:02}"
                 label = [f"{time_range}", f"({z}時)"]
                 loop_items.append({'val': z, 'label': label, 'type': 'hour'})
             target_val_match = get_zhi_index(target_data['hour_zhi'])
 
-        trend_response["target_index"] = target_val_match # 回傳靶點索引
+        trend_response["target_index"] = target_val_match
 
-        # 開始運算
         current_fy_idx = get_zhi_index(hierarchy['year']['zhi']) 
         current_fm_idx = get_zhi_index(hierarchy['month']['zhi'])
         current_fd_idx = get_zhi_index(hierarchy['day']['zhi'])   
@@ -249,7 +254,6 @@ class OnePalmSystem:
                 current_host_el = me_el
                 current_host_name = age_star_name
 
-                # 遞進主客法則
                 if name == "總命運":
                     upper_level_star = None
                     upper_level_label = ""
@@ -269,7 +273,6 @@ class OnePalmSystem:
                 grade_score = STAR_MODIFIERS.get(aspect_star_info['name'], 0)
                 root_score = 10 if curr_idx in pillar_indices else 0
                 trend_response["adjustments"][name].append(grade_score + root_score)
-                # Tooltip 增強：加入日期資訊
                 date_str = point['label'][0] + point['label'][1]
                 trend_response["tooltips"][name].append(f"[{date_str}] {current_guest_name} {rel['type']} {current_host_name}")
                 
@@ -393,7 +396,10 @@ async def transcribe_audio(file: UploadFile = File(...)):
 async def calculate(req: UserRequest):
     try:
         lunar_data = solar_to_one_palm_lunar(req.solar_date)
+        if not lunar_data: raise ValueError("出生日期解析失敗")
+        
         target_data = parse_target_date(req.target_scope, req.target_calendar, req.target_year, req.target_month, req.target_day, req.target_hour)
+        
         age = target_data['lunar_year'] - lunar_data['lunar_year_num'] + 1
         system = OnePalmSystem(req.gender, lunar_data['year_zhi'], lunar_data['month'], lunar_data['day'], req.hour)
         base_chart = system.get_base_chart()
@@ -421,7 +427,10 @@ async def calculate(req: UserRequest):
         trend_data = system.calculate_full_trend(hierarchy, req.target_scope, lunar_data, target_data, system)
         
         return {"lunar_info": lunar_data['lunar_str'], "age": age, "base_chart": base_chart, "hierarchy": hierarchy, "target_display": target_data['display_info'], "dual_info": target_data.get('dual_info', {}), "aspects": aspects, "ai_prompt": "", "trend_data": trend_data}
-    except Exception as e: logger.error(str(e)); raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e: 
+        logger.error(f"Calculate Error: {str(e)}")
+        # 回傳 400 而不是 500，方便前端除錯，且不會讓瀏覽器認為伺服器掛了
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/scan_family_risks")
 async def scan_family_risks(req: SaveRequest):
