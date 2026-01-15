@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V10.0 AI 戰略顧問版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V10.0 旗艦版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -49,34 +49,22 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
-        /* [V9.9.30] HUD Header Info Styles */
-        .hud-time-info {
-            display: flex; align-items: center; gap: 10px; margin-left: auto; margin-right: 15px;
-            font-size: 0.75em; background: rgba(0,0,0,0.3); padding: 4px 12px; border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.1); white-space: nowrap;
-        }
-        .hud-val-solar { color: var(--cyan); font-weight: bold; font-family: monospace; }
-        .hud-val-lunar { color: #a3a3ff; font-weight: bold; font-family: monospace; }
-        .hud-icon { color: var(--gold); font-weight: bold; font-size: 1.2em; line-height: 1; animation: pulse 3s infinite; }
+        /* [V9.9.31] HUD 視覺增強版：膠囊標籤風格 */
+        .hud-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 35px; }
+        .hud-capsule { display: flex; align-items: center; background: rgba(0, 0, 0, 0.4); border-radius: 4px; border: 1px solid #333; overflow: hidden; font-family: "Microsoft JhengHei", monospace; font-size: 0.85em; }
+        .hud-capsule.solar { border-color: rgba(79, 209, 197, 0.3); }
+        .hud-capsule.lunar { border-color: rgba(163, 163, 255, 0.3); }
+        .hud-label { padding: 2px 6px; font-weight: bold; font-size: 0.8em; color: #1a2634; }
+        .hud-label.solar-bg { background: var(--cyan); }
+        .hud-label.lunar-bg { background: #a3a3ff; }
+        .hud-value { padding: 2px 8px; color: #eee; font-weight: bold; letter-spacing: 0.5px; }
+        .hud-transfer-icon { color: var(--gold); font-size: 1.2em; font-weight: bold; opacity: 0.8; }
 
         /* [V10.0] 聊天室樣式 */
-        .chat-window {
-            background: #0f1319; border: 1px solid #333; border-radius: 8px;
-            height: 300px; overflow-y: auto; padding: 15px;
-            display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px;
-        }
-        .chat-message {
-            max-width: 85%; padding: 10px 14px; border-radius: 12px;
-            line-height: 1.5; font-size: 0.95em; position: relative; word-wrap: break-word;
-        }
-        .chat-message.user {
-            align-self: flex-end; background: linear-gradient(135deg, var(--bronze), var(--gold));
-            color: #1a2634; border-bottom-right-radius: 2px; font-weight: bold;
-        }
-        .chat-message.ai {
-            align-self: flex-start; background: #2d3748; color: #e0e0e0;
-            border: 1px solid #4a5568; border-bottom-left-radius: 2px;
-        }
+        .chat-window { background: #0f1319; border: 1px solid #333; border-radius: 8px; height: 300px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px; }
+        .chat-message { max-width: 85%; padding: 10px 14px; border-radius: 12px; line-height: 1.5; font-size: 0.95em; position: relative; word-wrap: break-word; }
+        .chat-message.user { align-self: flex-end; background: linear-gradient(135deg, var(--bronze), var(--gold)); color: #1a2634; border-bottom-right-radius: 2px; font-weight: bold; }
+        .chat-message.ai { align-self: flex-start; background: #2d3748; color: #e0e0e0; border: 1px solid #4a5568; border-bottom-left-radius: 2px; }
         .typing-indicator::after { content: '...'; animation: typing 1.5s infinite; }
         @keyframes typing { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
         .chat-input-area { display: flex; gap: 10px; }
@@ -284,15 +272,9 @@
         
         <div class="card" style="border-left: 5px solid var(--gold);">
             <h3 class="card-header" onclick="toggleCard('trendBody')">
-                <span id="trendTitle">運勢能量走勢圖 <span style="font-size:0.7em; color:#888;">(預設: 總命運)</span></span>
-                
-                <div id="headerTimeInfo" class="hud-time-info" style="display:none;">
-                    <span class="hud-val-solar" id="hudSolar">-</span>
-                    <span class="hud-icon">⇄</span>
-                    <span class="hud-val-lunar" id="hudLunar">-</span>
-                </div>
-
-                <span class="arrow-icon">▼</span>
+                <span id="trendTitle" style="display:flex; align-items:center; width:100%;">
+                    運勢能量走勢圖 <span style="font-size:0.7em; color:#888;">(初始化中...)</span>
+                </span>
             </h3>
             <div id="trendBody" class="card-body">
                 <div style="margin-bottom:10px; display:flex; justify-content:flex-end; gap:15px;">
@@ -328,11 +310,9 @@
                     <button class="ai-shortcut-btn" onclick="sendToAI('請分析目前的戰略時機，現在適合進攻還是防守？')">📅 定時機</button>
                     <button class="ai-shortcut-btn" onclick="sendToAI('針對目前的運勢，請給我一段建議客戶的話術，語氣要委婉但堅定。')">🗣️ 求話術</button>
                 </div>
-
                 <div class="chat-window" id="chatWindow">
                     <div class="chat-message ai">徐峰老師您好，我是您的達摩戰略顧問。請先完成排盤，我將為您解析。</div>
                 </div>
-
                 <div class="chat-input-area">
                     <input type="text" id="userChatInput" class="chat-input" placeholder="輸入您的問題..." onkeypress="if(event.key==='Enter') manualSend()">
                     <button class="btn-main" style="width:80px; margin-top:0; padding:5px; background:var(--gpt-color); color:white;" onclick="manualSend()">發送</button>
@@ -384,7 +364,7 @@
     
     let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
     let isAnimEnabled = false;
-    let chatHistory = []; // [V10.0] 聊天歷史紀錄
+    let chatHistory = [];
 
     // 2. 基礎工具
     function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
@@ -426,7 +406,7 @@
         }
     }
 
-    // 3. 核心計算與動畫
+    // 3. 核心計算
     async function calculate() {
         document.getElementById('loadingOverlay').style.display='flex';
         const data = { 
@@ -456,16 +436,6 @@
         document.getElementById('animControls').style.display = isAnimEnabled ? 'flex' : 'none';
         globalSkipAnimation=false; globalIsPaused=false; initMap(); setHTML('pillarsArea','');
         setText('lunarInfo', `| 虛歲 ${result.age} | ${result.lunar_info}`);
-        
-        // HUD 更新
-        const headerInfo = document.getElementById('headerTimeInfo');
-        if (result.dual_info && result.dual_info.solar && result.dual_info.lunar) {
-            headerInfo.style.display = 'flex';
-            setText('hudSolar', result.dual_info.solar);
-            setText('hudLunar', result.dual_info.lunar);
-        } else {
-            headerInfo.style.display = 'none';
-        }
         
         const p = result.base_chart;
         const list = [{z:p.年柱.zhi, n:p.年柱.name, c:'var(--p-year)', k:'年'}, {z:p.月柱.zhi, n:p.月柱.name, c:'var(--p-month)', k:'月'}, {z:p.日柱.zhi, n:p.日柱.name, c:'var(--p-day)', k:'日'}, {z:p.時柱.zhi, n:p.時柱.name, c:'var(--p-hour)', k:'命'}];
@@ -516,8 +486,6 @@
 
         let aHtml = '';
         let dataIndex = result.trend_data.target_index; 
-
-        // Fallback
         if (dataIndex === -1 && globalTrendData.axis_labels.length > 0) dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
 
         result.aspects.forEach(a => {
@@ -576,91 +544,66 @@
         if(globalTrendData) updateTrendChart('總命運');
     }
 
-    // 請覆蓋原本的 renderTrendChart 函數
-function renderTrendChart(labels, scores, tooltips, title) {
-    const ctx = document.getElementById('trendChart').getContext('2d');
-    if (trendChartInstance) trendChartInstance.destroy();
+    // [V9.9.31 修復] 確保 HUD 永遠只顯示一組
+    function renderTrendChart(labels, scores, tooltips, title) {
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        if (trendChartInstance) trendChartInstance.destroy();
 
-    // [防呆修正] 強制重寫標題 HTML，確保不會出現重複的 HUD
-    // 這裡使用 flex 佈局，讓 標題(左) - HUD(右) - 箭頭(最右) 排列整齊
-    const hudDisplay = (globalLastResult && globalLastResult.dual_info) ? 'flex' : 'none';
-    const solarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.solar : '-';
-    const lunarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.lunar : '-';
+        const hudDisplay = (globalLastResult && globalLastResult.dual_info) ? 'flex' : 'none';
+        const solarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.solar : '-';
+        const lunarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.lunar : '-';
 
-    document.getElementById('trendTitle').innerHTML = `
-        <div style="display:flex; align-items:center; width:100%; justify-content: space-between;">
-            <span style="white-space:nowrap;">運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span></span>
-            
-            <div id="headerTimeInfo" class="hud-container" style="display:${hudDisplay};">
-                <div class="hud-capsule solar">
-                    <span class="hud-label solar-bg">國</span>
-                    <span class="hud-value">${solarVal}</span>
+        // 重寫標題與 HUD 區域
+        document.getElementById('trendTitle').innerHTML = `
+            <div style="display:flex; align-items:center; width:100%; justify-content: space-between;">
+                <span style="white-space:nowrap;">運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span></span>
+                <div id="headerTimeInfo" class="hud-container" style="display:${hudDisplay};">
+                    <div class="hud-capsule solar"><span class="hud-label solar-bg">國</span><span class="hud-value">${solarVal}</span></div>
+                    <span class="hud-transfer-icon">⇄</span>
+                    <div class="hud-capsule lunar"><span class="hud-label lunar-bg">農</span><span class="hud-value">${lunarVal}</span></div>
                 </div>
-                <span class="hud-transfer-icon">⇄</span>
-                <div class="hud-capsule lunar">
-                    <span class="hud-label lunar-bg">農</span>
-                    <span class="hud-value">${lunarVal}</span>
-                </div>
+                <span class="arrow-icon" style="margin-left:10px;">▼</span>
             </div>
+        `;
+        
+        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+        gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); 
+        gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+        
+        const radarPulsePlugin = {
+            id: 'radarPulse',
+            afterDatasetsDraw(chart, args, options) {
+                const { ctx, data } = chart;
+                const activeIndex = globalTrendData.target_index; 
+                if (activeIndex === -1 || activeIndex === undefined) return;
+                const meta = chart.getDatasetMeta(0);
+                if (!meta.data[activeIndex]) return; 
+                const x = meta.data[activeIndex].x;
+                const y = meta.data[activeIndex].y;
+                ctx.save(); ctx.beginPath(); ctx.arc(x, y, 15, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(255, 77, 77, 0.3)'; ctx.fill(); ctx.restore();
+                ctx.save(); ctx.beginPath(); ctx.arc(x, y, 22, 0, 2 * Math.PI); ctx.strokeStyle = 'rgba(255, 77, 77, 0.6)'; ctx.lineWidth = 1; ctx.setLineDash([2, 4]); ctx.stroke(); ctx.restore();
+            }
+        };
 
-            <span class="arrow-icon" style="margin-left:10px;">▼</span>
-        </div>
-    `;
-    
-    // ... 以下是原本的 Chart.js 繪圖邏輯 (保持不變) ...
-    const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-    gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); 
-    gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
-    
-    const radarPulsePlugin = {
-        id: 'radarPulse',
-        afterDatasetsDraw(chart, args, options) {
-            const { ctx, data } = chart;
-            const activeIndex = globalTrendData.target_index; 
-            if (activeIndex === -1 || activeIndex === undefined) return;
+        const targetStr = String(document.getElementById('tYear').value);
+        const pointColors = labels.map((l, i) => i === globalTrendData.target_index ? '#ff4d4d' : '#fff');
+        const pointRadii = labels.map((l, i) => i === globalTrendData.target_index ? 8 : 4);
 
-            const meta = chart.getDatasetMeta(0);
-            if (!meta.data[activeIndex]) return; // 防呆：避免索引越界
+        trendChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointColors, pointRadius: pointRadii, pointHoverRadius: 10, fill: true, tension: 0.4 }] },
+            options: { 
+                maintainAspectRatio: false, 
+                scales: { 
+                    y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, 
+                    x: { grid: {color:'#333'}, ticks: {color:'#888', autoSkip: false, maxRotation: 0} } 
+                }, 
+                plugins: { legend: {display:false}, tooltip: { callbacks: { title: i=>Array.isArray(i[0].label)?i[0].label.join(" "):i[0].label, afterLabel: ctx=>tooltips[ctx.dataIndex] }, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37' } } 
+            },
+            plugins: [radarPulsePlugin] 
+        });
+    }
 
-            const x = meta.data[activeIndex].x;
-            const y = meta.data[activeIndex].y;
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(x, y, 15, 0, 2 * Math.PI);
-            ctx.fillStyle = 'rgba(255, 77, 77, 0.3)'; 
-            ctx.fill();
-            ctx.restore();
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(x, y, 22, 0, 2 * Math.PI);
-            ctx.strokeStyle = 'rgba(255, 77, 77, 0.6)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([2, 4]); 
-            ctx.stroke();
-            ctx.restore();
-        }
-    };
-
-    const targetStr = String(document.getElementById('tYear').value);
-    const pointColors = labels.map((l, i) => i === globalTrendData.target_index ? '#ff4d4d' : '#fff');
-    const pointRadii = labels.map((l, i) => i === globalTrendData.target_index ? 8 : 4);
-
-    trendChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointColors, pointRadius: pointRadii, pointHoverRadius: 10, fill: true, tension: 0.4 }] },
-        options: { 
-            maintainAspectRatio: false, 
-            scales: { 
-                y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, 
-                x: { grid: {color:'#333'}, ticks: {color:'#888', autoSkip: false, maxRotation: 0} } 
-            }, 
-            plugins: { legend: {display:false}, tooltip: { callbacks: { title: i=>Array.isArray(i[0].label)?i[0].label.join(" "):i[0].label, afterLabel: ctx=>tooltips[ctx.dataIndex] }, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37' } } 
-        },
-        plugins: [radarPulsePlugin] 
-    });
-}
     function updateTrendChart(aspectName) {
         if (!globalTrendData || !globalTrendData.datasets[aspectName]) return;
         lastActiveAspect = aspectName;
@@ -669,7 +612,6 @@ function renderTrendChart(labels, scores, tooltips, title) {
         
         const useGrade = document.getElementById('gradeCheckbox').checked;
         const useRenhe = document.getElementById('renheCheckbox').checked;
-        
         const baseScores = globalTrendData.datasets[aspectName];
         const adjustments = globalTrendData.adjustments[aspectName] || [];
         const renheScores = globalTrendData.renhe_scores || [];
@@ -691,20 +633,13 @@ function renderTrendChart(labels, scores, tooltips, title) {
         if(activeRow) activeRow.classList.add('active-aspect');
     }
 
-    // [V10.0] AI 聊天室邏輯
+    // [V10.0] AI 聊天室
     async function sendToAI(message) {
         if (!globalLastResult) { alert("請先進行排盤"); return; }
         if (!message) return;
-
-        // 1. 顯示使用者訊息
         addChatBubble(message, 'user');
         document.getElementById('userChatInput').value = '';
-
-        // 2. 顯示 AI 思考中
         const loadingId = addChatBubble("思考運算中", 'ai', true);
-        
-        // 3. 準備數據包 (Context)
-        // 抓取當前分數
         const scoreIndex = globalTrendData.target_index || 0;
         const contextData = {
             age: globalLastResult.age,
@@ -714,38 +649,21 @@ function renderTrendChart(labels, scores, tooltips, title) {
                 return `${a.name}: ${a.star} (${a.relation}, ${score}分)`;
             })
         };
-
         try {
             const res = await fetch('/api/ask_ai', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    message: message,
-                    history: chatHistory,
-                    context_data: contextData
-                })
+                body: JSON.stringify({ message: message, history: chatHistory, context_data: contextData })
             });
-            
             const data = await res.json();
-            
-            // 4. 移除思考中，顯示 AI 回覆
             document.getElementById(loadingId).remove();
             addChatBubble(data.reply, 'ai');
-
-            // 5. 更新歷史紀錄
             chatHistory.push({"role": "user", "content": message});
             chatHistory.push({"role": "assistant", "content": data.reply});
-
-        } catch (e) {
-            document.getElementById(loadingId).innerText = "連線錯誤，請重試。";
-        }
+        } catch (e) { document.getElementById(loadingId).innerText = "連線錯誤，請重試。"; }
     }
 
-    function manualSend() {
-        const input = document.getElementById('userChatInput');
-        sendToAI(input.value);
-    }
-
+    function manualSend() { const input = document.getElementById('userChatInput'); sendToAI(input.value); }
     function addChatBubble(text, role, isLoading=false) {
         const win = document.getElementById('chatWindow');
         const div = document.createElement('div');
@@ -757,7 +675,7 @@ function renderTrendChart(labels, scores, tooltips, title) {
         return div.id;
     }
 
-    // Export Function needs to access renderTrendChart to get base64
+    // Export & Helpers (保持不變)
     async function exportToImage() {
         if (!globalLastResult || !trendChartInstance) { alert("請先排盤"); return; }
         document.getElementById('loadingOverlay').style.display = 'flex';
@@ -821,4 +739,3 @@ function renderTrendChart(labels, scores, tooltips, title) {
 </script>
 </body>
 </html>
-
