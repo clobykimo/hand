@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V9.9.29)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V9.9.30 HUD版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -49,18 +49,15 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
-        /* Time Converter Card (V9.6 新增) */
-        .time-converter-box {
-            display: flex; align-items: center; justify-content: space-between;
-            background: linear-gradient(90deg, #1a2634, #2d3748);
-            border: 1px solid var(--gold); border-radius: 8px;
-            padding: 10px 20px; margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        /* [V9.9.30] HUD Header Info Styles */
+        .hud-time-info {
+            display: flex; align-items: center; gap: 10px; margin-left: auto; margin-right: 15px;
+            font-size: 0.75em; background: rgba(0,0,0,0.3); padding: 4px 12px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1); white-space: nowrap;
         }
-        .tc-section { flex: 1; text-align: center; }
-        .tc-label { font-size: 0.8em; color: #888; margin-bottom: 2px; }
-        .tc-value { font-size: 1.1em; color: var(--cyan); font-weight: bold; }
-        .tc-icon { font-size: 1.5em; color: var(--gold); padding: 0 15px; animation: pulse 2s infinite; }
+        .hud-val-solar { color: var(--cyan); font-weight: bold; font-family: monospace; }
+        .hud-val-lunar { color: #a3a3ff; font-weight: bold; font-family: monospace; }
+        .hud-icon { color: var(--gold); font-weight: bold; font-size: 1.2em; line-height: 1; animation: pulse 3s infinite; }
 
         /* Dashboard Components */
         .aspect-row { border-bottom: 1px solid #333; padding: 14px 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: background 0.2s; }
@@ -212,18 +209,6 @@
 
     <div class="info-panel" id="resultArea">
         
-        <div class="time-converter-box" id="timeConverter" style="display:none;">
-            <div class="tc-section">
-                <div class="tc-label">西元目標</div>
-                <div class="tc-value" id="tcSolar">-</div>
-            </div>
-            <div class="tc-icon">⇋</div>
-            <div class="tc-section">
-                <div class="tc-label">農曆目標</div>
-                <div class="tc-value" id="tcLunar">-</div>
-            </div>
-        </div>
-
         <div class="card" style="border-left:5px solid var(--gold); overflow:hidden;">
             <h3 class="card-header" style="color:var(--gold);">
                 <div style="display:flex; align-items:center; width:100%">
@@ -277,6 +262,13 @@
         <div class="card" style="border-left: 5px solid var(--gold);">
             <h3 class="card-header" onclick="toggleCard('trendBody')">
                 <span id="trendTitle">運勢能量走勢圖 <span style="font-size:0.7em; color:#888;">(預設: 總命運)</span></span>
+                
+                <div id="headerTimeInfo" class="hud-time-info" style="display:none;">
+                    <span class="hud-val-solar" id="hudSolar">-</span>
+                    <span class="hud-icon">⇄</span>
+                    <span class="hud-val-lunar" id="hudLunar">-</span>
+                </div>
+
                 <span class="arrow-icon">▼</span>
             </h3>
             <div id="trendBody" class="card-body">
@@ -434,14 +426,14 @@
         globalSkipAnimation=false; globalIsPaused=false; initMap(); setHTML('pillarsArea','');
         setText('lunarInfo', `| 虛歲 ${result.age} | ${result.lunar_info}`);
         
-        // [V9.6] 更新時空轉換區
-        const tc = document.getElementById('timeConverter');
-        if (result.dual_info) {
-            tc.style.display = 'flex';
-            setText('tcSolar', result.dual_info.solar || '-');
-            setText('tcLunar', result.dual_info.lunar || '-');
+        // [V9.9.30] HUD 更新邏輯
+        const headerInfo = document.getElementById('headerTimeInfo');
+        if (result.dual_info && result.dual_info.solar && result.dual_info.lunar) {
+            headerInfo.style.display = 'flex';
+            setText('hudSolar', result.dual_info.solar);
+            setText('hudLunar', result.dual_info.lunar);
         } else {
-            tc.style.display = 'none';
+            headerInfo.style.display = 'none';
         }
         
         const p = result.base_chart;
@@ -492,7 +484,7 @@
         setHTML('hierarchyArea', hHtml);
 
         let aHtml = '';
-        let dataIndex = result.trend_data.target_index; // V9.6 支援後端直接給定 Index
+        let dataIndex = result.trend_data.target_index; 
 
         // Fallback
         if (dataIndex === -1 && globalTrendData.axis_labels.length > 0) dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
@@ -557,7 +549,14 @@
     function renderTrendChart(labels, scores, tooltips, title) {
         const ctx = document.getElementById('trendChart').getContext('2d');
         if (trendChartInstance) trendChartInstance.destroy();
-        document.getElementById('trendTitle').innerHTML = `運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>`;
+        document.getElementById('trendTitle').innerHTML = `運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span>
+        <div id="headerTimeInfo" class="hud-time-info" style="${globalLastResult.dual_info ? 'display:flex' : 'display:none'}">
+            <span class="hud-val-solar">${globalLastResult.dual_info ? globalLastResult.dual_info.solar : '-'}</span>
+            <span class="hud-icon">⇄</span>
+            <span class="hud-val-lunar">${globalLastResult.dual_info ? globalLastResult.dual_info.lunar : '-'}</span>
+        </div>
+        <span class="arrow-icon">▼</span>`;
+        
         const gradient = ctx.createLinearGradient(0, 0, 0, 250);
         gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); 
         gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
@@ -567,37 +566,33 @@
             id: 'radarPulse',
             afterDatasetsDraw(chart, args, options) {
                 const { ctx, data } = chart;
-                const activeIndex = globalTrendData.target_index; // 從後端獲取鎖定點
+                const activeIndex = globalTrendData.target_index; 
                 if (activeIndex === -1) return;
 
                 const meta = chart.getDatasetMeta(0);
                 const x = meta.data[activeIndex].x;
                 const y = meta.data[activeIndex].y;
 
-                // 畫光暈
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(x, y, 15, 0, 2 * Math.PI);
-                ctx.fillStyle = 'rgba(255, 77, 77, 0.3)'; // 半透明紅
+                ctx.fillStyle = 'rgba(255, 77, 77, 0.3)'; 
                 ctx.fill();
                 ctx.restore();
 
-                // 畫外圈
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(x, y, 22, 0, 2 * Math.PI);
                 ctx.strokeStyle = 'rgba(255, 77, 77, 0.6)';
                 ctx.lineWidth = 1;
-                ctx.setLineDash([2, 4]); // 虛線效果
+                ctx.setLineDash([2, 4]); 
                 ctx.stroke();
                 ctx.restore();
             }
         };
 
         const targetStr = String(document.getElementById('tYear').value);
-        // 設定點的顏色：鎖定點為紅色，其餘白色
         const pointColors = labels.map((l, i) => i === globalTrendData.target_index ? '#ff4d4d' : '#fff');
-        // 設定點的大小：鎖定點特大
         const pointRadii = labels.map((l, i) => i === globalTrendData.target_index ? 8 : 4);
 
         trendChartInstance = new Chart(ctx, {
@@ -611,11 +606,10 @@
                 }, 
                 plugins: { legend: {display:false}, tooltip: { callbacks: { title: i=>Array.isArray(i[0].label)?i[0].label.join(" "):i[0].label, afterLabel: ctx=>tooltips[ctx.dataIndex] }, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37' } } 
             },
-            plugins: [radarPulsePlugin] // 掛載雷達插件
+            plugins: [radarPulsePlugin] 
         });
     }
 
-    // ... (updateTrendChart, exportToImage 及其他函數保持不變，但記得確保 globalTrendData 被正確更新) ...
     function updateTrendChart(aspectName) {
         if (!globalTrendData || !globalTrendData.datasets[aspectName]) return;
         lastActiveAspect = aspectName;
@@ -646,7 +640,6 @@
         if(activeRow) activeRow.classList.add('active-aspect');
     }
 
-    // Export Function needs to access renderTrendChart to get base64
     async function exportToImage() {
         if (!globalLastResult || !trendChartInstance) { alert("請先排盤"); return; }
         document.getElementById('loadingOverlay').style.display = 'flex';
