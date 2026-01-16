@@ -3,227 +3,264 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩客戶戰情室 (生態系版)</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <title>達摩戰情室 (CRM V11.0)</title>
     <style>
-        :root { --bg: #121820; --panel: #1e2732; --gold: #d4af37; --cyan: #4fd1c5; --danger: #ff4d4d; --text: #e0e0e0; }
-        body { background-color: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; display: flex; gap: 20px; }
+        :root {
+            --bg-color: #121820; --panel-bg: #1e2732; --gold: #d4af37;
+            --bronze: #8c7853; --cyan: #4fd1c5; --danger: #ff4d4d;
+            --text-main: #e0e0e0; --text-sub: #a0a0a0;
+        }
+        body { background-color: var(--bg-color); color: var(--text-main); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        .main-content { flex: 1; }
-        .sidebar { width: 300px; background: var(--panel); border-radius: 8px; border: 1px solid #444; padding: 20px; height: 90vh; position: sticky; top: 20px; display:none; }
-        @media (min-width: 1200px) { .sidebar { display: block; } }
+        /* 頂部導航區 */
+        .header { width: 100%; max-width: 1400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--gold); padding-bottom: 15px; }
+        .title { font-size: 1.8em; color: var(--gold); font-weight: bold; letter-spacing: 3px; display: flex; align-items: center; gap: 10px; }
+        .back-btn { background: transparent; border: 1px solid var(--cyan); color: var(--cyan); padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 1em; transition: all 0.3s; text-decoration: none; display: flex; align-items: center; gap: 5px; }
+        .back-btn:hover { background: rgba(79, 209, 197, 0.1); transform: translateX(-5px); }
 
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid var(--gold); padding-bottom: 15px; }
-        h1 { margin: 0; color: var(--gold); letter-spacing: 2px; font-size: 1.8em; }
-        .btn { background: #333; color: #ddd; border: 1px solid #555; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-primary { background: linear-gradient(135deg, #8c7853, var(--gold)); color: #1a2634; border: none; }
-        .btn-danger { color: var(--danger); border-color: var(--danger); }
+        /* 搜尋與過濾區 */
+        .filter-bar { width: 100%; max-width: 1400px; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid #444; display: flex; gap: 15px; margin-bottom: 20px; box-sizing: border-box; align-items: flex-end; }
+        .search-group { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .search-group label { color: var(--cyan); font-size: 0.9em; font-weight: bold; }
+        .search-input { background: #121820; border: 1px solid #555; color: white; padding: 10px; border-radius: 4px; font-size: 1rem; width: 100%; box-sizing: border-box; }
+        .action-btn { background: linear-gradient(135deg, var(--bronze), var(--gold)); border: none; color: #1a2634; padding: 10px 25px; border-radius: 4px; font-weight: bold; cursor: pointer; height: 42px; display: flex; align-items: center; gap: 5px; }
+        .action-btn:hover { filter: brightness(1.15); }
+
+        /* 資料列表區 (Table) */
+        .table-container { width: 100%; max-width: 1400px; background: var(--panel-bg); border-radius: 8px; border: 1px solid #444; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        thead { background: #252f3a; color: var(--cyan); font-weight: bold; }
+        th { padding: 15px; border-bottom: 2px solid var(--gold); white-space: nowrap; }
+        td { padding: 15px; border-bottom: 1px solid #333; color: #ddd; vertical-align: middle; }
+        tr:hover { background: rgba(212, 175, 55, 0.05); }
         
-        .search-area { display: flex; gap: 10px; margin-bottom: 25px; background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid #444; }
-        input, select { padding: 10px; background: #111; border: 1px solid #555; color: white; border-radius: 4px; outline: none; }
-        input[type="text"] { flex: 1; }
+        /* 欄位樣式 */
+        .col-date { color: #888; font-size: 0.9em; font-family: monospace; }
+        .col-name { font-size: 1.1em; font-weight: bold; color: #fff; }
+        .col-chart { font-size: 0.9em; color: #bbb; display: flex; align-items: center; gap: 5px; }
+        .gender-badge { padding: 2px 6px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+        .gender-m { background: rgba(79, 209, 197, 0.2); color: var(--cyan); border: 1px solid var(--cyan); }
+        .gender-f { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; border: 1px solid #ff6b6b; }
+        .col-phone { font-family: monospace; color: var(--gold); letter-spacing: 1px; }
+        .col-note { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #888; font-style: italic; }
         
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: var(--panel); border: 1px solid #444; border-radius: 8px; padding: 20px; transition: all 0.3s ease; cursor: pointer; }
-        .card:hover { transform: translateY(-5px); border-color: var(--gold); }
-        .card-head { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .name { font-size: 1.2em; font-weight: bold; color: var(--gold); }
-        .note { color: #ccc; font-size: 0.9em; height: 3em; overflow: hidden; }
+        /* 標籤 */
+        .tag-pill { display: inline-block; background: #333; border: 1px solid #555; color: #aaa; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; margin-right: 4px; }
+        .tag-vip { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.1); }
 
-        /* Modal */
-        .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
-        .modal-box { background: #1e2732; width: 90%; max-width: 900px; height: 90vh; border-radius: 8px; border: 1px solid var(--gold); display: flex; flex-direction: column; }
-        .modal-head { padding: 15px 20px; border-bottom: 1px solid #444; background: #151b24; display:flex; justify-content:space-between; align-items:center; }
-        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
-        
-        .alert-banner { background: rgba(255, 77, 77, 0.2); border: 1px solid var(--danger); color: #ffcccc; padding: 10px; margin-bottom: 15px; border-radius: 4px; display: none; }
-        .consent-status { padding: 10px; background: #111; border-radius: 4px; display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
-        .status-badge { padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
-        .status-signed { background: var(--cyan); color: #000; }
-        .status-unsigned { background: #555; color: #ccc; }
-        #qrcode { background: white; padding: 10px; width: fit-content; margin: 10px auto; display: none; }
+        /* 操作按鈕 */
+        .op-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85em; font-weight: bold; transition: all 0.2s; margin-right: 5px; }
+        .btn-load { background: var(--cyan); color: #1a2634; }
+        .btn-load:hover { box-shadow: 0 0 10px var(--cyan); }
+        .btn-edit { background: #4a5568; color: #fff; }
+        .btn-edit:hover { background: #718096; }
+        .btn-del { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+        .btn-del:hover { background: var(--danger); color: white; }
 
-        .tabs { display: flex; border-bottom: 1px solid #444; margin-bottom: 20px; }
-        .tab { padding: 10px 20px; cursor: pointer; color: #888; border-bottom: 3px solid transparent; font-weight: bold; }
-        .tab.active { color: var(--gold); border-color: var(--gold); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        /* 讀取動畫 */
+        #loading { text-align: center; padding: 40px; color: #888; display: none; }
+        .spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid #333; border-top: 3px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .rel-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .rel-table th { text-align: left; color: #888; border-bottom: 1px solid #444; padding: 5px; }
-        .rel-table td { padding: 8px 5px; border-bottom: 1px solid #333; color: #eee; }
-        .add-rel-form { display: grid; grid-template-columns: 1fr 1fr 1fr 0.5fr 0.5fr auto; gap: 5px; background: #111; padding: 10px; border-radius: 4px; margin-top: 10px; }
+        /* 編輯視窗 */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
+        .modal-content { background: var(--panel-bg); border: 1px solid var(--gold); padding: 30px; border-radius: 8px; width: 500px; max-width: 90%; }
+        .form-group { margin-bottom: 15px; }
+        textarea { width: 100%; background: #121820; border: 1px solid #555; color: white; padding: 10px; border-radius: 4px; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
     </style>
 </head>
 <body>
 
-<div class="main-content">
-    <div class="header">
-        <h1>📂 達摩客戶戰情室 <span style="font-size:0.5em; color:#666;">(V7.1 最終版)</span></h1>
-        <a href="/" class="btn">⬅ 返回排盤</a>
+<div class="header">
+    <div class="title">
+        <span>📜</span> 達摩戰情室 <span style="font-size:0.5em; color:#666; margin-top:10px; margin-left:10px;">CRM V11.0</span>
     </div>
-    <div class="search-area">
-        <input type="text" id="searchInput" placeholder="搜尋..." onkeypress="if(event.key==='Enter') searchData()">
-        <button class="btn btn-primary" onclick="searchData()">🔍 搜尋</button>
-    </div>
-    <div id="dataGrid" class="grid"></div>
+    <a href="/" class="back-btn">⇦ 返回推演盤</a>
 </div>
 
-<div class="sidebar">
-    <div style="color:var(--cyan); font-weight:bold; border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:10px;">📅 待辦事項</div>
-    <ul style="list-style:none; padding:0; color:#aaa; font-size:0.9em;">
-        <li style="margin-bottom:10px;">🎂 [生日] 陳大發 (明天)</li>
-        <li>📝 [整理] 昨日諮詢筆記</li>
-    </ul>
+<div class="filter-bar">
+    <div class="search-group">
+        <label>🔍 關鍵字搜尋</label>
+        <input type="text" id="searchInput" class="search-input" placeholder="輸入姓名、電話或備註..." onkeypress="if(event.key==='Enter') loadData()">
+    </div>
+    <button class="action-btn" onclick="loadData()">搜尋客戶</button>
 </div>
 
-<div id="detailModal" class="modal">
-    <div class="modal-box">
-        <div class="modal-head">
-            <h2 class="name" id="mName">客戶姓名</h2>
-            <button class="btn" style="border:none; font-size:1.5em;" onclick="closeModal()">×</button>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th width="10%">諮詢日期</th>
+                <th width="12%">客戶姓名</th>
+                <th width="15%">本命參數</th>
+                <th width="12%">聯絡電話</th>
+                <th width="25%">戰略筆記 & 標籤</th>
+                <th width="20%">戰術行動</th>
+            </tr>
+        </thead>
+        <tbody id="crmTableBody">
+            </tbody>
+    </table>
+    <div id="loading"><div class="spinner"></div><br>正在讀取卷宗...</div>
+    <div id="emptyMsg" style="text-align:center; padding:40px; color:#666; display:none;">
+        📭 查無資料，請先至首頁建立客戶檔案。
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color:var(--gold); border-bottom:1px solid #444; padding-bottom:10px; margin-top:0;">✏️ 編輯客戶資料</h3>
+        <input type="hidden" id="editId">
+        <div class="form-group">
+            <label>客戶姓名</label>
+            <input type="text" id="editName" class="search-input">
         </div>
-        
-        <div class="modal-body">
-            <div id="riskBanner" class="alert-banner">⚠️ <strong>家族預警：</strong> <span id="riskText"></span></div>
-
-            <div class="consent-status">
-                <div><span>數位同意書：</span><span id="consentBadge" class="status-badge status-unsigned">未簽署</span></div>
-                <button class="btn btn-primary" style="font-size:0.8em;" onclick="generateConsent()">產生簽署連結</button>
-            </div>
-            <div id="qrcode"></div>
-
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('basic')">📊 紀錄</div>
-                <div class="tab" onclick="switchTab('relation')">👨‍👩‍👧‍👦 家族脈絡</div>
-                <div class="tab" onclick="switchTab('media')">🎙️ 多媒體</div>
-            </div>
-
-            <div id="tab-basic" class="tab-content active">
-                <textarea id="mNote" style="width:100%; height:150px; background:#111; color:#ddd; border:1px solid #444; padding:10px;"></textarea>
-                <div style="text-align:right; margin-top:5px;"><button class="btn btn-primary" onclick="updateNote()">💾 更新存檔</button></div>
-            </div>
-
-            <div id="tab-relation" class="tab-content">
-                <table class="rel-table">
-                    <thead><tr><th>關係</th><th>姓名</th><th>生日</th><th>性別</th><th>時辰</th><th>操作</th></tr></thead>
-                    <tbody id="relList"></tbody>
-                </table>
-                <div class="add-rel-form">
-                    <input type="text" id="relRelation" placeholder="關係">
-                    <input type="text" id="relName" placeholder="姓名">
-                    <input type="date" id="relDate">
-                    <select id="relGender"><option value="1">男</option><option value="0">女</option></select>
-                    <select id="relHour"><option value="子">子</option><option value="丑">丑</option><option value="寅">寅</option><option value="卯">卯</option><option value="辰">辰</option><option value="巳">巳</option><option value="午">午</option><option value="未">未</option><option value="申">申</option><option value="酉">酉</option><option value="戌">戌</option><option value="亥">亥</option></select>
-                    <button class="btn btn-primary" onclick="addRelation()">+</button>
-                </div>
-            </div>
-
-            <div id="tab-media" class="tab-content">
-                <div style="text-align:center; padding:20px; color:#666;">(請使用 V6.2 版的完整功能)</div>
-            </div>
+        <div class="form-group">
+            <label>聯絡電話</label>
+            <input type="text" id="editPhone" class="search-input">
+        </div>
+        <div class="form-group">
+            <label>備註筆記</label>
+            <textarea id="editNote" rows="4"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="op-btn btn-del" onclick="closeModal()">取消</button>
+            <button class="action-btn" onclick="saveEdit()">確認更新</button>
         </div>
     </div>
 </div>
 
 <script>
-    let currentData = [];
-    let selectedItem = null;
+    // 初始化
+    window.onload = function() {
+        loadData();
+    };
 
-    async function searchData() {
+    async function loadData() {
         const keyword = document.getElementById('searchInput').value;
-        const res = await fetch(`/api/search_records?keyword=${encodeURIComponent(keyword)}`);
-        currentData = await res.json();
-        const grid = document.getElementById('dataGrid');
-        grid.innerHTML = currentData.map((item, i) => `
-            <div class="card" onclick="openDetail(${i})">
-                <div class="card-head"><span class="name">${item.client_name}</span><span class="date">${item.created_at.split(' ')[0]}</span></div>
-                <div class="note">${item.note||'無'}</div>
-            </div>`).join('');
-    }
+        const tbody = document.getElementById('crmTableBody');
+        const loading = document.getElementById('loading');
+        const emptyMsg = document.getElementById('emptyMsg');
 
-    async function openDetail(index) {
-        selectedItem = currentData[index];
-        document.getElementById('mName').innerText = selectedItem.client_name;
-        document.getElementById('mNote').value = selectedItem.note || '';
-        
-        const badge = document.getElementById('consentBadge');
-        if(selectedItem.consent_signed) { badge.innerText="已簽署"; badge.className="status-badge status-signed"; }
-        else { badge.innerText="未簽署"; badge.className="status-badge status-unsigned"; }
-        document.getElementById('qrcode').style.display = "none";
+        tbody.innerHTML = '';
+        loading.style.display = 'block';
+        emptyMsg.style.display = 'none';
 
-        renderRelations();
-        await scanRisks();
-        switchTab('basic');
-        document.getElementById('detailModal').style.display = 'flex';
-    }
-
-    function renderRelations() {
-        const list = document.getElementById('relList');
-        const rels = selectedItem.relations || [];
-        list.innerHTML = rels.map((r, i) => `
-            <tr><td>${r.relation}</td><td>${r.name}</td><td>${r.solar_date}</td><td>${r.gender==1?'男':'女'}</td><td>${r.hour}</td>
-            <td><button class="btn btn-danger" style="padding:2px 6px; font-size:0.7em;" onclick="removeRel(${i})">×</button></td></tr>`).join('');
-    }
-
-    function addRelation() {
-        if(!selectedItem.relations) selectedItem.relations = [];
-        selectedItem.relations.push({
-            relation: document.getElementById('relRelation').value,
-            name: document.getElementById('relName').value,
-            solar_date: document.getElementById('relDate').value,
-            gender: parseInt(document.getElementById('relGender').value),
-            hour: document.getElementById('relHour').value
-        });
-        renderRelations();
-        updateNote(true);
-    }
-
-    function removeRel(i) {
-        selectedItem.relations.splice(i, 1);
-        renderRelations();
-        updateNote(false);
-    }
-
-    // [核心修復] 使用 update_record 避免重複
-    async function updateNote(autoScan=false) {
-        selectedItem.note = document.getElementById('mNote').value;
         try {
-            await fetch(`/api/update_record/${selectedItem.id}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(selectedItem)});
-            if(autoScan) await scanRisks();
-            else alert("資料已更新");
-        } catch(e) { console.error(e); }
+            // 呼叫 V10.3.3 的後端 API
+            const res = await fetch(`/api/search_records?keyword=${encodeURIComponent(keyword)}`);
+            const data = await res.json();
+            
+            loading.style.display = 'none';
+            if (!data || data.length === 0) {
+                emptyMsg.style.display = 'block';
+                return;
+            }
+
+            // 渲染列表 (List Mode)
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                
+                // 1. 日期
+                const dateStr = item.created_at || '-';
+                
+                // 2. 本命參數 (性別/生辰)
+                const genderBadge = item.gender === 1 
+                    ? `<span class="gender-badge gender-m">乾造(男)</span>` 
+                    : `<span class="gender-badge gender-f">坤造(女)</span>`;
+                const birthInfo = `${item.solar_date} [${item.hour}時]`;
+
+                // 3. 標籤處理
+                let tagsHtml = '';
+                if(item.tags && item.tags.length > 0) {
+                    item.tags.forEach(t => {
+                        const isVip = t.toLowerCase().includes('vip');
+                        tagsHtml += `<span class="tag-pill ${isVip?'tag-vip':''}">${t}</span>`;
+                    });
+                }
+
+                tr.innerHTML = `
+                    <td class="col-date">${dateStr}</td>
+                    <td class="col-name">${item.client_name || '貴賓'}</td>
+                    <td class="col-chart">
+                        ${genderBadge} <br>
+                        ${birthInfo}
+                    </td>
+                    <td class="col-phone">${item.phone || '-'}</td>
+                    <td class="col-note">
+                        <div style="margin-bottom:5px;">${tagsHtml}</div>
+                        ${item.note || '<span style="opacity:0.3">無筆記</span>'}
+                    </td>
+                    <td>
+                        <button class="op-btn btn-load" onclick='restoreRecord(${JSON.stringify(item)})'>📂 復盤推演</button>
+                        <button class="op-btn btn-edit" onclick='openEdit(${JSON.stringify(item)})'>✏️</button>
+                        <button class="op-btn btn-del" onclick="deleteRecord('${item.id}')">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+        } catch (e) {
+            console.error(e);
+            loading.innerText = "❌ 資料讀取失敗，請檢查後端連線";
+        }
     }
 
-    async function scanRisks() {
-        if(!selectedItem.relations || selectedItem.relations.length === 0) return;
-        const banner = document.getElementById('riskBanner');
+    // [核心戰略功能] 一鍵復盤
+    function restoreRecord(item) {
+        // 將資料存入 LocalStorage，這就像是把檔案放進「公事包」
+        localStorage.setItem('damo_restore_data', JSON.stringify(item));
+        // 跳轉回首頁，首頁的 window.onload 會打開公事包並自動填表
+        window.location.href = '/';
+    }
+
+    // 刪除功能
+    async function deleteRecord(id) {
+        if(!confirm("⚠️ 確定要刪除此客戶資料嗎？此動作無法復原！")) return;
         try {
-            const res = await fetch('/api/scan_family_risks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(selectedItem)});
-            const result = await res.json();
-            if(result.alerts && result.alerts.length > 0) {
-                document.getElementById('riskText').innerText = result.alerts.map(a => `${a.relation}${a.name}(${a.risk})`).join('、');
-                banner.style.display = 'block';
-            } else { banner.style.display = 'none'; }
-        } catch(e) { console.error(e); }
+            await fetch(`/api/delete_record/${id}`, { method: 'DELETE' });
+            loadData(); // 重新整理
+        } catch(e) { alert("刪除失敗"); }
     }
 
-    function generateConsent() {
-        const qrDiv = document.getElementById('qrcode');
-        qrDiv.innerHTML = ""; qrDiv.style.display = "block";
-        new QRCode(qrDiv, { text: `${window.location.origin}/consent_page?id=${selectedItem.id}`, width: 128, height: 128 });
+    // 編輯功能
+    function openEdit(item) {
+        document.getElementById('editId').value = item.id;
+        document.getElementById('editName').value = item.client_name || '';
+        document.getElementById('editPhone').value = item.phone || '';
+        document.getElementById('editNote').value = item.note || '';
+        document.getElementById('editModal').style.display = 'flex';
     }
 
-    function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
-    function switchTab(t) {
-        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
-        document.getElementById(`tab-${t}`).classList.add('active');
+    function closeModal() {
+        document.getElementById('editModal').style.display = 'none';
     }
 
-    searchData();
+    async function saveEdit() {
+        const id = document.getElementById('editId').value;
+        const data = {
+            client_name: document.getElementById('editName').value,
+            phone: document.getElementById('editPhone').value,
+            note: document.getElementById('editNote').value
+        };
+        try {
+            await fetch(`/api/update_record/${id}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            closeModal();
+            loadData();
+        } catch(e) { alert("更新失敗"); }
+    }
+    
+    // 點擊視窗外部關閉
+    window.onclick = function(event) {
+        const modal = document.getElementById('editModal');
+        if (event.target == modal) modal.style.display = "none";
+    }
 </script>
 
 </body>
