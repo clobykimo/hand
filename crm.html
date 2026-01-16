@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩戰情室 (CRM V11.0)</title>
+    <title>達摩戰情室 (CRM V12.0 家族戰略版)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --bg-color: #121820; --panel-bg: #1e2732; --gold: #d4af37;
@@ -12,21 +13,20 @@
         }
         body { background-color: var(--bg-color); color: var(--text-main); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        /* 頂部導航區 */
+        /* [V11.0] 頂部導航與搜尋 */
         .header { width: 100%; max-width: 1400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--gold); padding-bottom: 15px; }
         .title { font-size: 1.8em; color: var(--gold); font-weight: bold; letter-spacing: 3px; display: flex; align-items: center; gap: 10px; }
         .back-btn { background: transparent; border: 1px solid var(--cyan); color: var(--cyan); padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 1em; transition: all 0.3s; text-decoration: none; display: flex; align-items: center; gap: 5px; }
         .back-btn:hover { background: rgba(79, 209, 197, 0.1); transform: translateX(-5px); }
 
-        /* 搜尋與過濾區 */
         .filter-bar { width: 100%; max-width: 1400px; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid #444; display: flex; gap: 15px; margin-bottom: 20px; box-sizing: border-box; align-items: flex-end; }
         .search-group { flex: 1; display: flex; flex-direction: column; gap: 5px; }
         .search-group label { color: var(--cyan); font-size: 0.9em; font-weight: bold; }
         .search-input { background: #121820; border: 1px solid #555; color: white; padding: 10px; border-radius: 4px; font-size: 1rem; width: 100%; box-sizing: border-box; }
-        .action-btn { background: linear-gradient(135deg, var(--bronze), var(--gold)); border: none; color: #1a2634; padding: 10px 25px; border-radius: 4px; font-weight: bold; cursor: pointer; height: 42px; display: flex; align-items: center; gap: 5px; }
+        .action-btn { background: linear-gradient(135deg, var(--bronze), var(--gold)); border: none; color: #1a2634; padding: 10px 25px; border-radius: 4px; font-weight: bold; cursor: pointer; height: 42px; display: flex; align-items: center; gap: 5px; justify-content: center;}
         .action-btn:hover { filter: brightness(1.15); }
 
-        /* 資料列表區 (Table) */
+        /* [V11.0] 資料列表區 */
         .table-container { width: 100%; max-width: 1400px; background: var(--panel-bg); border-radius: 8px; border: 1px solid #444; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         thead { background: #252f3a; color: var(--cyan); font-weight: bold; }
@@ -34,21 +34,17 @@
         td { padding: 15px; border-bottom: 1px solid #333; color: #ddd; vertical-align: middle; }
         tr:hover { background: rgba(212, 175, 55, 0.05); }
         
-        /* 欄位樣式 */
         .col-date { color: #888; font-size: 0.9em; font-family: monospace; }
         .col-name { font-size: 1.1em; font-weight: bold; color: #fff; }
-        .col-chart { font-size: 0.9em; color: #bbb; display: flex; align-items: center; gap: 5px; }
+        .col-chart { font-size: 0.9em; color: #bbb; }
         .gender-badge { padding: 2px 6px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
         .gender-m { background: rgba(79, 209, 197, 0.2); color: var(--cyan); border: 1px solid var(--cyan); }
         .gender-f { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; border: 1px solid #ff6b6b; }
         .col-phone { font-family: monospace; color: var(--gold); letter-spacing: 1px; }
         .col-note { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #888; font-style: italic; }
-        
-        /* 標籤 */
         .tag-pill { display: inline-block; background: #333; border: 1px solid #555; color: #aaa; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; margin-right: 4px; }
         .tag-vip { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.1); }
 
-        /* 操作按鈕 */
         .op-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85em; font-weight: bold; transition: all 0.2s; margin-right: 5px; }
         .btn-load { background: var(--cyan); color: #1a2634; }
         .btn-load:hover { box-shadow: 0 0 10px var(--cyan); }
@@ -57,25 +53,50 @@
         .btn-del { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
         .btn-del:hover { background: var(--danger); color: white; }
 
-        /* 讀取動畫 */
+        /* [V12.0] 全功能檔案夾 Modal (移植自 V7.1) */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
+        .modal-content { background: var(--panel-bg); border: 1px solid var(--gold); width: 900px; max-width: 95%; height: 85vh; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        .modal-header { padding: 20px; border-bottom: 1px solid #444; background: #151b24; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; }
+        .modal-title { margin: 0; color: var(--gold); font-size: 1.5em; letter-spacing: 2px; }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        
+        /* 頁籤系統 */
+        .tabs { display: flex; border-bottom: 1px solid #444; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; color: #888; border-bottom: 3px solid transparent; font-weight: bold; transition: all 0.3s; }
+        .tab:hover { color: #ccc; }
+        .tab.active { color: var(--cyan); border-color: var(--cyan); background: rgba(79, 209, 197, 0.05); }
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        
+        /* [V12.0] 風險雷達 */
+        .risk-banner { background: rgba(255, 77, 77, 0.15); border: 1px solid var(--danger); color: #ffcccc; padding: 15px; margin-bottom: 20px; border-radius: 4px; display: none; align-items: center; gap: 10px; }
+        .risk-icon { font-size: 1.5em; }
+
+        /* 家族列表 */
+        .rel-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+        .rel-table th { text-align: left; color: var(--cyan); border-bottom: 1px solid #444; padding: 8px; }
+        .rel-table td { padding: 8px; border-bottom: 1px solid #333; color: #eee; }
+        .add-rel-form { display: grid; grid-template-columns: 100px 100px 140px 60px 60px auto; gap: 10px; background: #111; padding: 15px; border-radius: 4px; margin-top: 15px; border: 1px dashed #444; }
+        
+        /* 同意書區塊 */
+        .consent-section { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 15px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #333; }
+        .status-badge { padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+        .status-signed { background: var(--cyan); color: #000; }
+        .status-unsigned { background: #555; color: #ccc; }
+        #qrcode { background: white; padding: 10px; width: fit-content; margin: 10px auto; display: none; border-radius: 4px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
         #loading { text-align: center; padding: 40px; color: #888; display: none; }
         .spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid #333; border-top: 3px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* 編輯視窗 */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
-        .modal-content { background: var(--panel-bg); border: 1px solid var(--gold); padding: 30px; border-radius: 8px; width: 500px; max-width: 90%; }
-        .form-group { margin-bottom: 15px; }
-        textarea { width: 100%; background: #121820; border: 1px solid #555; color: white; padding: 10px; border-radius: 4px; }
-        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-
     </style>
 </head>
 <body>
 
 <div class="header">
     <div class="title">
-        <span>📜</span> 達摩戰情室 <span style="font-size:0.5em; color:#666; margin-top:10px; margin-left:10px;">CRM V11.0</span>
+        <span>📜</span> 達摩戰情室 <span style="font-size:0.5em; color:#666; margin-top:10px; margin-left:10px;">CRM V12.0</span>
     </div>
     <a href="/" class="back-btn">⇦ 返回推演盤</a>
 </div>
@@ -93,10 +114,10 @@
         <thead>
             <tr>
                 <th width="10%">諮詢日期</th>
-                <th width="12%">客戶姓名</th>
-                <th width="15%">本命參數</th>
-                <th width="12%">聯絡電話</th>
-                <th width="25%">戰略筆記 & 標籤</th>
+                <th width="15%">客戶姓名</th>
+                <th width="20%">本命參數</th>
+                <th width="15%">聯絡電話</th>
+                <th width="20%">戰略筆記</th>
                 <th width="20%">戰術行動</th>
             </tr>
         </thead>
@@ -109,34 +130,76 @@
     </div>
 </div>
 
-<div id="editModal" class="modal">
+<div id="detailModal" class="modal">
     <div class="modal-content">
-        <h3 style="color:var(--gold); border-bottom:1px solid #444; padding-bottom:10px; margin-top:0;">✏️ 編輯客戶資料</h3>
-        <input type="hidden" id="editId">
-        <div class="form-group">
-            <label>客戶姓名</label>
-            <input type="text" id="editName" class="search-input">
+        <div class="modal-header">
+            <h2 class="modal-title" id="mName">客戶姓名</h2>
+            <button style="background:none; border:none; color:#888; font-size:2em; cursor:pointer;" onclick="closeModal()">×</button>
         </div>
-        <div class="form-group">
-            <label>聯絡電話</label>
-            <input type="text" id="editPhone" class="search-input">
-        </div>
-        <div class="form-group">
-            <label>備註筆記</label>
-            <textarea id="editNote" rows="4"></textarea>
-        </div>
-        <div class="modal-footer">
-            <button class="op-btn btn-del" onclick="closeModal()">取消</button>
-            <button class="action-btn" onclick="saveEdit()">確認更新</button>
+        
+        <div class="modal-body">
+            <div id="riskBanner" class="risk-banner">
+                <span class="risk-icon">⚠️</span> 
+                <div><strong>家族預警：</strong> <span id="riskText"></span></div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('basic')">📝 基本資料</div>
+                <div class="tab" onclick="switchTab('relation')">👨‍👩‍👧‍👦 家族生態</div>
+                <div class="tab" onclick="switchTab('consent')">🛡️ 法律同意書</div>
+            </div>
+
+            <div id="tab-basic" class="tab-content active">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:15px;">
+                    <div><label style="color:var(--cyan); font-size:0.9em;">姓名</label><input type="text" id="editName" class="search-input"></div>
+                    <div><label style="color:var(--cyan); font-size:0.9em;">電話</label><input type="text" id="editPhone" class="search-input"></div>
+                </div>
+                <label style="color:var(--cyan); font-size:0.9em;">戰略筆記</label>
+                <textarea id="editNote" style="width:100%; height:150px; background:#121820; color:#ddd; border:1px solid #555; padding:10px; margin-top:5px; border-radius:4px;"></textarea>
+                <div style="text-align:right; margin-top:15px;">
+                    <button class="action-btn" onclick="saveData()">💾 更新檔案</button>
+                </div>
+            </div>
+
+            <div id="tab-relation" class="tab-content">
+                <p style="color:#888; font-size:0.9em;">建立家族連結，系統將自動掃描成員的潛在風險 (天厄/天刃)。</p>
+                <table class="rel-table">
+                    <thead><tr><th>關係</th><th>姓名</th><th>生日</th><th>性別</th><th>時辰</th><th>操作</th></tr></thead>
+                    <tbody id="relList"></tbody>
+                </table>
+                <div class="add-rel-form">
+                    <input type="text" id="relRelation" placeholder="關係 (如:長子)" class="search-input">
+                    <input type="text" id="relName" placeholder="姓名" class="search-input">
+                    <input type="date" id="relDate" class="search-input">
+                    <select id="relGender" class="search-input"><option value="1">男</option><option value="0">女</option></select>
+                    <select id="relHour" class="search-input">
+                        <option value="子">子</option><option value="丑">丑</option><option value="寅">寅</option><option value="卯">卯</option><option value="辰">辰</option><option value="巳">巳</option>
+                        <option value="午">午</option><option value="未">未</option><option value="申">申</option><option value="酉">酉</option><option value="戌">戌</option><option value="亥">亥</option>
+                    </select>
+                    <button class="action-btn" style="height:42px; padding:0 15px;" onclick="addRelation()">＋ 新增</button>
+                </div>
+            </div>
+
+            <div id="tab-consent" class="tab-content">
+                <div class="consent-section">
+                    <div>
+                        <div style="font-weight:bold; color:var(--text-main);">數位諮詢同意書</div>
+                        <div style="font-size:0.8em; color:#888;">狀態：<span id="consentBadge" class="status-badge status-unsigned">未簽署</span></div>
+                    </div>
+                    <button class="op-btn btn-load" onclick="generateConsent()">📲 產生簽署 QR Code</button>
+                </div>
+                <div id="qrcode"></div>
+                <p style="color:#666; font-size:0.8em; text-align:center; margin-top:10px;">(請客戶使用手機掃描上方條碼進行簽名)</p>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    // 初始化
-    window.onload = function() {
-        loadData();
-    };
+    let currentData = [];
+    let selectedItem = null;
+
+    window.onload = function() { loadData(); };
 
     async function loadData() {
         const keyword = document.getElementById('searchInput').value;
@@ -144,35 +207,22 @@
         const loading = document.getElementById('loading');
         const emptyMsg = document.getElementById('emptyMsg');
 
-        tbody.innerHTML = '';
-        loading.style.display = 'block';
-        emptyMsg.style.display = 'none';
+        tbody.innerHTML = ''; loading.style.display = 'block'; emptyMsg.style.display = 'none';
 
         try {
-            // 呼叫 V10.3.3 的後端 API
             const res = await fetch(`/api/search_records?keyword=${encodeURIComponent(keyword)}`);
             const data = await res.json();
+            currentData = data; // 存入全域變數
             
             loading.style.display = 'none';
-            if (!data || data.length === 0) {
-                emptyMsg.style.display = 'block';
-                return;
-            }
+            if (!data || data.length === 0) { emptyMsg.style.display = 'block'; return; }
 
-            // 渲染列表 (List Mode)
-            data.forEach(item => {
+            data.forEach((item, index) => {
                 const tr = document.createElement('tr');
-                
-                // 1. 日期
                 const dateStr = item.created_at || '-';
-                
-                // 2. 本命參數 (性別/生辰)
-                const genderBadge = item.gender === 1 
-                    ? `<span class="gender-badge gender-m">乾造(男)</span>` 
-                    : `<span class="gender-badge gender-f">坤造(女)</span>`;
+                const genderBadge = item.gender === 1 ? `<span class="gender-badge gender-m">乾(男)</span>` : `<span class="gender-badge gender-f">坤(女)</span>`;
                 const birthInfo = `${item.solar_date} [${item.hour}時]`;
-
-                // 3. 標籤處理
+                
                 let tagsHtml = '';
                 if(item.tags && item.tags.length > 0) {
                     item.tags.forEach(t => {
@@ -184,81 +234,172 @@
                 tr.innerHTML = `
                     <td class="col-date">${dateStr}</td>
                     <td class="col-name">${item.client_name || '貴賓'}</td>
-                    <td class="col-chart">
-                        ${genderBadge} <br>
-                        ${birthInfo}
-                    </td>
+                    <td class="col-chart">${genderBadge} ${birthInfo}</td>
                     <td class="col-phone">${item.phone || '-'}</td>
-                    <td class="col-note">
-                        <div style="margin-bottom:5px;">${tagsHtml}</div>
-                        ${item.note || '<span style="opacity:0.3">無筆記</span>'}
-                    </td>
+                    <td class="col-note"><div style="margin-bottom:5px;">${tagsHtml}</div>${item.note || '<span style="opacity:0.3">無筆記</span>'}</td>
                     <td>
-                        <button class="op-btn btn-load" onclick='restoreRecord(${JSON.stringify(item)})'>📂 復盤推演</button>
-                        <button class="op-btn btn-edit" onclick='openEdit(${JSON.stringify(item)})'>✏️</button>
+                        <button class="op-btn btn-load" onclick='restoreRecord(${index})'>📂 復盤</button>
+                        <button class="op-btn btn-edit" onclick='openDetail(${index})'>✏️ 檔案</button>
                         <button class="op-btn btn-del" onclick="deleteRecord('${item.id}')">🗑️</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
-
-        } catch (e) {
-            console.error(e);
-            loading.innerText = "❌ 資料讀取失敗，請檢查後端連線";
-        }
+        } catch (e) { console.error(e); loading.innerText = "❌ 連線失敗"; }
     }
 
-    // [核心戰略功能] 一鍵復盤
-    function restoreRecord(item) {
-        // 將資料存入 LocalStorage，這就像是把檔案放進「公事包」
-        localStorage.setItem('damo_restore_data', JSON.stringify(item));
-        // 跳轉回首頁，首頁的 window.onload 會打開公事包並自動填表
+    // 核心戰略：一鍵復盤
+    function restoreRecord(index) {
+        localStorage.setItem('damo_restore_data', JSON.stringify(currentData[index]));
         window.location.href = '/';
     }
 
-    // 刪除功能
     async function deleteRecord(id) {
-        if(!confirm("⚠️ 確定要刪除此客戶資料嗎？此動作無法復原！")) return;
+        if(!confirm("⚠️ 確定要刪除？")) return;
+        try { await fetch(`/api/delete_record/${id}`, { method: 'DELETE' }); loadData(); } catch(e) { alert("刪除失敗"); }
+    }
+
+    // [V12.0] 打開全功能檔案夾
+    async function openDetail(index) {
+        selectedItem = currentData[index];
+        
+        // 填入基本資料
+        document.getElementById('mName').innerText = selectedItem.client_name || '客戶檔案';
+        document.getElementById('editName').value = selectedItem.client_name || '';
+        document.getElementById('editPhone').value = selectedItem.phone || '';
+        document.getElementById('editNote').value = selectedItem.note || '';
+        
+        // 同意書狀態
+        const badge = document.getElementById('consentBadge');
+        if(selectedItem.consent_signed) { badge.innerText="已簽署"; badge.className="status-badge status-signed"; }
+        else { badge.innerText="未簽署"; badge.className="status-badge status-unsigned"; }
+        document.getElementById('qrcode').style.display = "none";
+
+        // 渲染家族與風險
+        renderRelations();
+        await scanRisks(); // 自動掃描風險
+        
+        switchTab('basic'); // 預設顯示基本資料
+        document.getElementById('detailModal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
+
+    // 存檔 (整合基本資料與家族)
+    async function saveData(autoScan=false) {
+        if(!selectedItem) return;
+        
+        // 更新物件
+        selectedItem.client_name = document.getElementById('editName').value;
+        selectedItem.phone = document.getElementById('editPhone').value;
+        selectedItem.note = document.getElementById('editNote').value;
+        // relations 已經在 addRelation/removeRel 中更新到 selectedItem
+
         try {
-            await fetch(`/api/delete_record/${id}`, { method: 'DELETE' });
-            loadData(); // 重新整理
-        } catch(e) { alert("刪除失敗"); }
-    }
-
-    // 編輯功能
-    function openEdit(item) {
-        document.getElementById('editId').value = item.id;
-        document.getElementById('editName').value = item.client_name || '';
-        document.getElementById('editPhone').value = item.phone || '';
-        document.getElementById('editNote').value = item.note || '';
-        document.getElementById('editModal').style.display = 'flex';
-    }
-
-    function closeModal() {
-        document.getElementById('editModal').style.display = 'none';
-    }
-
-    async function saveEdit() {
-        const id = document.getElementById('editId').value;
-        const data = {
-            client_name: document.getElementById('editName').value,
-            phone: document.getElementById('editPhone').value,
-            note: document.getElementById('editNote').value
-        };
-        try {
-            await fetch(`/api/update_record/${id}`, {
+            await fetch(`/api/update_record/${selectedItem.id}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
+                body: JSON.stringify(selectedItem)
             });
-            closeModal();
-            loadData();
-        } catch(e) { alert("更新失敗"); }
+            if(autoScan) await scanRisks();
+            else {
+                alert("✅ 檔案已更新");
+                loadData(); // 刷新列表
+            }
+        } catch(e) { alert("存檔失敗"); }
     }
-    
-    // 點擊視窗外部關閉
+
+    // 家族功能模組
+    function renderRelations() {
+        const list = document.getElementById('relList');
+        const rels = selectedItem.relations || [];
+        list.innerHTML = rels.map((r, i) => `
+            <tr>
+                <td style="color:var(--cyan); font-weight:bold;">${r.relation}</td>
+                <td>${r.name}</td>
+                <td style="font-family:monospace; color:#888;">${r.solar_date}</td>
+                <td>${r.gender==1?'男':'女'}</td>
+                <td>${r.hour}</td>
+                <td><button class="op-btn btn-del" style="margin:0;" onclick="removeRel(${i})">×</button></td>
+            </tr>`).join('');
+    }
+
+    function addRelation() {
+        if(!selectedItem.relations) selectedItem.relations = [];
+        const rName = document.getElementById('relName').value;
+        const rDate = document.getElementById('relDate').value;
+        
+        if(!rName || !rDate) { alert("請填寫姓名與生日"); return; }
+
+        selectedItem.relations.push({
+            relation: document.getElementById('relRelation').value || '親友',
+            name: rName,
+            solar_date: rDate,
+            gender: parseInt(document.getElementById('relGender').value),
+            hour: document.getElementById('relHour').value
+        });
+        
+        // 清空輸入框
+        document.getElementById('relName').value = '';
+        document.getElementById('relDate').value = '';
+        
+        renderRelations();
+        saveData(true); // 自動存檔並掃描風險
+    }
+
+    function removeRel(i) {
+        if(!confirm("移除此家族成員？")) return;
+        selectedItem.relations.splice(i, 1);
+        renderRelations();
+        saveData(true);
+    }
+
+    // 風險雷達
+    async function scanRisks() {
+        const banner = document.getElementById('riskBanner');
+        if(!selectedItem.relations || selectedItem.relations.length === 0) {
+            banner.style.display = 'none'; return;
+        }
+        try {
+            const res = await fetch('/api/scan_family_risks', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(selectedItem)
+            });
+            const result = await res.json();
+            if(result.alerts && result.alerts.length > 0) {
+                document.getElementById('riskText').innerText = result.alerts.map(a => `${a.relation}${a.name} (${a.risk})`).join('、');
+                banner.style.display = 'flex';
+            } else {
+                banner.style.display = 'none';
+            }
+        } catch(e) { console.error("Risk scan failed", e); }
+    }
+
+    // 法律同意書
+    function generateConsent() {
+        const qrDiv = document.getElementById('qrcode');
+        qrDiv.innerHTML = ""; 
+        qrDiv.style.display = "block";
+        // 產生連結：指向 consent_page
+        const url = `${window.location.origin}/consent_page?id=${selectedItem.id}`;
+        new QRCode(qrDiv, { text: url, width: 150, height: 150 });
+    }
+
+    // 頁籤切換
+    function switchTab(t) {
+        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+        // 確保元素存在才操作
+        const tabBtn = document.querySelector(`.tab[onclick="switchTab('${t}')"]`);
+        const tabDiv = document.getElementById(`tab-${t}`);
+        if(tabBtn) tabBtn.classList.add('active');
+        if(tabDiv) tabDiv.classList.add('active');
+    }
+
+    // 點擊外部關閉
     window.onclick = function(event) {
-        const modal = document.getElementById('editModal');
+        const modal = document.getElementById('detailModal');
         if (event.target == modal) modal.style.display = "none";
     }
 </script>
