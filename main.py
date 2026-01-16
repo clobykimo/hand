@@ -21,7 +21,7 @@ SYSTEM_BASE_URL = "https://hand-316288530636.asia-east1.run.app"
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V10.3 格局雷達版")
+app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V10.3.3 藏經閣版")
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -246,56 +246,25 @@ class OnePalmSystem:
             }
         return chart
 
-    # [V10.3] 新增：自動格局偵測雷達
     def calculate_special_patterns(self):
         patterns = []
         pillars = [self.year_idx, self.month_idx, self.day_idx, self.hour_idx]
         star_counts = {}
-        
-        # 1. 統計星宿出現次數 (犯重)
         for idx in pillars:
             star_name = STARS_INFO[ZHI[idx]]['name']
             star_counts[star_name] = star_counts.get(star_name, 0) + 1
             
-        # 2. 判斷特殊格局 (依據一掌經總論)
-        # [cite: 92] 四柱皆吉星者必大富大貴
         good_stars = ['天貴星', '天福星', '天壽星', '天文星', '天權星']
-        if all(STARS_INFO[ZHI[idx]]['name'] in good_stars for idx in pillars):
-            patterns.append({"name": "👑 四柱全吉格", "desc": "四柱皆為吉星，必然大富大貴之命。"})
-
-        # [cite: 94] 四柱皆凶星
+        if all(STARS_INFO[ZHI[idx]]['name'] in good_stars for idx in pillars): patterns.append({"name": "👑 四柱全吉格", "desc": "四柱皆為吉星，必然大富大貴之命。"})
         bad_stars = ['天奸星', '天破星', '天驛星', '天刃星', '天厄星', '天孤星']
-        if all(STARS_INFO[ZHI[idx]]['name'] in bad_stars for idx in pillars):
-            patterns.append({"name": "⚠️ 四柱全凶格", "desc": "四柱皆凶，需修身養性，行善積德以化解。"})
-
-        # [cite: 110] 三權若值者...富貴有權
-        if star_counts.get('天權星', 0) >= 3:
-            patterns.append({"name": "🔥 三權掌印格", "desc": "權星犯重，心高志大，富貴有權，不受人欺。"})
-        
-        # [cite: 111] 三貴若逢者...必然大貴
-        if star_counts.get('天貴星', 0) >= 3:
-            patterns.append({"name": "💎 三貴顯赫格", "desc": "貴星犯重，必然大貴，受人尊敬。"})
-
-        # [cite: 113] 三福之人，必然大富
-        if star_counts.get('天福星', 0) >= 3:
-            patterns.append({"name": "💰 三福巨富格", "desc": "福星犯重，財源廣進，必然大富。"})
-
-        # [cite: 104] 三孤...為僧道必成正果
-        if star_counts.get('天孤星', 0) >= 3:
-            patterns.append({"name": "🧘‍♂️ 三孤通靈格", "desc": "孤星犯重，若為僧道必成正果，在家亦非凡俗。"})
-
-        # [cite: 106] 驛若三重，一生勞碌
-        if star_counts.get('天驛星', 0) >= 3:
-            patterns.append({"name": "🐎 三驛奔波格", "desc": "驛星犯重，一生勞碌，遷移無定。"})
-
-        # [cite: 82] 二刃星者主慈善
-        if star_counts.get('天刃星', 0) == 2:
-            patterns.append({"name": "⚔️ 雙刃化善格", "desc": "刃星見二，反主慈善，但仍需修身。"})
-
-        # [cite: 73] 逢三厄者不唯無厄，而衣祿有餘
-        if star_counts.get('天厄星', 0) >= 3:
-            patterns.append({"name": "🛡️ 三厄反吉格", "desc": "厄星犯重反不為厄，衣祿有餘。"})
-
+        if all(STARS_INFO[ZHI[idx]]['name'] in bad_stars for idx in pillars): patterns.append({"name": "⚠️ 四柱全凶格", "desc": "四柱皆凶，需修身養性，行善積德以化解。"})
+        if star_counts.get('天權星', 0) >= 3: patterns.append({"name": "🔥 三權掌印格", "desc": "權星犯重，心高志大，富貴有權，不受人欺。"})
+        if star_counts.get('天貴星', 0) >= 3: patterns.append({"name": "💎 三貴顯赫格", "desc": "貴星犯重，必然大貴，受人尊敬。"})
+        if star_counts.get('天福星', 0) >= 3: patterns.append({"name": "💰 三福巨富格", "desc": "福星犯重，財源廣進，必然大富。"})
+        if star_counts.get('天孤星', 0) >= 3: patterns.append({"name": "🧘‍♂️ 三孤通靈格", "desc": "孤星犯重，若為僧道必成正果，在家亦非凡俗。"})
+        if star_counts.get('天驛星', 0) >= 3: patterns.append({"name": "🐎 三驛奔波格", "desc": "驛星犯重，一生勞碌，遷移無定。"})
+        if star_counts.get('天刃星', 0) == 2: patterns.append({"name": "⚔️ 雙刃化善格", "desc": "刃星見二，反主慈善，但仍需修身。"})
+        if star_counts.get('天厄星', 0) >= 3: patterns.append({"name": "🛡️ 三厄反吉格", "desc": "厄星犯重反不為厄，衣祿有餘。"})
         return patterns
 
     def calculate_hierarchy(self, current_age, target_data, scope):
@@ -303,17 +272,13 @@ class OnePalmSystem:
         luck_stage = (current_age - 1) // 7 
         big_luck_idx = get_next_position(start_luck, luck_stage, self.direction)
         hierarchy = {"big_luck": {**STARS_INFO[ZHI[big_luck_idx]], "zhi": ZHI[big_luck_idx]}}
-        
         t_year_zhi_idx = get_zhi_index(target_data['year_zhi'])
         flow_year_idx = get_next_position(big_luck_idx, t_year_zhi_idx, self.direction)
         hierarchy["year"] = {**STARS_INFO[ZHI[flow_year_idx]], "zhi": ZHI[flow_year_idx]}
-        
         flow_month_idx = get_next_position(flow_year_idx, target_data['lunar_month'] - 1, self.direction)
         hierarchy["month"] = {**STARS_INFO[ZHI[flow_month_idx]], "zhi": ZHI[flow_month_idx]}
-        
         flow_day_idx = get_next_position(flow_month_idx, target_data['lunar_day'] - 1, self.direction)
         hierarchy["day"] = {**STARS_INFO[ZHI[flow_day_idx]], "zhi": ZHI[flow_day_idx]}
-        
         t_hour_idx = get_zhi_index(target_data['hour_zhi'])
         flow_hour_idx = get_next_position(flow_day_idx, t_hour_idx, self.direction)
         hierarchy["hour"] = {**STARS_INFO[ZHI[flow_hour_idx]], "zhi": ZHI[flow_hour_idx]}
@@ -325,10 +290,8 @@ class OnePalmSystem:
             trend_response["datasets"][name] = []
             trend_response["adjustments"][name] = []
             trend_response["tooltips"][name] = [] 
-        
         loop_items = []
         target_val_match = -1
-        
         if scope == 'year':
             current_idx = get_zhi_index(hierarchy['year']['zhi'])
             base_year = target_data['lunar_year']
@@ -357,7 +320,6 @@ class OnePalmSystem:
                 valid_month = max(1, min(12, t_month))
                 days_in_month = LunarDate(t_year, valid_month, 1).days_in_month 
             except: pass
-            
             for i in range(1, days_in_month + 1):
                 try:
                     valid_month = max(1, min(12, t_month))
@@ -383,17 +345,10 @@ class OnePalmSystem:
         for point in loop_items:
             trend_response["axis_labels"].append(point['label'])
             time_star_info = None
-            if scope == 'year':
-                dynamic_idx = get_next_position(current_fy_idx, point['offset'], system_obj.direction)
-            elif scope == 'month':
-                offset = point['val'] - 1
-                dynamic_idx = get_next_position(current_fy_idx, offset, system_obj.direction)
-            elif scope == 'day':
-                offset = point['val'] - 1
-                dynamic_idx = get_next_position(current_fm_idx, offset, system_obj.direction)
-            elif scope == 'hour':
-                h_idx = get_zhi_index(point['val']) if isinstance(point['val'], str) else point['val']
-                dynamic_idx = get_next_position(current_fd_idx, h_idx, system_obj.direction)
+            if scope == 'year': dynamic_idx = get_next_position(current_fy_idx, point['offset'], system_obj.direction)
+            elif scope == 'month': offset = point['val'] - 1; dynamic_idx = get_next_position(current_fy_idx, offset, system_obj.direction)
+            elif scope == 'day': offset = point['val'] - 1; dynamic_idx = get_next_position(current_fm_idx, offset, system_obj.direction)
+            elif scope == 'hour': h_idx = get_zhi_index(point['val']) if isinstance(point['val'], str) else point['val']; dynamic_idx = get_next_position(current_fd_idx, h_idx, system_obj.direction)
             
             time_star_info = STARS_INFO[ZHI[dynamic_idx]]
             me_el = time_star_info['element'] 
@@ -408,21 +363,17 @@ class OnePalmSystem:
                 current_guest_name = aspect_star_info['name']
                 current_host_el = me_el
                 current_host_name = age_star_name
-
                 if name == "總命運":
-                    upper_level_star = None
-                    upper_level_label = ""
+                    upper_level_star = None; upper_level_label = ""
                     if scope == 'year': upper_level_star = hierarchy['big_luck']; upper_level_label = "(大運)"
                     elif scope == 'month': upper_level_star = hierarchy['year']; upper_level_label = "(流年)"
                     elif scope == 'day': upper_level_star = hierarchy['month']; upper_level_label = "(流月)"
                     elif scope == 'hour': upper_level_star = hierarchy['day']; upper_level_label = "(流日)"
-                        
                     if upper_level_star:
                         current_host_el = upper_level_star['element']
                         current_host_name = upper_level_star['name'] + upper_level_label
                         current_guest_el = time_star_info['element']
                         current_guest_name = time_star_info['name'] + "(值星)"
-
                 rel = get_element_relation(me=current_host_el, target=current_guest_el)
                 trend_response["datasets"][name].append(rel["score"])
                 grade_score = STAR_MODIFIERS.get(aspect_star_info['name'], 0)
@@ -430,7 +381,6 @@ class OnePalmSystem:
                 trend_response["adjustments"][name].append(grade_score + root_score)
                 date_str = point['label'][0] + point['label'][1]
                 trend_response["tooltips"][name].append(f"[{date_str}] {current_guest_name} {rel['type']} {current_host_name}")
-                
         return trend_response
 
     def check_risk(self, target_year):
@@ -481,21 +431,17 @@ async def calculate(req: UserRequest):
     try:
         lunar_data = solar_to_one_palm_lunar(req.solar_date)
         if not lunar_data: raise ValueError("出生日期解析失敗")
-        
         target_data = parse_target_date(req.target_scope, req.target_calendar, req.target_year, req.target_month, req.target_day, req.target_hour)
-        
         age = target_data['lunar_year'] - lunar_data['lunar_year_num'] + 1
         system = OnePalmSystem(req.gender, lunar_data['year_zhi'], lunar_data['month'], lunar_data['day'], req.hour)
         base_chart = system.get_base_chart()
         hierarchy = system.calculate_hierarchy(age, target_data, req.target_scope)
         aspects = []
         base_idx = get_zhi_index(hierarchy['year']['zhi']) if req.target_scope == 'year' else get_zhi_index(hierarchy['year']['zhi'])
-        
         host_star = hierarchy['year'] 
         if req.target_scope == 'month': host_star = hierarchy['month']
         elif req.target_scope == 'day': host_star = hierarchy['day']
         elif req.target_scope == 'hour': host_star = hierarchy['hour']
-        
         for i, name in enumerate(ASPECTS_ORDER):
             curr_idx = (base_idx + i) % 12 
             guest_star_info = STARS_INFO[ZHI[curr_idx]] 
@@ -509,21 +455,12 @@ async def calculate(req: UserRequest):
             aspects.append({ "name": name, "star": guest_star_info['name'], "element": guest_star_info['element'], "zhi": ZHI[curr_idx], "relation": rel['type'], "is_alert": (rel['type'] in ['我剋','剋我']) })
         
         trend_data = system.calculate_full_trend(hierarchy, req.target_scope, lunar_data, target_data, system)
-        
-        # [V10.3] 新增：計算特殊格局並回傳
         special_patterns = system.calculate_special_patterns()
 
         return {
-            "lunar_info": lunar_data['lunar_str'], 
-            "age": age, 
-            "base_chart": base_chart, 
-            "hierarchy": hierarchy, 
-            "target_display": target_data['display_info'], 
-            "dual_info": target_data.get('dual_info', {}), 
-            "aspects": aspects, 
-            "ai_prompt": "", 
-            "trend_data": trend_data,
-            "special_patterns": special_patterns  # [V10.3] 回傳格局
+            "lunar_info": lunar_data['lunar_str'], "age": age, "base_chart": base_chart, "hierarchy": hierarchy, 
+            "target_display": target_data['display_info'], "dual_info": target_data.get('dual_info', {}), "aspects": aspects, 
+            "ai_prompt": "", "trend_data": trend_data, "special_patterns": special_patterns
         }
     except Exception as e: 
         logger.error(f"Calculate Error: {str(e)}")
@@ -590,15 +527,18 @@ async def delete_record(doc_id: str):
 @app.post("/api/ask_ai")
 async def ask_ai(req: AIRequest):
     if "請在此" in OPENAI_API_KEY: return {"error": "API Key 未設定"}
-    
     try:
         from openai import OpenAI
         client = OpenAI(api_key=OPENAI_API_KEY)
-
         ctx = req.context_data
         system_prompt = f"""
-        你現在是「達摩一掌經」的專業戰略顧問，輔助「徐峰老師」進行命理諮詢。
+        你現在是「達摩智囊」的首席戰略參謀，輔助「徐峰老師」進行命理戰略諮詢。
         
+        【你的核心身分】：
+        1. 說話風格：專業、理性、帶有戰略高度。你會將古老的命理智慧，轉化為現代管理學或戰略術語。
+        2. 自稱：請自稱為「本智囊」或「達摩智囊」，不要說是「AI」或「機器人」。
+        3. 任務：協助徐峰老師找出案主的命盤優勢與風險，並提供具體可執行的戰略建議。
+
         【你的核心邏輯】：
         1. 依據分數判斷吉凶 (底層邏輯)：
            - 80分 (生我)：大吉，貴人相助，輕鬆得利。
@@ -606,9 +546,8 @@ async def ask_ai(req: AIRequest):
            - 60分 (我生)：平運，才華展現，但需付出努力。
            - 35分 (我剋)：勞碌，雖然有掌控權，但過程辛苦，需親力親為。
            - 20分 (剋我)：凶險，壓力極大，受制於人，易有災禍。
-        2. 說話風格：專業、理性、帶有戰略高度。
-        3. 【古今對照指令】：若分析中涉及星宿，請務必【先引用古文詩訣】，再進行【現代白話戰略轉譯】，讓客戶既覺得有底蘊，又聽得懂。
-        4. 【商業導購指令】：若發現低分 (<=40) 或凶格，請在結尾加上：「⚠ 偵測到此處能量波動較大，建議預約徐峰老師進行一對一深度佈局，以化解風險。」
+        2. 【古今對照指令】：若分析中涉及星宿，請務必【先引用古文詩訣】，再進行【現代白話戰略轉譯】，讓客戶既覺得有底蘊，又聽得懂。
+        3. 【商業導購指令】：若發現低分 (<=40) 或凶格，請在結尾加上：「⚠ 偵測到此處能量波動較大，建議預約徐峰老師進行一對一深度佈局，以化解風險。」
 
         【當前案主數據】：
         - 年齡：{ctx.get('age', '未知')}
@@ -616,23 +555,15 @@ async def ask_ai(req: AIRequest):
         - 特殊格局：{str(ctx.get('special_patterns', []))}
         - 命盤重點數據：{str(ctx.get('aspects', []))}
         """
-
         messages = [{"role": "system", "content": system_prompt}]
         recent_history = req.history[-6:] 
         messages.extend(recent_history)
         messages.append({"role": "user", "content": req.message})
-
-        res = client.chat.completions.create(
-            model="gpt-4o", 
-            messages=messages,
-            temperature=0.7 
-        )
-        
+        res = client.chat.completions.create(model="gpt-4o", messages=messages, temperature=0.7)
         return {"reply": res.choices[0].message.content}
-
     except Exception as e:
         logger.error(f"AI Error: {str(e)}")
-        return {"reply": f"AI 思考過載中，請稍後再試。({str(e)})"}
+        return {"reply": f"智囊推演過載中，請稍後再試。({str(e)})"}
 
 if __name__ == "__main__":
     import uvicorn
