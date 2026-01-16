@@ -513,9 +513,10 @@
         document.getElementById('pillarModal').style.display = 'flex';
     }
 
-    // [V10.2] 呼叫 AI 解析四柱
+// [V10.2.1 優化版] 呼叫 AI 解析四柱 (加入全盤合參邏輯)
     function analyzePillarWithAI() {
-        if (!currentPillarData) return;
+        if (!currentPillarData || !globalLastResult) return;
+        
         document.getElementById('pillarModal').style.display = 'none'; // 關閉 Modal
         
         // 自動捲動到 AI 區域並展開
@@ -523,12 +524,21 @@
         document.querySelector('#aiBody .arrow-icon').classList.remove('collapsed');
         document.getElementById('aiBody').scrollIntoView({behavior: "smooth"});
 
-        const prompt = `請針對案主的【${currentPillarData.title}】進行深度解析。
-        星宿：${currentPillarData.star} (${currentPillarData.zhi}宮)
-        核心特質：${currentPillarData.slogan}
-        詳細描述：${currentPillarData.desc}
-        
-        請分析這代表案主的什麼性格特質、潛在優勢與人生課題？`;
+        // 1. 抓取全盤資訊 (讓 AI 能參考年/月/日/時)
+        const p = globalLastResult.base_chart;
+        const fullChartContext = `年柱:${p.年柱.name}(${p.年柱.zhi}), 月柱:${p.月柱.name}(${p.月柱.zhi}), 日柱:${p.日柱.name}(${p.日柱.zhi}), 時柱:${p.時柱.name}(${p.時柱.zhi})`;
+
+        // 2. 建構大師級 Prompt
+        const prompt = `請以專通達摩一掌經及八字命理『徐峰老師』的口吻，
+參考案主的完整命盤架構：【${fullChartContext}】，
+針對目前點選的【${currentPillarData.title}】進行深度戰略點評。
+
+【點選位置資訊】：
+- 星宿：${currentPillarData.star} (${currentPillarData.zhi}宮)
+- 核心特質：${currentPillarData.slogan}
+- 基礎定義：${currentPillarData.desc}
+
+請指出該位置對案主影響的**數個優勢與劣勢**，並結合全盤氣場，給出一個**具體的改運建議或注意事項**。`;
         
         sendToAI(prompt);
     }
@@ -818,3 +828,4 @@
 </script>
 </body>
 </html>
+
