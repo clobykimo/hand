@@ -513,34 +513,63 @@
         document.getElementById('pillarModal').style.display = 'flex';
     }
 
-// [V10.2.1 優化版] 呼叫 AI 解析四柱 (加入全盤合參邏輯)
+// [V10.2.2 診斷修復版] 加入防呆與診斷機制
     function analyzePillarWithAI() {
-        if (!currentPillarData || !globalLastResult) return;
-        
-        document.getElementById('pillarModal').style.display = 'none'; // 關閉 Modal
-        
-        // 自動捲動到 AI 區域並展開
-        document.getElementById('aiBody').classList.remove('collapsed');
-        document.querySelector('#aiBody .arrow-icon').classList.remove('collapsed');
-        document.getElementById('aiBody').scrollIntoView({behavior: "smooth"});
+        console.log("正在啟動 AI 分析程序...");
 
-        // 1. 抓取全盤資訊 (讓 AI 能參考年/月/日/時)
-        const p = globalLastResult.base_chart;
-        const fullChartContext = `年柱:${p.年柱.name}(${p.年柱.zhi}), 月柱:${p.月柱.name}(${p.月柱.zhi}), 日柱:${p.日柱.name}(${p.日柱.zhi}), 時柱:${p.時柱.name}(${p.時柱.zhi})`;
+        // 1. 第一關：檢查資料是否存在
+        if (!currentPillarData) {
+            alert("❌ 錯誤：找不到當前選中的柱位資料 (currentPillarData 為空)");
+            return;
+        }
+        if (!globalLastResult || !globalLastResult.base_chart) {
+            alert("❌ 錯誤：找不到命盤資料 (globalLastResult 為空)，請重新排盤");
+            return;
+        }
 
-        // 2. 建構大師級 Prompt
-        const prompt = `請以專通達摩一掌經及八字命理『徐峰老師』的口吻，
+        // 2. 第二關：嘗試關閉視窗與捲動 (UI 動作)
+        try {
+            document.getElementById('pillarModal').style.display = 'none'; 
+            const aiBody = document.getElementById('aiBody');
+            aiBody.classList.remove('collapsed');
+            document.querySelector('#aiBody .arrow-icon').classList.remove('collapsed');
+            aiBody.scrollIntoView({behavior: "smooth"});
+        } catch (e) {
+            console.error("UI 切換錯誤", e);
+            // UI 錯誤不阻擋後續流程
+        }
+
+        // 3. 第三關：資料組裝 (最容易報錯的地方)
+        try {
+            const p = globalLastResult.base_chart;
+            // 防呆：確保各柱存在，若不存在則給預設值
+            const getPillarInfo = (key) => p[key] ? `${p[key].name}(${p[key].zhi})` : "未知";
+            
+            const fullChartContext = `年柱:${getPillarInfo('年柱')}, 月柱:${getPillarInfo('月柱')}, 日柱:${getPillarInfo('日柱')}, 時柱:${getPillarInfo('時柱')}`;
+
+            const prompt = `請以專通達摩一掌經及八字命理『徐峰老師』的口吻，
 參考案主的完整命盤架構：【${fullChartContext}】，
 針對目前點選的【${currentPillarData.title}】進行深度戰略點評。
 
 【點選位置資訊】：
 - 星宿：${currentPillarData.star} (${currentPillarData.zhi}宮)
-- 核心特質：${currentPillarData.slogan}
-- 基礎定義：${currentPillarData.desc}
+- 核心特質：${currentPillarData.slogan || '無'}
+- 基礎定義：${currentPillarData.desc || '無'}
 
 請指出該位置對案主影響的**數個優勢與劣勢**，並結合全盤氣場，給出一個**具體的改運建議或注意事項**。`;
-        
-        sendToAI(prompt);
+
+            // 4. 第四關：發送指令
+            // 檢查 sendToAI 是否存在
+            if (typeof sendToAI === 'function') {
+                sendToAI(prompt);
+            } else {
+                alert("❌ 嚴重錯誤：找不到 sendToAI 函式。請檢查程式碼是否完整複製。");
+            }
+
+        } catch (error) {
+            alert("❌ 程式執行發生意外錯誤：\n" + error.message);
+            console.error(error);
+        }
     }
 
     function runRoulette(targetZhi, isMale) { return new Promise(resolve => { let rounds=0, maxRounds=1, speed=50; const targetIndex = ROULETTE_PATH.indexOf(targetZhi); const step = isMale ? 1 : -1; function nextStep() { if(globalSkipAnimation) { resolve(); return; } if(globalIsPaused) { setTimeout(nextStep, 100); return; } const prev = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(prev) prev.classList.remove('roulette-active'); currentLightIndex = (currentLightIndex + step + 12) % 12; const curr = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(curr) curr.classList.add('roulette-active'); if(rounds>=maxRounds && currentLightIndex===targetIndex) { if(curr) curr.classList.add('flash-stop'); setTimeout(()=>{ if(curr){curr.classList.remove('roulette-active'); curr.classList.remove('flash-stop');} resolve(); }, 800); return; } if(currentLightIndex===0) rounds++; if(rounds>=maxRounds) speed+=30; setTimeout(nextStep, speed); } nextStep(); }); }
@@ -828,4 +857,5 @@
 </script>
 </body>
 </html>
+
 
