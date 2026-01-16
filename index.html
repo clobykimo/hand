@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V10.2 戰略詳解版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V10.3 格局雷達版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -62,11 +62,7 @@
 
         /* [V10.2] 四柱詳解卡片樣式 */
         .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .pillar-card { 
-            background: #252f3a; border: 1px solid #4a5568; border-radius: 6px; 
-            padding: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease; 
-            position: relative; overflow: hidden;
-        }
+        .pillar-card { background: #252f3a; border: 1px solid #4a5568; border-radius: 6px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
         .pillar-card:hover { transform: translateY(-3px); border-color: var(--gold); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .pillar-card.active { border-color: var(--gold); opacity: 1; }
         .pillar-header { font-size: 0.8em; color: #888; margin-bottom: 5px; font-weight: bold; }
@@ -74,6 +70,17 @@
         .pillar-slogan { font-size: 0.75em; color: var(--cyan); opacity: 0.8; line-height: 1.3; min-height: 2.6em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .click-hint { position: absolute; bottom: 2px; right: 2px; font-size: 0.6em; color: #555; opacity: 0; transition: opacity 0.3s; }
         .pillar-card:hover .click-hint { opacity: 1; }
+
+        /* [V10.3] 特殊格局徽章 */
+        .pattern-area { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; justify-content: center; }
+        .pattern-badge { 
+            background: linear-gradient(135deg, #1a202c, #2d3748); 
+            border: 1px solid var(--gold); color: var(--gold);
+            padding: 5px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold;
+            display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
         /* [V10.0] 聊天室樣式 */
         .chat-window { background: #0f1319; border: 1px solid #333; border-radius: 8px; height: 300px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px; }
@@ -275,6 +282,7 @@
             <div id="pillarsBody" class="card-body collapsed">
                 <div class="four-pillars" id="pillarsArea">
                     </div>
+                <div id="specialPatternsArea" class="pattern-area"></div>
             </div>
         </div>
 
@@ -319,7 +327,7 @@
 
         <div class="card" style="background:#161625; border-color:var(--gpt-color);">
             <h3 class="card-header" onclick="toggleCard('aiBody')" style="color:var(--gpt-color);">
-                🤖 AI 戰略顧問 <span style="font-size:0.7em; color:#888;">(V10.0)</span>
+                🤖 AI 戰略顧問 <span style="font-size:0.7em; color:#888;">(V10.3)</span>
                 <span class="arrow-icon collapsed">▼</span>
             </h3>
             <div id="aiBody" class="card-body collapsed">
@@ -402,7 +410,7 @@
     let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
     let isAnimEnabled = false;
     let chatHistory = [];
-    let currentPillarData = null; // [V10.2] 暫存當前點擊的柱位資料
+    let currentPillarData = null; 
 
     // 2. 基礎工具
     function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
@@ -476,12 +484,12 @@
         setText('lunarInfo', `| 虛歲 ${result.age} | ${result.lunar_info}`);
         
         const p = result.base_chart;
-        // [V10.2] 更新 Pillars List 邏輯，準備生成互動卡片
+        // [V10.3] 加入 poem (詩訣)
         const list = [
-            {z:p.年柱.zhi, n:p.年柱.name, c:'var(--p-year)', k:'年', s:p.年柱.slogan, d:p.年柱.desc, key:'年柱'}, 
-            {z:p.月柱.zhi, n:p.月柱.name, c:'var(--p-month)', k:'月', s:p.月柱.slogan, d:p.月柱.desc, key:'月柱'}, 
-            {z:p.日柱.zhi, n:p.日柱.name, c:'var(--p-day)', k:'日', s:p.日柱.slogan, d:p.日柱.desc, key:'日柱'}, 
-            {z:p.時柱.zhi, n:p.時柱.name, c:'var(--p-hour)', k:'命', s:p.時柱.slogan, d:p.時柱.desc, key:'時柱'}
+            {z:p.年柱.zhi, n:p.年柱.name, c:'var(--p-year)', k:'年', s:p.年柱.slogan, d:p.年柱.desc, pm:p.年柱.poem, key:'年柱'}, 
+            {z:p.月柱.zhi, n:p.月柱.name, c:'var(--p-month)', k:'月', s:p.月柱.slogan, d:p.月柱.desc, pm:p.月柱.poem, key:'月柱'}, 
+            {z:p.日柱.zhi, n:p.日柱.name, c:'var(--p-day)', k:'日', s:p.日柱.slogan, d:p.日柱.desc, pm:p.日柱.poem, key:'日柱'}, 
+            {z:p.時柱.zhi, n:p.時柱.name, c:'var(--p-hour)', k:'命', s:p.時柱.slogan, d:p.時柱.desc, pm:p.時柱.poem, key:'時柱'}
         ];
         const isMale = (parseInt(document.getElementById('gender').value)===1);
         
@@ -490,9 +498,8 @@
             if (isAnimEnabled) await runRoulette(item.z, isMale); 
             addBadgeToCell(item.z, item.k, item.c, !isAnimEnabled); 
             
-            // [V10.2] 生成互動卡片 HTML
             const pillarHtml = `
-                <div class="pillar-card active" onclick="showPillarModal('${item.key}', '${item.n}', '${item.z}', '${item.s}', '${item.d}')" style="border-color:${item.c}">
+                <div class="pillar-card active" onclick="showPillarModal('${item.key}', '${item.n}', '${item.z}', '${item.s}', '${item.d}', '${item.pm}')" style="border-color:${item.c}">
                     <div class="pillar-header" style="color:${item.c}">${item.key}</div>
                     <div class="pillar-star">${item.n}</div>
                     <div class="pillar-slogan">${item.s}</div>
@@ -500,12 +507,22 @@
                 </div>`;
             document.getElementById('pillarsArea').innerHTML += pillarHtml; 
         }
+
+        // [V10.3] 渲染特殊格局徽章
+        const patternArea = document.getElementById('specialPatternsArea');
+        patternArea.innerHTML = "";
+        if (result.special_patterns && result.special_patterns.length > 0) {
+            result.special_patterns.forEach(pt => {
+                patternArea.innerHTML += `<div class="pattern-badge" title="${pt.desc}">${pt.name}</div>`;
+            });
+        }
+
         renderFullView(result);
     }
 
-    // [V10.2] 顯示四柱詳解 Modal
-    function showPillarModal(title, star, zhi, slogan, desc) {
-        currentPillarData = { title, star, zhi, slogan, desc }; // 暫存給 AI 用
+    // [V10.3] 顯示詳解 Modal (含詩訣)
+    function showPillarModal(title, star, zhi, slogan, desc, poem) {
+        currentPillarData = { title, star, zhi, slogan, desc, poem }; 
         setText('modalPillarTitle', title + "解析");
         setText('modalPillarZhi', `${zhi}宮 (${star})`);
         setText('modalPillarSlogan', slogan);
@@ -513,40 +530,24 @@
         document.getElementById('pillarModal').style.display = 'flex';
     }
 
-// [V10.2.2 診斷修復版] 加入防呆與診斷機制
+    // [V10.2.2 診斷修復版 + V10.3 古文引用升級] 
     function analyzePillarWithAI() {
         console.log("正在啟動 AI 分析程序...");
+        if (!currentPillarData) { alert("❌ 錯誤：找不到當前選中的柱位資料"); return; }
+        if (!globalLastResult || !globalLastResult.base_chart) { alert("❌ 錯誤：找不到命盤資料，請重新排盤"); return; }
 
-        // 1. 第一關：檢查資料是否存在
-        if (!currentPillarData) {
-            alert("❌ 錯誤：找不到當前選中的柱位資料 (currentPillarData 為空)");
-            return;
-        }
-        if (!globalLastResult || !globalLastResult.base_chart) {
-            alert("❌ 錯誤：找不到命盤資料 (globalLastResult 為空)，請重新排盤");
-            return;
-        }
-
-        // 2. 第二關：嘗試關閉視窗與捲動 (UI 動作)
         try {
             document.getElementById('pillarModal').style.display = 'none'; 
             const aiBody = document.getElementById('aiBody');
             aiBody.classList.remove('collapsed');
             document.querySelector('#aiBody .arrow-icon').classList.remove('collapsed');
             aiBody.scrollIntoView({behavior: "smooth"});
-        } catch (e) {
-            console.error("UI 切換錯誤", e);
-            // UI 錯誤不阻擋後續流程
-        }
 
-        // 3. 第三關：資料組裝 (最容易報錯的地方)
-        try {
             const p = globalLastResult.base_chart;
-            // 防呆：確保各柱存在，若不存在則給預設值
             const getPillarInfo = (key) => p[key] ? `${p[key].name}(${p[key].zhi})` : "未知";
-            
             const fullChartContext = `年柱:${getPillarInfo('年柱')}, 月柱:${getPillarInfo('月柱')}, 日柱:${getPillarInfo('日柱')}, 時柱:${getPillarInfo('時柱')}`;
 
+            // [V10.3] Prompt 升級：加入詩訣引用指令
             const prompt = `請以專通達摩一掌經及八字命理『徐峰老師』的口吻，
 參考案主的完整命盤架構：【${fullChartContext}】，
 針對目前點選的【${currentPillarData.title}】進行深度戰略點評。
@@ -554,18 +555,20 @@
 【點選位置資訊】：
 - 星宿：${currentPillarData.star} (${currentPillarData.zhi}宮)
 - 核心特質：${currentPillarData.slogan || '無'}
+- 古籍詩訣：${currentPillarData.poem || '無'}
 - 基礎定義：${currentPillarData.desc || '無'}
 
-請指出該位置對案主影響的**數個優勢與劣勢**，並結合全盤氣場，給出一個**具體的改運建議或注意事項**。`;
+【回答要求】：
+1. 請先【引用古籍詩訣】。
+2. 將詩訣翻譯為【現代白話戰略建議】。
+3. 指出該位置對案主影響的【優勢與劣勢】。
+4. 結合全盤氣場，給出一個具體的【改運建議或注意事項】。`;
 
-            // 4. 第四關：發送指令
-            // 檢查 sendToAI 是否存在
             if (typeof sendToAI === 'function') {
                 sendToAI(prompt);
             } else {
-                alert("❌ 嚴重錯誤：找不到 sendToAI 函式。請檢查程式碼是否完整複製。");
+                alert("❌ 嚴重錯誤：找不到 sendToAI 函式。");
             }
-
         } catch (error) {
             alert("❌ 程式執行發生意外錯誤：\n" + error.message);
             console.error(error);
@@ -670,6 +673,7 @@
         const ctx = document.getElementById('trendChart').getContext('2d');
         if (trendChartInstance) trendChartInstance.destroy();
 
+        // [V10.1 UI 清理] 確保只有一個 HUD 容器，且為膠囊樣式
         const hudDisplay = (globalLastResult && globalLastResult.dual_info) ? 'flex' : 'none';
         const solarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.solar : '-';
         const lunarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.lunar : '-';
@@ -762,6 +766,7 @@
         const contextData = {
             age: globalLastResult.age,
             target_display: globalLastResult.target_display,
+            special_patterns: globalLastResult.special_patterns || [],
             aspects: globalLastResult.aspects.map(a => {
                 const score = globalTrendData.datasets[a.name][scoreIndex];
                 return `${a.name}: ${a.star} (${a.relation}, ${score}分)`;
@@ -857,5 +862,3 @@
 </script>
 </body>
 </html>
-
-
