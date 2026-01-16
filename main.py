@@ -12,25 +12,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from borax.calendars.lunardate import LunarDate
 from google.cloud import firestore
 
-# [輕量版] 移除自動化模組
-# from apscheduler.schedulers.asyncio import AsyncIOScheduler
-# from playwright.async_api import async_playwright
-# import smtplib
-# from email.message import EmailMessage
-
 # 設定 Log 格式
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("DamoSystem")
 
 # ---------------- 設定區 ----------------
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or "請在此填入您的OpenAI_API_Key"
-# [輕量版] SMTP 設定暫時移除
-# SMTP_CONFIG = { ... } 
 SYSTEM_BASE_URL = "https://hand-316288530636.asia-east1.run.app"
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR): os.makedirs(UPLOAD_DIR)
 
-app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V10.0 Lite 輕量競速版")
+app = FastAPI(title="達摩一掌經．生命藍圖導航系統 - V10.2 戰略詳解版")
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -42,22 +34,126 @@ try:
 except Exception as e:
     logger.warning(f"⚠️ Firestore 連線失敗: {e}")
 
-# ---------------- 知識庫 (保留完整邏輯) ----------------
+# ---------------- [V10.2] 達摩知識庫核心 (完整注入) ----------------
 ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
+
 STARS_INFO = {
-    '子': {'name': '天貴星', 'element': '水'}, '丑': {'name': '天厄星', 'element': '土'},
-    '寅': {'name': '天權星', 'element': '木'}, '卯': {'name': '天破星', 'element': '木'},
-    '辰': {'name': '天奸星', 'element': '土'}, '巳': {'name': '天文星', 'element': '火'},
-    '午': {'name': '天福星', 'element': '火'}, '未': {'name': '天驛星', 'element': '土'},
-    '申': {'name': '天孤星', 'element': '金'}, '酉': {'name': '天刃星', 'element': '金'},
-    '戌': {'name': '天藝星', 'element': '土'}, '亥': {'name': '天壽星', 'element': '水'}
+    '子': {
+        'name': '天貴星', 'element': '水', 'slogan': '春風化雨的清貴點燈人',
+        'pillars': {
+            'year': '乖巧有人緣，心地善良，很會讀書，體貼父母，清雅高貴，重視內在人格涵養。',
+            'month': '有貴人相助，適合以嘴巴來傳道，或從事文教清雅的工作，但不太積極。',
+            'day': '女性較容易在婚姻生活中受苦，悟性強，常會有逃避現象，男性體貼溫柔。',
+            'hour': '很有智慧，充滿慈悲心，重名不重利，自主性強，重於口德的佈施。'
+        }
+    },
+    '丑': {
+        'name': '天厄星', 'element': '土', 'slogan': '重見曙光的惜福者',
+        'pillars': {
+            'year': '智慧不易開，怕孤獨寂寞，容易出意外，很孝順父母，幼年適合獎懲方式管教。',
+            'month': '持續力差，無法收成安定，自主性弱，頗喜歡職場的熱鬧，容易滿足，不會抱怨。',
+            'day': '婚姻無主見，困頓渾噩，但不適合單身，雖然苦也能忍受，不在意婚姻生活品質。',
+            'hour': '生存力強，愛漂亮，心地好沒主見，不太用大腦，依賴性強，喜過美好日子。'
+        }
+    },
+    '寅': {
+        'name': '天權星', 'element': '木', 'slogan': '人生戰場，見我運籌帷幄',
+        'pillars': {
+            'year': '從小很有主見，不喜歡被管束，年少容易嶄露頭角，具十足行動力。',
+            'month': '衣食無虞，是主管的命格，愛掌權，主觀意識強烈，做事很有方法有效率。',
+            'day': '會管另一半，為人處事一板一眼，頗會記仇，但都會放心中型。',
+            'hour': '懂得經營，有很強的賺錢能量，不容易推心置腹，重視家庭生活，喜歡用錢堆積。'
+        }
+    },
+    '卯': {
+        'name': '天破星', 'element': '木', 'slogan': '守著陽光守著你',
+        'pillars': {
+            'year': '個性保守，早年沒自信，義務型的孝順，幼年性格為乖乖牌，較沒勇氣與膽識。',
+            'month': '適合上班族，沒有開創性，大部分的人一份工作都從事很久，且會邊做邊抱怨。',
+            'day': '婚姻生活肯定不會太好，婚姻中會沒有自我，是愛家型的配偶，感情相當執著。',
+            'hour': '個性溫和沒侵犯性，但防衛性很強，愛付出又心不甘情不願，無法享受生命。'
+        }
+    },
+    '辰': {
+        'name': '天奸星', 'element': '土', 'slogan': '山海中的精靈，別管我來去何方',
+        'pillars': {
+            'year': '反叛性強，早期會被視為問題兒童，重感情及義氣，生命力強，可塑性相對低。',
+            'month': '聰明但工作上的定性不夠，會常換工作，有創意，點子多，情緒掌握力差。',
+            'day': '完美主義者，負責指揮家裏大小事，而且要視其情緒的掌控，但不記仇。',
+            'hour': '反應快，很聰明，脾氣大，來得快去得也快，不信邪，很顧面子。'
+        }
+    },
+    '巳': {
+        'name': '天文星', 'element': '火', 'slogan': '浪漫唯美的性靈飛天女',
+        'pillars': {
+            'year': '書讀得好，男性斯文，較無男性氣概，女性氣質柔美漂亮，唯獨感情上依賴很重。',
+            'month': '研究學問高手，不能忍受髒亂的工作環境，也不能太辛苦，要學務實，公關人才。',
+            'day': '喜歡幻想浪漫，重感覺，外遇機率高，女生不善家事，更要心靈的交流互動。',
+            'hour': '愛漂亮，重感情，較沒定性個性充滿浪漫唯美，性聰明心細膩，是讀書料。'
+        }
+    },
+    '午': {
+        'name': '天福星', 'element': '火', 'slogan': '福佈施的善心大員外',
+        'pillars': {
+            'year': '略顯憨厚，逢凶化吉，與父母相處很好，貴人很多，有福報，經濟穩定。',
+            'month': '常有貴人協助，易受提拔升官，沒什麼心眼，因事業順利，故較不積極。',
+            'day': '女性苦難較多，不會撒嬌，男性因妻而貴，個性大而化之，比較慵懶，不懂體貼。',
+            'hour': '性情憨厚，易相信別人，熱心大方，願意付出，繼續做財佈施。'
+        }
+    },
+    '未': {
+        'name': '天驛星', 'element': '土', 'slogan': '日夜奔馳，驛心難側',
+        'pillars': {
+            'year': '與父母關係緣薄，從小就顯得很獨立，容易早出社會，心不易定。',
+            'month': '習慣奔波，適合當導遊或各種業務性的工作，重視朋友感情，為人熱心。',
+            'day': '婚後絕對會為家庭及對方付出，要慎選另一半，最好不要早婚。',
+            'hour': '經常出國命，行動力強，重朋友愛熱鬧，要學習專心與靜心，怕鬼怪。'
+        }
+    },
+    '申': {
+        'name': '天孤星', 'element': '金', 'slogan': '人群中的獨孤隱人',
+        'pillars': {
+            'year': '早年與父母關係較淡，不知如何與人互動，沉默寡言，書唸得並不是很好。',
+            'month': '對金錢有深切自卑感，要學勇敢務實，常獨來獨往，較無創造力，要學習法佈施。',
+            'day': '有冷漠的距離感，容易不解風情，冷戰可以持續很久，生活嚴謹。',
+            'hour': '有自卑感害怕人群，行動力較弱，情緒容易卡在心中，理想性高。'
+        }
+    },
+    '酉': {
+        'name': '天刃星', 'element': '金', 'slogan': '盯緊目標伺機而動，唯我獨尊',
+        'pillars': {
+            'year': '從小個性剛烈，常與父母產生衝突，對父母也很執著，氣管不好，具暴力傾向。',
+            'month': '勇於冒險實踐，屬開路先鋒型，適合企業家和政客，容易中風。',
+            'day': '性需求較強，敢愛敢恨，佔有慾強，最黏人，熱度也最高，霸氣的愛。',
+            'hour': '剛強性急，很有行動力，做事果斷，目標取向，不拘小節，可多捐血。'
+        }
+    },
+    '戌': {
+        'name': '天藝星', 'element': '土', 'slogan': '藝高八斗，絕頂辯才',
+        'pillars': {
+            'year': '幼年很有才華，主觀意識與能力都強，有藝術天份，較不能忍受父母的嘮叨。',
+            'month': '適合從事專業性的工作，尤其理工方面，常常工作有成就，也可看得到具體結果。',
+            'day': '希望配偶要有才華與能力，是心甘情願與對方結髮一輩子的人，但有時爭執性強。',
+            'hour': '反應快，思緒敏銳，大都有特殊才能，固執不易說服，有我行我素之個性。'
+        }
+    },
+    '亥': {
+        'name': '天壽星', 'element': '水', 'slogan': '瀟灑、翩翩卻愛八卦的型男',
+        'pillars': {
+            'year': '孝順，貼心重感情，男生個性豪邁不拘小節，女生感覺像哥兒們。',
+            'month': '適從事公關，不做勞力的活動，工作不定隨遇而安型，對外來沒有長遠計劃。',
+            'day': '較重視另一半精神層面的溝通，怕挫折，感情依賴性頗強，很隨性，離婚率高。',
+            'hour': '要理財並重務實，否則易抑鬱寡歡，容易有生殖系統的毛病。'
+        }
+    }
 }
+
 ASPECTS_ORDER = ["總命運", "形象", "幸福", "事業", "變動", "健康", "愛情", "領導", "親信", "根基", "朋友", "錢財"]
 STAR_MODIFIERS = {'天貴星': 30, '天福星': 30, '天文星': 30, '天壽星': 30, '天權星': 10, '天藝星': 10, '天驛星': 10, '天奸星': 10, '天孤星': -20, '天破星': -20, '天刃星': -20, '天厄星': -20}
 RENHE_MODIFIERS = {'天貴星': 10, '天福星': 10, '天文星': 10, '天壽星': 10, '天權星': 5, '天藝星': 5, '天驛星': 5, '天奸星': 5, '天孤星': -10, '天破星': -10, '天刃星': -10, '天厄星': -10}
 BAD_STARS = ['天厄星', '天破星', '天刃星']
 
-# ---------------- 核心函數 (保留 V9.6 雙軌邏輯) ----------------
+# ---------------- 核心函數 ----------------
 def get_zhi_index(zhi_char): return ZHI.index(zhi_char) if zhi_char in ZHI else 0
 def get_next_position(start_index, steps, direction=1): return (start_index + (steps * direction)) % 12
 
@@ -129,8 +225,17 @@ class OnePalmSystem:
         self.hour_idx = get_next_position(self.day_idx, get_zhi_index(birth_hour_zhi), self.direction)
     
     def get_base_chart(self):
-        chart = {}; keys = [("年柱", self.year_idx), ("月柱", self.month_idx), ("日柱", self.day_idx), ("時柱", self.hour_idx)]
-        for key, idx in keys: chart[key] = {**STARS_INFO[ZHI[idx]], "zhi": ZHI[idx], "name": STARS_INFO[ZHI[idx]]['name']}
+        # [V10.2] 更新：加入 slogan 和 pillar_desc
+        chart = {}; keys = [("年柱", self.year_idx, "year"), ("月柱", self.month_idx, "month"), ("日柱", self.day_idx, "day"), ("時柱", self.hour_idx, "hour")]
+        for key, idx, p_key in keys: 
+            star = STARS_INFO[ZHI[idx]]
+            chart[key] = {
+                "zhi": ZHI[idx], 
+                "name": star['name'], 
+                "element": star['element'],
+                "slogan": star.get('slogan', ''),
+                "desc": star['pillars'].get(p_key, '') # 抓取對應柱位的詳細解釋
+            }
         return chart
 
     def calculate_hierarchy(self, current_age, target_data, scope):
@@ -156,7 +261,6 @@ class OnePalmSystem:
 
     def calculate_full_trend(self, hierarchy, scope, lunar_data, target_data, system_obj):
         trend_response = { "axis_labels": [], "datasets": {}, "adjustments": {}, "renhe_scores": [], "tooltips": {}, "target_index": -1 }
-        
         for name in ASPECTS_ORDER: 
             trend_response["datasets"][name] = []
             trend_response["adjustments"][name] = []
@@ -174,7 +278,6 @@ class OnePalmSystem:
                 label = [f"{year_val}", f"({y_zhi}年)"]
                 loop_items.append({'offset': i, 'label': label, 'type': 'year', 'val': year_val})
                 if i == 0: target_val_match = len(loop_items) - 1
-
         elif scope == 'month':
             t_year = target_data['lunar_year']
             for i in range(1, 13):
@@ -186,7 +289,6 @@ class OnePalmSystem:
                 label = [f"{i}月", f"{s_label}"]
                 loop_items.append({'val': i, 'label': label, 'type': 'month'})
             target_val_match = target_data['lunar_month'] - 1
-
         elif scope == 'day':
             t_year = target_data['lunar_year']
             t_month = target_data['lunar_month']
@@ -205,7 +307,6 @@ class OnePalmSystem:
                 except: label = [f"{i}日", ""]
                 loop_items.append({'val': i, 'label': label, 'type': 'day'})
             target_val_match = target_data['lunar_day'] - 1
-
         elif scope == 'hour':
             for i, z in enumerate(ZHI):
                 time_range = f"{((i-1)*2+24)%24:02}-{((i*2)+1)%24:02}"
@@ -214,17 +315,14 @@ class OnePalmSystem:
             target_val_match = get_zhi_index(target_data['hour_zhi'])
 
         trend_response["target_index"] = target_val_match
-
         current_fy_idx = get_zhi_index(hierarchy['year']['zhi']) 
         current_fm_idx = get_zhi_index(hierarchy['month']['zhi'])
         current_fd_idx = get_zhi_index(hierarchy['day']['zhi'])   
-        
         pillar_indices = [system_obj.year_idx, system_obj.month_idx, system_obj.day_idx, system_obj.hour_idx]
         
         for point in loop_items:
             trend_response["axis_labels"].append(point['label'])
             time_star_info = None
-            
             if scope == 'year':
                 dynamic_idx = get_next_position(current_fy_idx, point['offset'], system_obj.direction)
             elif scope == 'month':
@@ -240,14 +338,12 @@ class OnePalmSystem:
             time_star_info = STARS_INFO[ZHI[dynamic_idx]]
             me_el = time_star_info['element'] 
             age_star_name = time_star_info['name']
-            
             renhe_val = RENHE_MODIFIERS.get(age_star_name, 0)
             trend_response["renhe_scores"].append({"score": renhe_val, "star": age_star_name})
 
             for i, name in enumerate(ASPECTS_ORDER):
                 curr_idx = (system_obj.hour_idx + i) % 12
                 aspect_star_info = STARS_INFO[ZHI[curr_idx]]
-                
                 current_guest_el = aspect_star_info['element']
                 current_guest_name = aspect_star_info['name']
                 current_host_el = me_el
@@ -284,7 +380,6 @@ class OnePalmSystem:
         return risks
 
 # ---------------- API 模型 ----------------
-# [V10.0] AI 請求模型
 class AIRequest(BaseModel):
     message: str  
     history: List[Dict[str, str]] = []  
@@ -418,7 +513,6 @@ async def delete_record(doc_id: str):
     db.collection('consultations').document(doc_id).delete()
     return {"status": "success"}
 
-# [V10.0] AI 大腦核心：注入達摩邏輯與商業導購
 @app.post("/api/ask_ai")
 async def ask_ai(req: AIRequest):
     if "請在此" in OPENAI_API_KEY: return {"error": "API Key 未設定"}
@@ -427,7 +521,6 @@ async def ask_ai(req: AIRequest):
         from openai import OpenAI
         client = OpenAI(api_key=OPENAI_API_KEY)
 
-        # 1. 建構「系統人設」 (System Prompt) - 這是 AI 的靈魂
         ctx = req.context_data
         system_prompt = f"""
         你現在是「達摩一掌經」的專業戰略顧問，輔助「徐峰老師」進行命理諮詢。
@@ -448,13 +541,11 @@ async def ask_ai(req: AIRequest):
         - 命盤重點數據：{str(ctx.get('aspects', []))}
         """
 
-        # 2. 組合對話歷史
         messages = [{"role": "system", "content": system_prompt}]
         recent_history = req.history[-6:] 
         messages.extend(recent_history)
         messages.append({"role": "user", "content": req.message})
 
-        # 3. 發送請求
         res = client.chat.completions.create(
             model="gpt-4o", 
             messages=messages,
@@ -466,11 +557,6 @@ async def ask_ai(req: AIRequest):
     except Exception as e:
         logger.error(f"AI Error: {str(e)}")
         return {"reply": f"AI 思考過載中，請稍後再試。({str(e)})"}
-
-# [輕量版] 自動化排程暫時移除 (若日後需要可再開啟)
-# scheduler = AsyncIOScheduler()
-# @app.on_event("startup")
-# async def start_scheduler_event(): ...
 
 if __name__ == "__main__":
     import uvicorn
