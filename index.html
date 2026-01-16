@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V10.0 旗艦版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V10.1 完美介面版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -26,7 +26,7 @@
         .ctrl-btn { background: #333; color: #ddd; border: 1px solid #555; padding: 4px 12px; border-radius: 4px; cursor: pointer; margin-left: 8px; }
         .ctrl-btn.active { background: var(--gold); color: #1a2634; }
         .ctrl-btn.finish { border-color: var(--cyan); color: var(--cyan); }
-        .card-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; transition: opacity 0.2s; }
+        .card-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; transition: opacity 0.2s; min-height: 30px; }
         .card-header:hover { opacity: 0.8; }
         .arrow-icon { transition: transform 0.3s ease; font-size: 0.8em; color: var(--cyan); }
         .arrow-icon.collapsed { transform: rotate(-90deg); }
@@ -49,16 +49,44 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
-        /* [V9.9.31] HUD 視覺增強版：膠囊標籤風格 */
-        .hud-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 35px; }
-        .hud-capsule { display: flex; align-items: center; background: rgba(0, 0, 0, 0.4); border-radius: 4px; border: 1px solid #333; overflow: hidden; font-family: "Microsoft JhengHei", monospace; font-size: 0.85em; }
+        /* [V10.1 戰略級 UI] HUD 膠囊儀表板 (極度清晰) */
+        .hud-container { 
+            display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 15px; 
+        }
+        .hud-capsule { 
+            display: flex; align-items: center; 
+            background: rgba(0, 0, 0, 0.4); 
+            border-radius: 4px; 
+            border: 1px solid #333; 
+            overflow: hidden; 
+            font-family: "Microsoft JhengHei", monospace; 
+            font-size: 0.85em; 
+        }
         .hud-capsule.solar { border-color: rgba(79, 209, 197, 0.3); }
         .hud-capsule.lunar { border-color: rgba(163, 163, 255, 0.3); }
-        .hud-label { padding: 2px 6px; font-weight: bold; font-size: 0.8em; color: #1a2634; }
+        
+        .hud-label { 
+            padding: 2px 6px; 
+            font-weight: bold; 
+            font-size: 0.8em; 
+            color: #1a2634; 
+        }
         .hud-label.solar-bg { background: var(--cyan); }
         .hud-label.lunar-bg { background: #a3a3ff; }
-        .hud-value { padding: 2px 8px; color: #eee; font-weight: bold; letter-spacing: 0.5px; }
-        .hud-transfer-icon { color: var(--gold); font-size: 1.2em; font-weight: bold; opacity: 0.8; }
+        
+        .hud-value { 
+            padding: 2px 8px; 
+            color: #eee; 
+            font-weight: bold; 
+            letter-spacing: 0.5px; 
+        }
+        
+        .hud-transfer-icon { 
+            color: var(--gold); 
+            font-size: 1.1em; 
+            font-weight: bold; 
+            opacity: 0.8; 
+        }
 
         /* [V10.0] 聊天室樣式 */
         .chat-window { background: #0f1319; border: 1px solid #333; border-radius: 8px; height: 300px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px; }
@@ -264,18 +292,20 @@
 
         <div class="card" style="border-left:5px solid var(--cyan);">
             <h3 class="card-header" onclick="toggleCard('hierarchyBody')">
-                時空戰略定位 <span id="targetDisplayInfo" style="font-size:0.7em; color:#888; font-weight:normal;"></span> 
-                <span class="arrow-icon collapsed">▼</span>
+                時空戰略定位 
+                <span class="arrow-icon collapsed" style="margin-left:auto;">▼</span>
             </h3>
             <div id="hierarchyBody" class="card-body collapsed"><div id="hierarchyArea"></div></div>
         </div>
         
         <div class="card" style="border-left: 5px solid var(--gold);">
             <h3 class="card-header" onclick="toggleCard('trendBody')">
-                <span id="trendTitle" style="display:flex; align-items:center; width:100%;">
-                    運勢能量走勢圖 <span style="font-size:0.7em; color:#888;">(初始化中...)</span>
-                </span>
+                <div id="trendHeaderContainer" style="display:flex; align-items:center; width:100%; justify-content: space-between;">
+                    <span style="white-space:nowrap;">運勢能量走勢圖 <span style="font-size:0.7em; color:#888;">(初始化中...)</span></span>
+                    <span class="arrow-icon" style="margin-left:10px;">▼</span>
+                </div>
             </h3>
+
             <div id="trendBody" class="card-body">
                 <div style="margin-bottom:10px; display:flex; justify-content:flex-end; gap:15px;">
                     <label class="checkbox-wrapper">
@@ -544,26 +574,26 @@
         if(globalTrendData) updateTrendChart('總命運');
     }
 
-    // [V9.9.31 修復] 確保 HUD 永遠只顯示一組
     function renderTrendChart(labels, scores, tooltips, title) {
         const ctx = document.getElementById('trendChart').getContext('2d');
         if (trendChartInstance) trendChartInstance.destroy();
 
+        // [V10.1 UI 清理] 確保只有一個 HUD 容器，且為膠囊樣式
         const hudDisplay = (globalLastResult && globalLastResult.dual_info) ? 'flex' : 'none';
         const solarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.solar : '-';
         const lunarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.lunar : '-';
 
-        // 重寫標題與 HUD 區域
-        document.getElementById('trendTitle').innerHTML = `
-            <div style="display:flex; align-items:center; width:100%; justify-content: space-between;">
-                <span style="white-space:nowrap;">運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span></span>
-                <div id="headerTimeInfo" class="hud-container" style="display:${hudDisplay};">
-                    <div class="hud-capsule solar"><span class="hud-label solar-bg">國</span><span class="hud-value">${solarVal}</span></div>
-                    <span class="hud-transfer-icon">⇄</span>
-                    <div class="hud-capsule lunar"><span class="hud-label lunar-bg">農</span><span class="hud-value">${lunarVal}</span></div>
-                </div>
-                <span class="arrow-icon" style="margin-left:10px;">▼</span>
+        // 重新生成標題區塊，確保沒有舊的殘留
+        document.getElementById('trendHeaderContainer').innerHTML = `
+            <span style="white-space:nowrap;">運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span></span>
+            
+            <div id="headerTimeInfo" class="hud-container" style="display:${hudDisplay};">
+                <div class="hud-capsule solar"><span class="hud-label solar-bg">國</span><span class="hud-value">${solarVal}</span></div>
+                <span class="hud-transfer-icon">⇄</span>
+                <div class="hud-capsule lunar"><span class="hud-label lunar-bg">農</span><span class="hud-value">${lunarVal}</span></div>
             </div>
+
+            <span class="arrow-icon" style="margin-left:10px;">▼</span>
         `;
         
         const gradient = ctx.createLinearGradient(0, 0, 0, 250);
@@ -675,7 +705,7 @@
         return div.id;
     }
 
-    // Export & Helpers (保持不變)
+    // Export & Helpers
     async function exportToImage() {
         if (!globalLastResult || !trendChartInstance) { alert("請先排盤"); return; }
         document.getElementById('loadingOverlay').style.display = 'flex';
