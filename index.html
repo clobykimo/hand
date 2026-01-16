@@ -534,24 +534,35 @@
         document.getElementById('pillarModal').style.display = 'flex';
     }
 
-    // [V10.2.2 診斷修復版 + V10.3 古文引用升級] 
+// [V10.3.2 修復版] 修正箭頭選取錯誤，防止崩潰
     function analyzePillarWithAI() {
         console.log("正在啟動 AI 分析程序...");
         if (!currentPillarData) { alert("❌ 錯誤：找不到當前選中的柱位資料"); return; }
         if (!globalLastResult || !globalLastResult.base_chart) { alert("❌ 錯誤：找不到命盤資料，請重新排盤"); return; }
 
         try {
+            // 1. 關閉彈窗
             document.getElementById('pillarModal').style.display = 'none'; 
+            
+            // 2. 展開 AI 聊天室 (UI 修正)
             const aiBody = document.getElementById('aiBody');
-            aiBody.classList.remove('collapsed');
-            document.querySelector('#aiBody .arrow-icon').classList.remove('collapsed');
-            aiBody.scrollIntoView({behavior: "smooth"});
+            if (aiBody) {
+                aiBody.classList.remove('collapsed');
+                aiBody.scrollIntoView({behavior: "smooth"});
+                
+                // [關鍵修正] 箭頭是在 aiBody 的「前一個兄弟元素 (Header)」裡面
+                // 之前的寫法 document.querySelector('#aiBody .arrow-icon') 是錯的
+                if (aiBody.previousElementSibling) {
+                    const arrow = aiBody.previousElementSibling.querySelector('.arrow-icon');
+                    if (arrow) arrow.classList.remove('collapsed');
+                }
+            }
 
+            // 3. 準備 Prompt
             const p = globalLastResult.base_chart;
             const getPillarInfo = (key) => p[key] ? `${p[key].name}(${p[key].zhi})` : "未知";
             const fullChartContext = `年柱:${getPillarInfo('年柱')}, 月柱:${getPillarInfo('月柱')}, 日柱:${getPillarInfo('日柱')}, 時柱:${getPillarInfo('時柱')}`;
 
-            // [V10.3] Prompt 升級：加入詩訣引用指令
             const prompt = `請以專通達摩一掌經及八字命理『徐峰老師』的口吻，
 參考案主的完整命盤架構：【${fullChartContext}】，
 針對目前點選的【${currentPillarData.title}】進行深度戰略點評。
@@ -568,6 +579,7 @@
 3. 指出該位置對案主影響的【優勢與劣勢】。
 4. 結合全盤氣場，給出一個具體的【改運建議或注意事項】。`;
 
+            // 4. 發送
             if (typeof sendToAI === 'function') {
                 sendToAI(prompt);
             } else {
@@ -866,3 +878,4 @@
 </script>
 </body>
 </html>
+
