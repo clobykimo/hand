@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V10.3.4 完整修復版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V10.3.5 旗艦版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -49,7 +49,7 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
-        /* HUD 膠囊儀表板 */
+        /* HUD Capsule */
         .hud-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 15px; }
         .hud-capsule { display: flex; align-items: center; background: rgba(0, 0, 0, 0.4); border-radius: 4px; border: 1px solid #333; overflow: hidden; font-family: "Microsoft JhengHei", monospace; font-size: 0.85em; }
         .hud-capsule.solar { border-color: rgba(79, 209, 197, 0.3); }
@@ -60,7 +60,7 @@
         .hud-value { padding: 2px 8px; color: #eee; font-weight: bold; letter-spacing: 0.5px; }
         .hud-transfer-icon { color: var(--gold); font-size: 1.1em; font-weight: bold; opacity: 0.8; }
 
-        /* 四柱詳解卡片樣式 */
+        /* Four Pillars Cards */
         .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         .pillar-card { background: #252f3a; border: 1px solid #4a5568; border-radius: 6px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
         .pillar-card:hover { transform: translateY(-3px); border-color: var(--gold); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
@@ -71,7 +71,7 @@
         .click-hint { position: absolute; bottom: 2px; right: 2px; font-size: 0.6em; color: #555; opacity: 0; transition: opacity 0.3s; }
         .pillar-card:hover .click-hint { opacity: 1; }
 
-        /* 特殊格局徽章 */
+        /* Pattern Badges */
         .pattern-area { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; justify-content: center; }
         .pattern-badge { 
             background: linear-gradient(135deg, #1a202c, #2d3748); 
@@ -82,30 +82,7 @@
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 隱藏式 Viral Card 版型 (供 html2canvas 截圖用) */
-        #viralCardContainer {
-            position: absolute; left: -9999px; top: 0;
-            width: 480px;
-            background: linear-gradient(180deg, #121820 0%, #1a202c 100%);
-            padding: 30px; box-sizing: border-box;
-            border: 4px double var(--gold);
-            font-family: "Microsoft JhengHei", serif;
-            color: #e0e0e0;
-            display: flex; flex-direction: column; gap: 20px;
-        }
-        .vc-header { text-align: center; border-bottom: 2px solid var(--gold); padding-bottom: 15px; margin-bottom: 10px; }
-        .vc-title { font-size: 1.8em; color: var(--gold); font-weight: bold; letter-spacing: 3px; }
-        .vc-subtitle { font-size: 1em; color: var(--cyan); margin-top: 5px; }
-        .vc-chart-area { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; border: 1px solid #333; height: 250px; position:relative; }
-        .vc-pillars-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .vc-pillar-item { background: #252f3a; border: 1px solid #4a5568; border-radius: 6px; padding: 10px; text-align: center; }
-        .vc-p-head { font-size: 0.8em; color: #888; }
-        .vc-p-star { font-size: 1.3em; font-weight: bold; color: #eee; margin: 4px 0; }
-        .vc-p-slogan { font-size: 0.7em; color: var(--cyan); opacity: 0.9; line-height: 1.3; }
-        .vc-summary { background: rgba(212, 175, 55, 0.1); border-left: 4px solid var(--gold); padding: 15px; font-size: 0.95em; line-height: 1.5; color: #ddd; }
-        .vc-footer { text-align: center; font-size: 0.8em; color: #666; margin-top: 10px; letter-spacing: 1px; }
-
-        /* 聊天室樣式 */
+        /* Chat Window */
         .chat-window { background: #0f1319; border: 1px solid #333; border-radius: 8px; height: 300px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px; }
         .chat-message { max-width: 85%; padding: 10px 14px; border-radius: 12px; line-height: 1.5; font-size: 0.95em; position: relative; word-wrap: break-word; }
         .chat-message.user { align-self: flex-end; background: linear-gradient(135deg, var(--bronze), var(--gold)); color: #1a2634; border-bottom-right-radius: 2px; font-weight: bold; }
@@ -169,6 +146,41 @@
         .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; opacity: 0.3; pointer-events: none; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
         .ai-btn { background: var(--gpt-color); color: white; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight:bold; }
+
+        /* [V10.3.5 回歸原始版] 全能結案神器樣式 (A4 比例戰略報告) */
+        #exportContainer {
+            position: fixed; left: -9999px; top: 0; /* 隱藏在螢幕外 */
+            width: 1200px; /* 寬度足夠容納所有資訊 */
+            background: #101015; color: #e0e0e0;
+            padding: 40px;
+            border: 10px double var(--gold); /* 增加邊框厚度 */
+            font-family: "Microsoft JhengHei", serif;
+            box-sizing: border-box;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .export-header { 
+            border-bottom: 2px solid var(--gold); padding-bottom: 20px; margin-bottom: 10px; 
+            display: flex; justify-content: space-between; align-items: center; 
+        }
+        .export-title { font-size: 2.5em; color: var(--gold); font-weight: bold; letter-spacing: 5px; text-shadow: 0 0 10px rgba(212,175,55,0.3); }
+        .export-info { text-align: right; color: #aaa; font-size: 1.1em; line-height: 1.5; }
+        
+        .export-body-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        
+        .export-section-title { color: var(--cyan); border-left: 5px solid var(--gold); padding-left: 15px; margin-bottom: 15px; font-size: 1.5em; font-weight: bold; margin-top: 10px;}
+        
+        .export-chart-img { width: 100%; border-radius: 8px; border: 1px solid #444; background: #1e2732; padding: 10px; }
+        
+        .export-list-item { 
+            display: flex; align-items: center; justify-content: space-between; 
+            padding: 8px 0; border-bottom: 1px solid #333; font-size: 1.1em; 
+        }
+        
+        .export-footer { 
+            text-align: center; margin-top: 20px; padding-top: 20px; 
+            border-top: 1px solid #333; color: var(--bronze); font-size: 1.2em; 
+            letter-spacing: 2px; font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -217,7 +229,7 @@
         <button class="btn-main" onclick="calculate()">開啟運勢導航</button>
         
         <button class="btn-main" style="background: linear-gradient(135deg, #1a2634, #2d3748); border: 1px solid var(--gold); margin-top:15px; color:var(--gold);" onclick="exportToImage()">
-            📸 下載運勢分析卡 (戰略快照)
+            📸 下載運勢分析卡 (完整報告)
         </button>
 
         <button class="btn-main" style="background: #2d3748; border: 1px solid #4a5568; margin-top:10px; color:var(--cyan);" onclick="window.location.href='/crm'">
@@ -355,23 +367,30 @@
     </div>
 </div>
 
-<div id="viralCardContainer">
-    <div class="vc-header">
-        <div class="vc-title">達摩生命藍圖</div>
-        <div class="vc-subtitle" id="vcClientName">徐峰老師 戰略指導</div>
+<div id="exportContainer">
+    <div class="export-header">
+        <div class="export-title">達摩一掌經．生命藍圖導航</div>
+        <div class="export-info" id="exportInfo"></div>
     </div>
     
-    <div class="vc-chart-area">
-        <canvas id="vcChart" style="width:100%; height:100%;"></canvas>
+    <div class="export-body-grid">
+        <div>
+            <div class="export-section-title">本命全息圖 (十二宮)</div>
+            <div id="exportMapContainer" style="transform: scale(0.95); transform-origin: top left;"></div>
+        </div>
+        <div>
+            <div class="export-section-title">十二宮位運程分析</div>
+            <div id="exportAspectList"></div>
+        </div>
     </div>
 
-    <div class="vc-pillars-grid" id="vcPillarsArea">
-        </div>
+    <div>
+        <div class="export-section-title">運勢能量走勢圖</div>
+        <h4 style="color:var(--gold); text-align:center; margin:0 0 10px 0;" id="exportChartTitle"></h4>
+        <img id="exportChartImg" class="export-chart-img">
+    </div>
 
-    <div class="vc-summary" id="vcSummary">
-        </div>
-
-    <div class="vc-footer">Powered by 達摩一掌經 V10.3</div>
+    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V10.3</div>
 </div>
 
 <div id="saveModal" class="modal">
@@ -390,7 +409,6 @@
 <script>
     // 1. 全域變數
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
-    const STAR_TRAITS = { '天貴': { type: '吉', keyword: '貴人/顯赫' }, '天厄': { type: '凶', keyword: '勞碌/疾厄' }, '天權': { type: '平', keyword: '權力/社交' }, '天破': { type: '凶', keyword: '消耗/破損' }, '天奸': { type: '平', keyword: '機智/變動' }, '天文': { type: '吉', keyword: '智慧/文采' }, '天福': { type: '吉', keyword: '福氣/財祿' }, '天驛': { type: '平', keyword: '奔波/變動' }, '天孤': { type: '凶', keyword: '孤獨/獨立' }, '天刃': { type: '凶', keyword: '剛強/血光' }, '天藝': { type: '平', keyword: '才藝/技術' }, '天壽': { type: '吉', keyword: '長壽/圓融' } };
     const ROULETTE_PATH = ['巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰'];
     
     let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
@@ -495,32 +513,53 @@
         document.getElementById('pillarModal').style.display = 'flex';
     }
 
-    // [V10.3.2 + V10.3.4] 修復版：確保 AI 分析不報錯
+    // [V10.3.2 修正版] 修正箭頭選取錯誤，防止崩潰
     function analyzePillarWithAI() {
-        if (!currentPillarData || !globalLastResult) return;
-        
-        document.getElementById('pillarModal').style.display = 'none'; 
-        
-        // 確保找到 AI 容器並正確展開
-        const aiBody = document.getElementById('aiBody');
-        if (aiBody) {
-            aiBody.classList.remove('collapsed'); 
-            aiBody.scrollIntoView({behavior: "smooth"});
-            
-            // 安全地尋找箭頭（避免 null 報錯）
-            if (aiBody.previousElementSibling) {
-                const arrow = aiBody.previousElementSibling.querySelector('.arrow-icon');
-                if (arrow) arrow.classList.remove('collapsed');
-            }
-        }
+        console.log("正在啟動 AI 分析程序...");
+        if (!currentPillarData) { alert("❌ 錯誤：找不到當前選中的柱位資料"); return; }
+        if (!globalLastResult || !globalLastResult.base_chart) { alert("❌ 錯誤：找不到命盤資料，請重新排盤"); return; }
 
-        const p = globalLastResult.base_chart;
-        const getPillarInfo = (key) => p[key] ? `${p[key].name}(${p[key].zhi})` : "未知";
-        const fullChartContext = `年柱:${getPillarInfo('年柱')}, 月柱:${getPillarInfo('月柱')}, 日柱:${getPillarInfo('日柱')}, 時柱:${getPillarInfo('時柱')}`;
-        
-        const prompt = `請以專通達摩一掌經及八字命理『徐峰老師』的口吻，參考案主的完整命盤架構：【${fullChartContext}】，針對目前點選的【${currentPillarData.title}】進行深度戰略點評。\n【點選位置資訊】：\n- 星宿：${currentPillarData.star} (${currentPillarData.zhi}宮)\n- 核心特質：${currentPillarData.slogan || '無'}\n- 古籍詩訣：${currentPillarData.poem || '無'}\n- 基礎定義：${currentPillarData.desc || '無'}\n\n【回答要求】：\n1. 請先【引用古籍詩訣】。\n2. 將詩訣翻譯為【現代白話戰略建議】。\n3. 指出該位置對案主影響的【優勢與劣勢】。\n4. 結合全盤氣場，給出一個具體的【改運建議或注意事項】。`;
-        
-        sendToAI(prompt);
+        try {
+            document.getElementById('pillarModal').style.display = 'none'; 
+            const aiBody = document.getElementById('aiBody');
+            if (aiBody) {
+                aiBody.classList.remove('collapsed');
+                aiBody.scrollIntoView({behavior: "smooth"});
+                if (aiBody.previousElementSibling) {
+                    const arrow = aiBody.previousElementSibling.querySelector('.arrow-icon');
+                    if (arrow) arrow.classList.remove('collapsed');
+                }
+            }
+
+            const p = globalLastResult.base_chart;
+            const getPillarInfo = (key) => p[key] ? `${p[key].name}(${p[key].zhi})` : "未知";
+            const fullChartContext = `年柱:${getPillarInfo('年柱')}, 月柱:${getPillarInfo('月柱')}, 日柱:${getPillarInfo('日柱')}, 時柱:${getPillarInfo('時柱')}`;
+
+            const prompt = `請以專通達摩一掌經及八字命理『徐峰老師』的口吻，
+參考案主的完整命盤架構：【${fullChartContext}】，
+針對目前點選的【${currentPillarData.title}】進行深度戰略點評。
+
+【點選位置資訊】：
+- 星宿：${currentPillarData.star} (${currentPillarData.zhi}宮)
+- 核心特質：${currentPillarData.slogan || '無'}
+- 古籍詩訣：${currentPillarData.poem || '無'}
+- 基礎定義：${currentPillarData.desc || '無'}
+
+【回答要求】：
+1. 請先【引用古籍詩訣】。
+2. 將詩訣翻譯為【現代白話戰略建議】。
+3. 指出該位置對案主影響的【優勢與劣勢】。
+4. 結合全盤氣場，給出一個具體的【改運建議或注意事項】。`;
+
+            if (typeof sendToAI === 'function') {
+                sendToAI(prompt);
+            } else {
+                alert("❌ 嚴重錯誤：找不到 sendToAI 函式。");
+            }
+        } catch (error) {
+            alert("❌ 程式執行發生意外錯誤：\n" + error.message);
+            console.error(error);
+        }
     }
 
     function runRoulette(targetZhi, isMale) { return new Promise(resolve => { let rounds=0, maxRounds=1, speed=50; const targetIndex = ROULETTE_PATH.indexOf(targetZhi); const step = isMale ? 1 : -1; function nextStep() { if(globalSkipAnimation) { resolve(); return; } if(globalIsPaused) { setTimeout(nextStep, 100); return; } const prev = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(prev) prev.classList.remove('roulette-active'); currentLightIndex = (currentLightIndex + step + 12) % 12; const curr = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(curr) curr.classList.add('roulette-active'); if(rounds>=maxRounds && currentLightIndex===targetIndex) { if(curr) curr.classList.add('flash-stop'); setTimeout(()=>{ if(curr){curr.classList.remove('roulette-active'); curr.classList.remove('flash-stop');} resolve(); }, 800); return; } if(currentLightIndex===0) rounds++; if(rounds>=maxRounds) speed+=30; setTimeout(nextStep, speed); } nextStep(); }); }
@@ -617,21 +656,15 @@
         if(globalTrendData) updateTrendChart('總命運');
     }
 
-  // [V10.3.4 強韌修復版] 繪圖核心
+    // [V10.3.4 強韌修復版] 繪圖核心
     function renderTrendChart(labels, scores, tooltips, title) {
-        // 1. 先獲取容器，確保 DOM 存在
         const headerContainer = document.getElementById('trendHeaderContainer');
-        if (!headerContainer) {
-            console.error("找不到 trendHeaderContainer，無法更新標題");
-            return;
-        }
+        if (!headerContainer) { console.error("找不到 trendHeaderContainer"); return; }
 
-        // 2. 準備 HUD 數據 (防呆處理)
         const hudDisplay = (globalLastResult && globalLastResult.dual_info) ? 'flex' : 'none';
         const solarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.solar : '-';
         const lunarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.lunar : '-';
 
-        // 3. 【關鍵修正】先更新標題文字 (確保介面有反應)
         try {
             headerContainer.innerHTML = `
                 <span style="white-space:nowrap;">運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span></span>
@@ -642,24 +675,18 @@
                 </div>
                 <span class="arrow-icon" style="margin-left:10px;">▼</span>
             `;
-        } catch (e) {
-            console.error("標題更新失敗", e);
-        }
+        } catch (e) { console.error("標題更新失敗", e); }
 
-        // 4. 開始繪圖 (包在 Try-Catch 中防止崩潰)
         try {
             const canvas = document.getElementById('trendChart');
             if (!canvas) throw new Error("找不到 Canvas 元素");
-            
             const ctx = canvas.getContext('2d');
             if (trendChartInstance) trendChartInstance.destroy();
 
-            // 漸層特效
             const gradient = ctx.createLinearGradient(0, 0, 0, 250);
             gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); 
             gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
             
-            // 脈衝特效插件
             const radarPulsePlugin = {
                 id: 'radarPulse',
                 afterDatasetsDraw(chart, args, options) {
@@ -680,69 +707,23 @@
 
             trendChartInstance = new Chart(ctx, {
                 type: 'line',
-                data: { 
-                    labels: labels, 
-                    datasets: [{ 
-                        label: '運勢能量', 
-                        data: scores, 
-                        borderColor: '#d4af37', 
-                        backgroundColor: gradient, 
-                        borderWidth: 3, 
-                        pointBackgroundColor: pointColors, 
-                        pointRadius: pointRadii, 
-                        pointHoverRadius: 10, 
-                        fill: true, 
-                        tension: 0.4 
-                    }] 
-                },
-                options: { 
-                    maintainAspectRatio: false, 
-                    scales: { 
-                        y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, 
-                        x: { grid: {color:'#333'}, ticks: {color:'#888', autoSkip: false, maxRotation: 0} } 
-                    }, 
-                    plugins: { 
-                        legend: {display:false}, 
-                        tooltip: { 
-                            callbacks: { 
-                                title: i=>Array.isArray(i[0].label)?i[0].label.join(" "):i[0].label, 
-                                afterLabel: ctx=>tooltips[ctx.dataIndex] 
-                            }, 
-                            backgroundColor: 'rgba(0,0,0,0.9)', 
-                            titleColor: '#d4af37' 
-                        } 
-                    } 
-                },
+                data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointColors, pointRadius: pointRadii, pointHoverRadius: 10, fill: true, tension: 0.4 }] },
+                options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, x: { grid: {color:'#333'}, ticks: {color:'#888', autoSkip: false, maxRotation: 0} } }, plugins: { legend: {display:false}, tooltip: { callbacks: { title: i=>Array.isArray(i[0].label)?i[0].label.join(" "):i[0].label, afterLabel: ctx=>tooltips[ctx.dataIndex] }, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37' } } },
                 plugins: [radarPulsePlugin] 
             });
-
-        } catch (error) {
-            console.error("Chart.js 繪圖失敗:", error);
-            // 若失敗，在標題後顯示錯誤，方便除錯
-            headerContainer.innerHTML += ` <span style="color:red; font-size:0.7em;">(⚠️ 繪圖失敗)</span>`;
-        }
+        } catch (error) { console.error("Chart.js 繪圖失敗:", error); headerContainer.innerHTML += ` <span style="color:red; font-size:0.7em;">(⚠️ 繪圖失敗)</span>`; }
     }
 
     // [V10.3.4 強韌修復版] 數據處理
     function updateTrendChart(aspectName) {
-        // 1. 檢查數據源
-        if (!globalTrendData) {
-            console.warn("updateTrendChart: globalTrendData 為空");
-            return;
-        }
-        if (!globalTrendData.datasets[aspectName]) {
-            console.warn(`updateTrendChart: 找不到 ${aspectName} 的數據`);
-            return;
-        }
+        if (!globalTrendData) { console.warn("updateTrendChart: globalTrendData 為空"); return; }
+        if (!globalTrendData.datasets[aspectName]) { console.warn(`updateTrendChart: 找不到 ${aspectName} 的數據`); return; }
 
         lastActiveAspect = aspectName;
-        if (!aspectClickCounts[aspectName]) aspectClickCounts[aspectName] = 0;
-        aspectClickCounts[aspectName]++;
+        if (!aspectClickCounts[aspectName]) aspectClickCounts[aspectName] = 0; aspectClickCounts[aspectName]++;
         
-        // 2. 計算分數
         const useGrade = document.getElementById('gradeCheckbox').checked;
         const useRenhe = document.getElementById('renheCheckbox').checked;
-        
         const baseScores = globalTrendData.datasets[aspectName];
         const adjustments = globalTrendData.adjustments[aspectName] || [];
         const renheScores = globalTrendData.renhe_scores || [];
@@ -754,20 +735,11 @@
             return Math.max(5, Math.min(95, s));
         });
 
-        // 3. 準備標題後綴
         let titleSuffix = "";
         if (useGrade) titleSuffix += " +宮位";
         if (useRenhe) titleSuffix += " +人和";
 
-        // 4. 呼叫繪圖
-        renderTrendChart(
-            globalTrendData.axis_labels, 
-            finalScores, 
-            globalTrendData.tooltips[aspectName], 
-            aspectName + titleSuffix
-        );
-
-        // 5. 更新列表高亮
+        renderTrendChart(globalTrendData.axis_labels, finalScores, globalTrendData.tooltips[aspectName], aspectName + titleSuffix);
         document.querySelectorAll('.aspect-row').forEach(row => row.classList.remove('active-aspect'));
         const activeRow = document.getElementById(`row-${aspectName}`);
         if(activeRow) activeRow.classList.add('active-aspect');
@@ -799,65 +771,50 @@
         return div.id;
     }
 
-    // [V10.3 戰略快照引擎]
+    // [V10.3.5 回歸原始版] 完整報告導出功能
     async function exportToImage() {
         if (!globalLastResult || !trendChartInstance) { alert("請先排盤"); return; }
         document.getElementById('loadingOverlay').style.display = 'flex';
 
-        // 1. 填充隱藏的 Viral Card 資料
-        setText('vcClientName', `${document.getElementById('crmName').value || '貴賓'} - 戰略指導 (${document.getElementById('tYear').value}年)`);
-        
-        // 2. 複製圖表 (Redraw on hidden canvas)
-        const vcChartCanvas = document.getElementById('vcChart');
-        const originalCanvas = document.getElementById('trendChart');
-        vcChartCanvas.width = 420; vcChartCanvas.height = 250; // 固定尺寸
-        const vcCtx = vcChartCanvas.getContext('2d');
-        vcCtx.drawImage(originalCanvas, 0, 0, 420, 250); // 直接複製畫面最快
+        const clientName = document.getElementById('crmName').value || '貴賓';
+        const targetYear = document.getElementById('tYear').value;
+        const clientInfo = `姓名: ${clientName} | 生辰: ${document.getElementById('solarDate').value} ${document.getElementById('hour').value}時 | 性別: ${document.getElementById('gender').value==1?'男':'女'} | 預測年份: ${targetYear}年`;
+        setText('exportInfo', clientInfo);
 
-        // 3. 填充四柱 Slogan
-        const p = globalLastResult.base_chart;
-        const pillars = [
-            {k:'年柱', n:p.年柱.name, s:p.年柱.slogan, c:'var(--p-year)'},
-            {k:'月柱', n:p.月柱.name, s:p.月柱.slogan, c:'var(--p-month)'},
-            {k:'日柱', n:p.日柱.name, s:p.日柱.slogan, c:'var(--p-day)'},
-            {k:'時柱', n:p.時柱.name, s:p.時柱.slogan, c:'var(--p-hour)'}
-        ];
-        let pHTML = "";
-        pillars.forEach(item => {
-            pHTML += `<div class="vc-pillar-item" style="border-color:${item.c}">
-                <div class="vc-p-head" style="color:${item.c}">${item.k}</div>
-                <div class="vc-p-star">${item.n}</div>
-                <div class="vc-p-slogan">${item.s}</div>
-            </div>`;
+        const mapHtml = document.getElementById('mainMap').innerHTML;
+        const exportMap = document.getElementById('exportMapContainer');
+        exportMap.innerHTML = mapHtml;
+        exportMap.className = 'twelve-palaces-map';
+        exportMap.querySelectorAll('.grid-cell').forEach(cell => {
+            cell.classList.remove('roulette-active');
+            cell.style.boxShadow = 'none';
         });
-        setHTML('vcPillarsArea', pHTML);
 
-        // 4. 自動生成摘要 (Auto Summary) - 不依賴後端
-        if (globalTrendData && globalTrendData.datasets[lastActiveAspect]) {
-            const scores = globalTrendData.datasets[lastActiveAspect];
-            let maxS = -1, minS = 101, maxYear = "", minYear = "";
-            scores.forEach((s, i) => {
-                const lbl = Array.isArray(globalTrendData.axis_labels[i]) ? globalTrendData.axis_labels[i][0] : globalTrendData.axis_labels[i];
-                if (s > maxS) { maxS = s; maxYear = lbl; }
-                if (s < minS) { minS = s; minYear = lbl; }
-            });
-            const summaryHTML = `
-                <div style="margin-bottom:5px;"><strong>🎯 年度戰略摘要：</strong></div>
-                <div style="color:#ffd700;">★ 運勢高點：${maxYear} (指數 ${maxS}) - 適合進攻。</div>
-                <div style="color:#ff4d4d;">⚠️ 運勢低點：${minYear} (指數 ${minS}) - 建議守成。</div>
-                <div style="margin-top:5px; font-size:0.9em; opacity:0.8;">(此為系統自動運算結果，詳情請諮詢徐峰老師)</div>
-            `;
-            setHTML('vcSummary', summaryHTML);
-        }
+        const listHtml = document.getElementById('aspectsList').innerHTML;
+        const exportList = document.getElementById('exportAspectList');
+        exportList.innerHTML = listHtml;
+        exportList.querySelectorAll('button').forEach(btn => btn.remove());
+        exportList.querySelectorAll('.aspect-row').forEach(row => { 
+            row.style.borderBottom = '1px solid #444'; 
+            row.style.padding = '8px 0'; 
+            row.style.background = 'transparent';
+        });
 
-        // 5. 執行截圖
+        setText('exportChartTitle', `【${lastActiveAspect}】運勢能量走勢`);
+        const chartBase64 = trendChartInstance.toBase64Image();
+        document.getElementById('exportChartImg').src = chartBase64;
+
         setTimeout(() => {
-            const container = document.getElementById('viralCardContainer');
-            html2canvas(container, { scale: 2, backgroundColor: "#121820" }).then(canvas => {
+            const container = document.getElementById('exportContainer');
+            html2canvas(container, { scale: 2, backgroundColor: "#101015", useCORS: true }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `達摩戰略卡_${document.getElementById('crmName').value || 'Guest'}.jpg`;
+                link.download = `達摩完整報告_${clientName}_${targetYear}.jpg`;
                 link.href = canvas.toDataURL('image/jpeg', 0.9);
                 link.click();
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }).catch(err => {
+                console.error("截圖失敗:", err);
+                alert("截圖失敗，請檢查控制台錯誤訊息");
                 document.getElementById('loadingOverlay').style.display = 'none';
             });
         }, 800);
@@ -886,4 +843,3 @@
 </script>
 </body>
 </html>
-
