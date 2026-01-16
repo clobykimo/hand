@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩戰情室 (CRM V12.0 家族戰略版)</title>
+    <title>達摩戰情室 (CRM V13.0 帝國版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
@@ -13,12 +13,22 @@
         }
         body { background-color: var(--bg-color); color: var(--text-main); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        /* [V11.0] 頂部導航與搜尋 */
-        .header { width: 100%; max-width: 1400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--gold); padding-bottom: 15px; }
+        /* 頂部導航 */
+        .header { width: 100%; max-width: 1400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 2px solid var(--gold); padding-bottom: 15px; }
         .title { font-size: 1.8em; color: var(--gold); font-weight: bold; letter-spacing: 3px; display: flex; align-items: center; gap: 10px; }
         .back-btn { background: transparent; border: 1px solid var(--cyan); color: var(--cyan); padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 1em; transition: all 0.3s; text-decoration: none; display: flex; align-items: center; gap: 5px; }
         .back-btn:hover { background: rgba(79, 209, 197, 0.1); transform: translateX(-5px); }
 
+        /* [V13.0] 戰略雷達條 (通知中心) */
+        .notification-bar { width: 100%; max-width: 1400px; display: flex; gap: 15px; margin-bottom: 20px; font-size: 0.9em; }
+        .notif-box { flex: 1; background: rgba(212, 175, 55, 0.05); border: 1px solid #444; border-radius: 4px; padding: 10px 15px; display: flex; align-items: center; gap: 10px; color: #888; transition: all 0.3s; }
+        .notif-box:hover { border-color: var(--gold); background: rgba(212, 175, 55, 0.1); }
+        .notif-icon { font-size: 1.2em; }
+        .notif-content { color: #ddd; font-weight: bold; }
+        .nb-birthday { border-left: 3px solid var(--cyan); }
+        .nb-risk { border-left: 3px solid var(--danger); }
+
+        /* 搜尋過濾 */
         .filter-bar { width: 100%; max-width: 1400px; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid #444; display: flex; gap: 15px; margin-bottom: 20px; box-sizing: border-box; align-items: flex-end; }
         .search-group { flex: 1; display: flex; flex-direction: column; gap: 5px; }
         .search-group label { color: var(--cyan); font-size: 0.9em; font-weight: bold; }
@@ -26,7 +36,7 @@
         .action-btn { background: linear-gradient(135deg, var(--bronze), var(--gold)); border: none; color: #1a2634; padding: 10px 25px; border-radius: 4px; font-weight: bold; cursor: pointer; height: 42px; display: flex; align-items: center; gap: 5px; justify-content: center;}
         .action-btn:hover { filter: brightness(1.15); }
 
-        /* [V11.0] 資料列表區 */
+        /* 資料列表 */
         .table-container { width: 100%; max-width: 1400px; background: var(--panel-bg); border-radius: 8px; border: 1px solid #444; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         thead { background: #252f3a; color: var(--cyan); font-weight: bold; }
@@ -44,6 +54,10 @@
         .col-note { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #888; font-style: italic; }
         .tag-pill { display: inline-block; background: #333; border: 1px solid #555; color: #aaa; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; margin-right: 4px; }
         .tag-vip { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.1); }
+        
+        /* [V13.0] 熱點關注 Tag */
+        .heat-row { font-size: 0.75em; color: #ff6b6b; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+        .heat-item { background: rgba(255, 77, 77, 0.1); border: 1px solid #553333; padding: 1px 5px; border-radius: 3px; }
 
         .op-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85em; font-weight: bold; transition: all 0.2s; margin-right: 5px; }
         .btn-load { background: var(--cyan); color: #1a2634; }
@@ -53,7 +67,7 @@
         .btn-del { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
         .btn-del:hover { background: var(--danger); color: white; }
 
-        /* [V12.0] 全功能檔案夾 Modal (移植自 V7.1) */
+        /* 全功能檔案夾 Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
         .modal-content { background: var(--panel-bg); border: 1px solid var(--gold); width: 900px; max-width: 95%; height: 85vh; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
         .modal-header { padding: 20px; border-bottom: 1px solid #444; background: #151b24; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; }
@@ -68,9 +82,15 @@
         .tab-content { display: none; animation: fadeIn 0.3s; }
         .tab-content.active { display: block; }
         
-        /* [V12.0] 風險雷達 */
+        /* 風險雷達 */
         .risk-banner { background: rgba(255, 77, 77, 0.15); border: 1px solid var(--danger); color: #ffcccc; padding: 15px; margin-bottom: 20px; border-radius: 4px; display: none; align-items: center; gap: 10px; }
         .risk-icon { font-size: 1.5em; }
+
+        /* [V13.0] 多媒體樣式 */
+        .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin-top: 10px; }
+        .media-box { aspect-ratio: 1; background: #222; border: 1px dashed #555; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .media-box:hover { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+        .audio-player { background: #151b24; padding: 12px; border-radius: 6px; border: 1px solid #444; display: flex; align-items: center; gap: 10px; color: #aaa; margin-top: 10px; }
 
         /* 家族列表 */
         .rel-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
@@ -86,7 +106,6 @@
         #qrcode { background: white; padding: 10px; width: fit-content; margin: 10px auto; display: none; border-radius: 4px; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        
         #loading { text-align: center; padding: 40px; color: #888; display: none; }
         .spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid #333; border-top: 3px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -96,9 +115,26 @@
 
 <div class="header">
     <div class="title">
-        <span>📜</span> 達摩戰情室 <span style="font-size:0.5em; color:#666; margin-top:10px; margin-left:10px;">CRM V12.0</span>
+        <span>📜</span> 達摩戰情室 <span style="font-size:0.5em; color:#666; margin-top:10px; margin-left:10px;">CRM V13.0</span>
     </div>
     <a href="/" class="back-btn">⇦ 返回推演盤</a>
+</div>
+
+<div class="notification-bar">
+    <div class="notif-box nb-birthday">
+        <span class="notif-icon">🎂</span>
+        <div>
+            <div style="font-size:0.8em;">近期壽星 (30天內)</div>
+            <div class="notif-content" id="birthdayList">掃描中...</div>
+        </div>
+    </div>
+    <div class="notif-box nb-risk">
+        <span class="notif-icon">⚠️</span>
+        <div>
+            <div style="font-size:0.8em;">潛在風險關注</div>
+            <div class="notif-content" id="riskList">安全</div>
+        </div>
+    </div>
 </div>
 
 <div class="filter-bar">
@@ -117,7 +153,7 @@
                 <th width="15%">客戶姓名</th>
                 <th width="20%">本命參數</th>
                 <th width="15%">聯絡電話</th>
-                <th width="20%">戰略筆記</th>
+                <th width="20%">戰略筆記 & 熱點</th>
                 <th width="20%">戰術行動</th>
             </tr>
         </thead>
@@ -146,6 +182,7 @@
             <div class="tabs">
                 <div class="tab active" onclick="switchTab('basic')">📝 基本資料</div>
                 <div class="tab" onclick="switchTab('relation')">👨‍👩‍👧‍👦 家族生態</div>
+                <div class="tab" onclick="switchTab('media')">📸 多媒體/錄音</div>
                 <div class="tab" onclick="switchTab('consent')">🛡️ 法律同意書</div>
             </div>
 
@@ -162,13 +199,13 @@
             </div>
 
             <div id="tab-relation" class="tab-content">
-                <p style="color:#888; font-size:0.9em;">建立家族連結，系統將自動掃描成員的潛在風險 (天厄/天刃)。</p>
+                <p style="color:#888; font-size:0.9em;">建立家族連結，系統將自動掃描成員的潛在風險。</p>
                 <table class="rel-table">
                     <thead><tr><th>關係</th><th>姓名</th><th>生日</th><th>性別</th><th>時辰</th><th>操作</th></tr></thead>
                     <tbody id="relList"></tbody>
                 </table>
                 <div class="add-rel-form">
-                    <input type="text" id="relRelation" placeholder="關係 (如:長子)" class="search-input">
+                    <input type="text" id="relRelation" placeholder="關係" class="search-input">
                     <input type="text" id="relName" placeholder="姓名" class="search-input">
                     <input type="date" id="relDate" class="search-input">
                     <select id="relGender" class="search-input"><option value="1">男</option><option value="0">女</option></select>
@@ -176,7 +213,18 @@
                         <option value="子">子</option><option value="丑">丑</option><option value="寅">寅</option><option value="卯">卯</option><option value="辰">辰</option><option value="巳">巳</option>
                         <option value="午">午</option><option value="未">未</option><option value="申">申</option><option value="酉">酉</option><option value="戌">戌</option><option value="亥">亥</option>
                     </select>
-                    <button class="action-btn" style="height:42px; padding:0 15px;" onclick="addRelation()">＋ 新增</button>
+                    <button class="action-btn" style="height:42px; padding:0 15px;" onclick="addRelation()">＋</button>
+                </div>
+            </div>
+
+            <div id="tab-media" class="tab-content">
+                <p style="color:#888; font-size:0.9em;">可上傳手面相照片、錄音檔或貼上雲端連結。</p>
+                <div class="media-grid">
+                    <div class="media-box" onclick="alert('上傳模組建置中...')"><span style="font-size:2em;">+</span><span>上傳照片</span></div>
+                    <div class="media-box"><span style="font-size:2em;">🎙️</span><span>諮詢錄音</span></div>
+                </div>
+                <div class="audio-player">
+                    <span>▶️</span> <div style="height:4px; background:#333; flex:1; border-radius:2px;"></div> <span>00:00</span>
                 </div>
             </div>
 
@@ -186,10 +234,9 @@
                         <div style="font-weight:bold; color:var(--text-main);">數位諮詢同意書</div>
                         <div style="font-size:0.8em; color:#888;">狀態：<span id="consentBadge" class="status-badge status-unsigned">未簽署</span></div>
                     </div>
-                    <button class="op-btn btn-load" onclick="generateConsent()">📲 產生簽署 QR Code</button>
+                    <button class="op-btn btn-load" onclick="generateConsent()">📲 產生 QR Code</button>
                 </div>
                 <div id="qrcode"></div>
-                <p style="color:#666; font-size:0.8em; text-align:center; margin-top:10px;">(請客戶使用手機掃描上方條碼進行簽名)</p>
             </div>
         </div>
     </div>
@@ -212,10 +259,13 @@
         try {
             const res = await fetch(`/api/search_records?keyword=${encodeURIComponent(keyword)}`);
             const data = await res.json();
-            currentData = data; // 存入全域變數
+            currentData = data; 
             
             loading.style.display = 'none';
             if (!data || data.length === 0) { emptyMsg.style.display = 'block'; return; }
+
+            // [V13.0] 壽星掃描器
+            scanBirthdays(data);
 
             data.forEach((item, index) => {
                 const tr = document.createElement('tr');
@@ -223,6 +273,7 @@
                 const genderBadge = item.gender === 1 ? `<span class="gender-badge gender-m">乾(男)</span>` : `<span class="gender-badge gender-f">坤(女)</span>`;
                 const birthInfo = `${item.solar_date} [${item.hour}時]`;
                 
+                // 標籤
                 let tagsHtml = '';
                 if(item.tags && item.tags.length > 0) {
                     item.tags.forEach(t => {
@@ -231,12 +282,19 @@
                     });
                 }
 
+                // [V13.0] 關注熱點 (從 ai_log.click_heatmap 抓取)
+                let heatHtml = '';
+                if (item.ai_log && item.ai_log.click_heatmap) {
+                    const sorted = Object.entries(item.ai_log.click_heatmap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+                    if(sorted.length > 0) heatHtml = `<div class="heat-row">🔥 關注: ${sorted.map(s=>`<span class="heat-item">${s[0]}</span>`).join('')}</div>`;
+                }
+
                 tr.innerHTML = `
                     <td class="col-date">${dateStr}</td>
                     <td class="col-name">${item.client_name || '貴賓'}</td>
                     <td class="col-chart">${genderBadge} ${birthInfo}</td>
                     <td class="col-phone">${item.phone || '-'}</td>
-                    <td class="col-note"><div style="margin-bottom:5px;">${tagsHtml}</div>${item.note || '<span style="opacity:0.3">無筆記</span>'}</td>
+                    <td class="col-note">${heatHtml} ${tagsHtml} ${item.note || '<span style="opacity:0.3">無筆記</span>'}</td>
                     <td>
                         <button class="op-btn btn-load" onclick='restoreRecord(${index})'>📂 復盤</button>
                         <button class="op-btn btn-edit" onclick='openDetail(${index})'>✏️ 檔案</button>
@@ -248,7 +306,39 @@
         } catch (e) { console.error(e); loading.innerText = "❌ 連線失敗"; }
     }
 
-    // 核心戰略：一鍵復盤
+    // [V13.0] 壽星邏輯 (簡易版：只比對月/日)
+    function scanBirthdays(data) {
+        const today = new Date();
+        const tMonth = today.getMonth() + 1;
+        const tDay = today.getDate();
+        let bList = [];
+
+        data.forEach(d => {
+            if(!d.solar_date) return;
+            const parts = d.solar_date.split('-'); // YYYY-MM-DD
+            if(parts.length < 3) return;
+            const bMonth = parseInt(parts[1]);
+            const bDay = parseInt(parts[2]);
+
+            // 判斷是否為「未來30天內」的壽星
+            // 這裡用簡單邏輯：只要月份相同或下個月，且日期接近
+            if (bMonth === tMonth && bDay >= tDay) {
+                bList.push(`${d.client_name} (${bMonth}/${bDay})`);
+            } else if (bMonth === (tMonth % 12) + 1 && bDay < 15) {
+                bList.push(`${d.client_name} (${bMonth}/${bDay})`);
+            }
+        });
+
+        const listEl = document.getElementById('birthdayList');
+        if (bList.length > 0) {
+            listEl.innerHTML = bList.join('、');
+            listEl.style.color = "var(--cyan)";
+        } else {
+            listEl.innerHTML = "近期無壽星";
+            listEl.style.color = "#666";
+        }
+    }
+
     function restoreRecord(index) {
         localStorage.setItem('damo_restore_data', JSON.stringify(currentData[index]));
         window.location.href = '/';
@@ -259,42 +349,31 @@
         try { await fetch(`/api/delete_record/${id}`, { method: 'DELETE' }); loadData(); } catch(e) { alert("刪除失敗"); }
     }
 
-    // [V12.0] 打開全功能檔案夾
     async function openDetail(index) {
         selectedItem = currentData[index];
-        
-        // 填入基本資料
         document.getElementById('mName').innerText = selectedItem.client_name || '客戶檔案';
         document.getElementById('editName').value = selectedItem.client_name || '';
         document.getElementById('editPhone').value = selectedItem.phone || '';
         document.getElementById('editNote').value = selectedItem.note || '';
         
-        // 同意書狀態
         const badge = document.getElementById('consentBadge');
         if(selectedItem.consent_signed) { badge.innerText="已簽署"; badge.className="status-badge status-signed"; }
         else { badge.innerText="未簽署"; badge.className="status-badge status-unsigned"; }
         document.getElementById('qrcode').style.display = "none";
 
-        // 渲染家族與風險
         renderRelations();
-        await scanRisks(); // 自動掃描風險
-        
-        switchTab('basic'); // 預設顯示基本資料
+        await scanRisks();
+        switchTab('basic');
         document.getElementById('detailModal').style.display = 'flex';
     }
 
     function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
 
-    // 存檔 (整合基本資料與家族)
     async function saveData(autoScan=false) {
         if(!selectedItem) return;
-        
-        // 更新物件
         selectedItem.client_name = document.getElementById('editName').value;
         selectedItem.phone = document.getElementById('editPhone').value;
         selectedItem.note = document.getElementById('editNote').value;
-        // relations 已經在 addRelation/removeRel 中更新到 selectedItem
-
         try {
             await fetch(`/api/update_record/${selectedItem.id}`, {
                 method: 'POST',
@@ -302,14 +381,10 @@
                 body: JSON.stringify(selectedItem)
             });
             if(autoScan) await scanRisks();
-            else {
-                alert("✅ 檔案已更新");
-                loadData(); // 刷新列表
-            }
+            else { alert("✅ 檔案已更新"); loadData(); }
         } catch(e) { alert("存檔失敗"); }
     }
 
-    // 家族功能模組
     function renderRelations() {
         const list = document.getElementById('relList');
         const rels = selectedItem.relations || [];
@@ -328,76 +403,54 @@
         if(!selectedItem.relations) selectedItem.relations = [];
         const rName = document.getElementById('relName').value;
         const rDate = document.getElementById('relDate').value;
-        
         if(!rName || !rDate) { alert("請填寫姓名與生日"); return; }
-
         selectedItem.relations.push({
             relation: document.getElementById('relRelation').value || '親友',
-            name: rName,
-            solar_date: rDate,
+            name: rName, solar_date: rDate,
             gender: parseInt(document.getElementById('relGender').value),
             hour: document.getElementById('relHour').value
         });
-        
-        // 清空輸入框
-        document.getElementById('relName').value = '';
-        document.getElementById('relDate').value = '';
-        
-        renderRelations();
-        saveData(true); // 自動存檔並掃描風險
+        document.getElementById('relName').value = ''; document.getElementById('relDate').value = '';
+        renderRelations(); saveData(true);
     }
 
     function removeRel(i) {
         if(!confirm("移除此家族成員？")) return;
         selectedItem.relations.splice(i, 1);
-        renderRelations();
-        saveData(true);
+        renderRelations(); saveData(true);
     }
 
-    // 風險雷達
     async function scanRisks() {
         const banner = document.getElementById('riskBanner');
-        if(!selectedItem.relations || selectedItem.relations.length === 0) {
-            banner.style.display = 'none'; return;
-        }
+        if(!selectedItem.relations || selectedItem.relations.length === 0) { banner.style.display = 'none'; return; }
         try {
             const res = await fetch('/api/scan_family_risks', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(selectedItem)
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(selectedItem)
             });
             const result = await res.json();
             if(result.alerts && result.alerts.length > 0) {
                 document.getElementById('riskText').innerText = result.alerts.map(a => `${a.relation}${a.name} (${a.risk})`).join('、');
                 banner.style.display = 'flex';
-            } else {
-                banner.style.display = 'none';
-            }
-        } catch(e) { console.error("Risk scan failed", e); }
+            } else { banner.style.display = 'none'; }
+        } catch(e) { console.error(e); }
     }
 
-    // 法律同意書
     function generateConsent() {
         const qrDiv = document.getElementById('qrcode');
-        qrDiv.innerHTML = ""; 
-        qrDiv.style.display = "block";
-        // 產生連結：指向 consent_page
+        qrDiv.innerHTML = ""; qrDiv.style.display = "block";
         const url = `${window.location.origin}/consent_page?id=${selectedItem.id}`;
         new QRCode(qrDiv, { text: url, width: 150, height: 150 });
     }
 
-    // 頁籤切換
     function switchTab(t) {
         document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
-        // 確保元素存在才操作
         const tabBtn = document.querySelector(`.tab[onclick="switchTab('${t}')"]`);
         const tabDiv = document.getElementById(`tab-${t}`);
         if(tabBtn) tabBtn.classList.add('active');
         if(tabDiv) tabDiv.classList.add('active');
     }
 
-    // 點擊外部關閉
     window.onclick = function(event) {
         const modal = document.getElementById('detailModal');
         if (event.target == modal) modal.style.display = "none";
