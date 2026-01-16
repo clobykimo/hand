@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V10.3.3 藏經閣版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V10.3.4 完整修復版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -49,7 +49,7 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
-        /* [V10.1] HUD 膠囊儀表板 */
+        /* HUD 膠囊儀表板 */
         .hud-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 15px; }
         .hud-capsule { display: flex; align-items: center; background: rgba(0, 0, 0, 0.4); border-radius: 4px; border: 1px solid #333; overflow: hidden; font-family: "Microsoft JhengHei", monospace; font-size: 0.85em; }
         .hud-capsule.solar { border-color: rgba(79, 209, 197, 0.3); }
@@ -60,7 +60,7 @@
         .hud-value { padding: 2px 8px; color: #eee; font-weight: bold; letter-spacing: 0.5px; }
         .hud-transfer-icon { color: var(--gold); font-size: 1.1em; font-weight: bold; opacity: 0.8; }
 
-        /* [V10.2] 四柱詳解卡片樣式 */
+        /* 四柱詳解卡片樣式 */
         .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         .pillar-card { background: #252f3a; border: 1px solid #4a5568; border-radius: 6px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
         .pillar-card:hover { transform: translateY(-3px); border-color: var(--gold); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
@@ -71,7 +71,7 @@
         .click-hint { position: absolute; bottom: 2px; right: 2px; font-size: 0.6em; color: #555; opacity: 0; transition: opacity 0.3s; }
         .pillar-card:hover .click-hint { opacity: 1; }
 
-        /* [V10.3] 特殊格局徽章 */
+        /* 特殊格局徽章 */
         .pattern-area { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; justify-content: center; }
         .pattern-badge { 
             background: linear-gradient(135deg, #1a202c, #2d3748); 
@@ -82,7 +82,7 @@
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* [V10.3] 隱藏式 Viral Card 版型 (供 html2canvas 截圖用) */
+        /* 隱藏式 Viral Card 版型 (供 html2canvas 截圖用) */
         #viralCardContainer {
             position: absolute; left: -9999px; top: 0;
             width: 480px;
@@ -105,7 +105,7 @@
         .vc-summary { background: rgba(212, 175, 55, 0.1); border-left: 4px solid var(--gold); padding: 15px; font-size: 0.95em; line-height: 1.5; color: #ddd; }
         .vc-footer { text-align: center; font-size: 0.8em; color: #666; margin-top: 10px; letter-spacing: 1px; }
 
-        /* [V10.0] 聊天室樣式 */
+        /* 聊天室樣式 */
         .chat-window { background: #0f1319; border: 1px solid #333; border-radius: 8px; height: 300px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px; }
         .chat-message { max-width: 85%; padding: 10px 14px; border-radius: 12px; line-height: 1.5; font-size: 0.95em; position: relative; word-wrap: break-word; }
         .chat-message.user { align-self: flex-end; background: linear-gradient(135deg, var(--bronze), var(--gold)); color: #1a2634; border-bottom-right-radius: 2px; font-weight: bold; }
@@ -390,6 +390,7 @@
 <script>
     // 1. 全域變數
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
+    const STAR_TRAITS = { '天貴': { type: '吉', keyword: '貴人/顯赫' }, '天厄': { type: '凶', keyword: '勞碌/疾厄' }, '天權': { type: '平', keyword: '權力/社交' }, '天破': { type: '凶', keyword: '消耗/破損' }, '天奸': { type: '平', keyword: '機智/變動' }, '天文': { type: '吉', keyword: '智慧/文采' }, '天福': { type: '吉', keyword: '福氣/財祿' }, '天驛': { type: '平', keyword: '奔波/變動' }, '天孤': { type: '凶', keyword: '孤獨/獨立' }, '天刃': { type: '凶', keyword: '剛強/血光' }, '天藝': { type: '平', keyword: '才藝/技術' }, '天壽': { type: '吉', keyword: '長壽/圓融' } };
     const ROULETTE_PATH = ['巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰'];
     
     let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
@@ -494,18 +495,31 @@
         document.getElementById('pillarModal').style.display = 'flex';
     }
 
+    // [V10.3.2 + V10.3.4] 修復版：確保 AI 分析不報錯
     function analyzePillarWithAI() {
         if (!currentPillarData || !globalLastResult) return;
+        
         document.getElementById('pillarModal').style.display = 'none'; 
+        
+        // 確保找到 AI 容器並正確展開
         const aiBody = document.getElementById('aiBody');
-        if(aiBody) {
-            aiBody.classList.remove('collapsed'); aiBody.scrollIntoView({behavior: "smooth"});
-            if (aiBody.previousElementSibling) aiBody.previousElementSibling.querySelector('.arrow-icon').classList.remove('collapsed');
+        if (aiBody) {
+            aiBody.classList.remove('collapsed'); 
+            aiBody.scrollIntoView({behavior: "smooth"});
+            
+            // 安全地尋找箭頭（避免 null 報錯）
+            if (aiBody.previousElementSibling) {
+                const arrow = aiBody.previousElementSibling.querySelector('.arrow-icon');
+                if (arrow) arrow.classList.remove('collapsed');
+            }
         }
+
         const p = globalLastResult.base_chart;
         const getPillarInfo = (key) => p[key] ? `${p[key].name}(${p[key].zhi})` : "未知";
         const fullChartContext = `年柱:${getPillarInfo('年柱')}, 月柱:${getPillarInfo('月柱')}, 日柱:${getPillarInfo('日柱')}, 時柱:${getPillarInfo('時柱')}`;
+        
         const prompt = `請以專通達摩一掌經及八字命理『徐峰老師』的口吻，參考案主的完整命盤架構：【${fullChartContext}】，針對目前點選的【${currentPillarData.title}】進行深度戰略點評。\n【點選位置資訊】：\n- 星宿：${currentPillarData.star} (${currentPillarData.zhi}宮)\n- 核心特質：${currentPillarData.slogan || '無'}\n- 古籍詩訣：${currentPillarData.poem || '無'}\n- 基礎定義：${currentPillarData.desc || '無'}\n\n【回答要求】：\n1. 請先【引用古籍詩訣】。\n2. 將詩訣翻譯為【現代白話戰略建議】。\n3. 指出該位置對案主影響的【優勢與劣勢】。\n4. 結合全盤氣場，給出一個具體的【改運建議或注意事項】。`;
+        
         sendToAI(prompt);
     }
 
@@ -601,6 +615,120 @@
         });
         setHTML('aspectsList', aHtml);
         if(globalTrendData) updateTrendChart('總命運');
+    }
+
+    // [V10.3.4 修復] 繪製走勢圖 (含防呆機制)
+    function renderTrendChart(labels, scores, tooltips, title) {
+        // 1. 獲取畫布 (Canvas)
+        const canvas = document.getElementById('trendChart');
+        if (!canvas) {
+            console.error("❌ 錯誤：找不到 id='trendChart' 的畫布");
+            return;
+        }
+        const ctx = canvas.getContext('2d');
+
+        // 2. 清除舊圖表
+        if (trendChartInstance) trendChartInstance.destroy();
+
+        // 3. 更新標題與 HUD (安全寫法)
+        const headerContainer = document.getElementById('trendHeaderContainer');
+        if (headerContainer) {
+            const hudDisplay = (globalLastResult && globalLastResult.dual_info) ? 'flex' : 'none';
+            const solarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.solar : '-';
+            const lunarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.lunar : '-';
+
+            headerContainer.innerHTML = `
+                <span style="white-space:nowrap;">運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span></span>
+                <div id="headerTimeInfo" class="hud-container" style="display:${hudDisplay};">
+                    <div class="hud-capsule solar"><span class="hud-label solar-bg">國</span><span class="hud-value">${solarVal}</span></div>
+                    <span class="hud-transfer-icon">⇄</span>
+                    <div class="hud-capsule lunar"><span class="hud-label lunar-bg">農</span><span class="hud-value">${lunarVal}</span></div>
+                </div>
+                <span class="arrow-icon" style="margin-left:10px;">▼</span>
+            `;
+        } else {
+            console.warn("⚠️ 警告：找不到 id='trendHeaderContainer'，跳過標題更新，直接繪圖。");
+        }
+        
+        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+        gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); 
+        gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+        
+        const radarPulsePlugin = {
+            id: 'radarPulse',
+            afterDatasetsDraw(chart, args, options) {
+                const { ctx, data } = chart;
+                const activeIndex = globalTrendData ? globalTrendData.target_index : -1;
+                if (activeIndex === -1 || activeIndex === undefined) return;
+
+                const meta = chart.getDatasetMeta(0);
+                if (!meta.data[activeIndex]) return; // 防呆
+
+                const x = meta.data[activeIndex].x;
+                const y = meta.data[activeIndex].y;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(x, y, 15, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(255, 77, 77, 0.3)'; 
+                ctx.fill();
+                ctx.restore();
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(x, y, 22, 0, 2 * Math.PI);
+                ctx.strokeStyle = 'rgba(255, 77, 77, 0.6)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([2, 4]); 
+                ctx.stroke();
+                ctx.restore();
+            }
+        };
+
+        const pointColors = labels.map((l, i) => (globalTrendData && i === globalTrendData.target_index) ? '#ff4d4d' : '#fff');
+        const pointRadii = labels.map((l, i) => (globalTrendData && i === globalTrendData.target_index) ? 8 : 4);
+
+        try {
+            trendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { 
+                    labels: labels, 
+                    datasets: [{ 
+                        label: '運勢能量', 
+                        data: scores, 
+                        borderColor: '#d4af37', 
+                        backgroundColor: gradient, 
+                        borderWidth: 3, 
+                        pointBackgroundColor: pointColors, 
+                        pointRadius: pointRadii, 
+                        pointHoverRadius: 10, 
+                        fill: true, 
+                        tension: 0.4 
+                    }] 
+                },
+                options: { 
+                    maintainAspectRatio: false, 
+                    scales: { 
+                        y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, 
+                        x: { grid: {color:'#333'}, ticks: {color:'#888', autoSkip: false, maxRotation: 0} } 
+                    }, 
+                    plugins: { 
+                        legend: {display:false}, 
+                        tooltip: { 
+                            callbacks: { 
+                                title: i=>Array.isArray(i[0].label)?i[0].label.join(" "):i[0].label, 
+                                afterLabel: ctx=>tooltips[ctx.dataIndex] 
+                            }, 
+                            backgroundColor: 'rgba(0,0,0,0.9)', 
+                            titleColor: '#d4af37' 
+                        } 
+                    } 
+                },
+                plugins: [radarPulsePlugin] 
+            });
+        } catch (e) {
+            console.error("❌ Chart.js 繪圖失敗:", e);
+        }
     }
 
     async function sendToAI(message) {
