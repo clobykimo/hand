@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V10.3 格局雷達版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V10.3.1 旗艦版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -357,6 +357,9 @@
         
         <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:6px; margin-bottom:20px;">
             <div id="modalPillarSlogan" style="color:var(--gold); font-weight:bold; margin-bottom:10px; border-bottom:1px dashed #555; padding-bottom:5px;"></div>
+            
+            <div id="modalPillarPoem" style="color:#a3a3ff; font-family:'Kaiti', 'Microsoft JhengHei', serif; font-size:1.05em; line-height:1.4; margin-bottom:12px; padding:8px; background:rgba(0,0,0,0.2); border-left:3px solid #a3a3ff; font-style:italic;"></div>
+
             <div id="modalPillarDesc" style="color:#eee; line-height:1.6; font-size:1.1em;"></div>
         </div>
 
@@ -520,12 +523,13 @@
         renderFullView(result);
     }
 
-    // [V10.3] 顯示詳解 Modal (含詩訣)
+    // [V10.3.1] 顯示詳解 Modal (含詩訣)
     function showPillarModal(title, star, zhi, slogan, desc, poem) {
         currentPillarData = { title, star, zhi, slogan, desc, poem }; 
         setText('modalPillarTitle', title + "解析");
         setText('modalPillarZhi', `${zhi}宮 (${star})`);
         setText('modalPillarSlogan', slogan);
+        setText('modalPillarPoem', poem || "（此星宿暫無詩訣紀錄）");
         setText('modalPillarDesc', desc);
         document.getElementById('pillarModal').style.display = 'flex';
     }
