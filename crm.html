@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩戰情室 (CRM V13.0 帝國版)</title>
+    <title>達摩戰情室 (CRM V13.1 雙塔版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
@@ -13,31 +13,64 @@
         }
         body { background-color: var(--bg-color); color: var(--text-main); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        /* 頂部導航 */
-        .header { width: 100%; max-width: 1400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 2px solid var(--gold); padding-bottom: 15px; }
+        /* [V13.1] 雙欄佈局容器 */
+        .layout-container {
+            display: grid;
+            grid-template-columns: 1fr 320px; /* 左側彈性，右側固定 320px */
+            gap: 20px;
+            width: 100%;
+            max-width: 1600px; /* 加寬整體版面 */
+            align-items: start;
+        }
+        @media (max-width: 1000px) { .layout-container { grid-template-columns: 1fr; } } /* 手機版自動變單欄 */
+
+        /* 左側主內容區 */
+        .main-content { width: 100%; min-width: 0; /* 防止表格撐爆 Grid */ }
+
+        /* [V13.1] 右側指揮塔 (Sidebar) */
+        .sidebar {
+            background: var(--panel-bg);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            position: sticky;
+            top: 20px; /* 固定在視窗右側 */
+            height: fit-content;
+            box-shadow: -5px 5px 15px rgba(0,0,0,0.3);
+        }
+        .sidebar-section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #444; }
+        .sidebar-title { color: var(--gold); font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-size: 1.1em; letter-spacing: 1px; }
+        
+        /* 生日列表樣式 */
+        .birthday-list { list-style: none; padding: 0; margin: 0; font-size: 0.9em; }
+        .birthday-item { margin-bottom: 10px; display: flex; align-items: center; gap: 8px; color: #ccc; }
+        .b-icon { color: var(--danger); font-size: 1.2em; }
+        .b-date { color: var(--cyan); font-family: monospace; font-weight: bold; }
+
+        /* 待辦事項樣式 */
+        .todo-input-group { display: flex; gap: 5px; margin-bottom: 10px; }
+        .todo-input { flex: 1; background: #111; border: 1px solid #555; color: #ddd; padding: 5px 8px; border-radius: 4px; font-size: 0.9em; }
+        .todo-add-btn { background: var(--cyan); border: none; color: #000; border-radius: 4px; padding: 0 10px; font-weight: bold; cursor: pointer; }
+        .todo-list { list-style: none; padding: 0; margin: 0; }
+        .todo-item { background: #151b24; padding: 8px; border-radius: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; border-left: 2px solid #555; transition: all 0.2s; }
+        .todo-item:hover { border-left-color: var(--gold); transform: translateX(3px); }
+        .todo-del { color: #666; cursor: pointer; font-size: 1.2em; line-height: 1; }
+        .todo-del:hover { color: var(--danger); }
+
+        /* 通用元件 */
+        .header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--gold); padding-bottom: 15px; }
         .title { font-size: 1.8em; color: var(--gold); font-weight: bold; letter-spacing: 3px; display: flex; align-items: center; gap: 10px; }
         .back-btn { background: transparent; border: 1px solid var(--cyan); color: var(--cyan); padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 1em; transition: all 0.3s; text-decoration: none; display: flex; align-items: center; gap: 5px; }
         .back-btn:hover { background: rgba(79, 209, 197, 0.1); transform: translateX(-5px); }
 
-        /* [V13.0] 戰略雷達條 (通知中心) */
-        .notification-bar { width: 100%; max-width: 1400px; display: flex; gap: 15px; margin-bottom: 20px; font-size: 0.9em; }
-        .notif-box { flex: 1; background: rgba(212, 175, 55, 0.05); border: 1px solid #444; border-radius: 4px; padding: 10px 15px; display: flex; align-items: center; gap: 10px; color: #888; transition: all 0.3s; }
-        .notif-box:hover { border-color: var(--gold); background: rgba(212, 175, 55, 0.1); }
-        .notif-icon { font-size: 1.2em; }
-        .notif-content { color: #ddd; font-weight: bold; }
-        .nb-birthday { border-left: 3px solid var(--cyan); }
-        .nb-risk { border-left: 3px solid var(--danger); }
-
-        /* 搜尋過濾 */
-        .filter-bar { width: 100%; max-width: 1400px; background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid #444; display: flex; gap: 15px; margin-bottom: 20px; box-sizing: border-box; align-items: flex-end; }
+        .filter-bar { background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid #444; display: flex; gap: 15px; margin-bottom: 20px; box-sizing: border-box; align-items: flex-end; }
         .search-group { flex: 1; display: flex; flex-direction: column; gap: 5px; }
         .search-group label { color: var(--cyan); font-size: 0.9em; font-weight: bold; }
         .search-input { background: #121820; border: 1px solid #555; color: white; padding: 10px; border-radius: 4px; font-size: 1rem; width: 100%; box-sizing: border-box; }
         .action-btn { background: linear-gradient(135deg, var(--bronze), var(--gold)); border: none; color: #1a2634; padding: 10px 25px; border-radius: 4px; font-weight: bold; cursor: pointer; height: 42px; display: flex; align-items: center; gap: 5px; justify-content: center;}
         .action-btn:hover { filter: brightness(1.15); }
 
-        /* 資料列表 */
-        .table-container { width: 100%; max-width: 1400px; background: var(--panel-bg); border-radius: 8px; border: 1px solid #444; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .table-container { background: var(--panel-bg); border-radius: 8px; border: 1px solid #444; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         thead { background: #252f3a; color: var(--cyan); font-weight: bold; }
         th { padding: 15px; border-bottom: 2px solid var(--gold); white-space: nowrap; }
@@ -51,11 +84,10 @@
         .gender-m { background: rgba(79, 209, 197, 0.2); color: var(--cyan); border: 1px solid var(--cyan); }
         .gender-f { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; border: 1px solid #ff6b6b; }
         .col-phone { font-family: monospace; color: var(--gold); letter-spacing: 1px; }
-        .col-note { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #888; font-style: italic; }
+        .col-note { max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #888; font-style: italic; }
         .tag-pill { display: inline-block; background: #333; border: 1px solid #555; color: #aaa; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; margin-right: 4px; }
         .tag-vip { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.1); }
         
-        /* [V13.0] 熱點關注 Tag */
         .heat-row { font-size: 0.75em; color: #ff6b6b; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
         .heat-item { background: rgba(255, 77, 77, 0.1); border: 1px solid #553333; padding: 1px 5px; border-radius: 3px; }
 
@@ -67,14 +99,13 @@
         .btn-del { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
         .btn-del:hover { background: var(--danger); color: white; }
 
-        /* 全功能檔案夾 Modal */
+        /* Modal 相關 */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
         .modal-content { background: var(--panel-bg); border: 1px solid var(--gold); width: 900px; max-width: 95%; height: 85vh; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
         .modal-header { padding: 20px; border-bottom: 1px solid #444; background: #151b24; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; }
         .modal-title { margin: 0; color: var(--gold); font-size: 1.5em; letter-spacing: 2px; }
         .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
         
-        /* 頁籤系統 */
         .tabs { display: flex; border-bottom: 1px solid #444; margin-bottom: 20px; }
         .tab { padding: 10px 20px; cursor: pointer; color: #888; border-bottom: 3px solid transparent; font-weight: bold; transition: all 0.3s; }
         .tab:hover { color: #ccc; }
@@ -82,23 +113,19 @@
         .tab-content { display: none; animation: fadeIn 0.3s; }
         .tab-content.active { display: block; }
         
-        /* 風險雷達 */
         .risk-banner { background: rgba(255, 77, 77, 0.15); border: 1px solid var(--danger); color: #ffcccc; padding: 15px; margin-bottom: 20px; border-radius: 4px; display: none; align-items: center; gap: 10px; }
         .risk-icon { font-size: 1.5em; }
 
-        /* [V13.0] 多媒體樣式 */
         .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin-top: 10px; }
         .media-box { aspect-ratio: 1; background: #222; border: 1px dashed #555; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
         .media-box:hover { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
         .audio-player { background: #151b24; padding: 12px; border-radius: 6px; border: 1px solid #444; display: flex; align-items: center; gap: 10px; color: #aaa; margin-top: 10px; }
 
-        /* 家族列表 */
         .rel-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
         .rel-table th { text-align: left; color: var(--cyan); border-bottom: 1px solid #444; padding: 8px; }
         .rel-table td { padding: 8px; border-bottom: 1px solid #333; color: #eee; }
         .add-rel-form { display: grid; grid-template-columns: 100px 100px 140px 60px 60px auto; gap: 10px; background: #111; padding: 15px; border-radius: 4px; margin-top: 15px; border: 1px dashed #444; }
         
-        /* 同意書區塊 */
         .consent-section { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 15px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #333; }
         .status-badge { padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
         .status-signed { background: var(--cyan); color: #000; }
@@ -113,56 +140,60 @@
 </head>
 <body>
 
-<div class="header">
-    <div class="title">
-        <span>📜</span> 達摩戰情室 <span style="font-size:0.5em; color:#666; margin-top:10px; margin-left:10px;">CRM V13.0</span>
-    </div>
-    <a href="/" class="back-btn">⇦ 返回推演盤</a>
-</div>
+<div class="layout-container">
+    <div class="main-content">
+        <div class="header">
+            <div class="title">
+                <span>📜</span> 達摩戰情室 <span style="font-size:0.5em; color:#666; margin-top:10px; margin-left:10px;">CRM V13.1</span>
+            </div>
+            <a href="/" class="back-btn">⇦ 返回推演盤</a>
+        </div>
 
-<div class="notification-bar">
-    <div class="notif-box nb-birthday">
-        <span class="notif-icon">🎂</span>
-        <div>
-            <div style="font-size:0.8em;">近期壽星 (30天內)</div>
-            <div class="notif-content" id="birthdayList">掃描中...</div>
+        <div class="filter-bar">
+            <div class="search-group">
+                <label>🔍 關鍵字搜尋</label>
+                <input type="text" id="searchInput" class="search-input" placeholder="輸入姓名、電話或備註..." onkeypress="if(event.key==='Enter') loadData()">
+            </div>
+            <button class="action-btn" onclick="loadData()">搜尋客戶</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="10%">諮詢日期</th>
+                        <th width="15%">客戶姓名</th>
+                        <th width="20%">本命參數</th>
+                        <th width="15%">聯絡電話</th>
+                        <th width="20%">戰略筆記</th>
+                        <th width="20%">戰術行動</th>
+                    </tr>
+                </thead>
+                <tbody id="crmTableBody"></tbody>
+            </table>
+            <div id="loading"><div class="spinner"></div><br>正在讀取卷宗...</div>
+            <div id="emptyMsg" style="text-align:center; padding:40px; color:#666; display:none;">
+                📭 查無資料，請先至首頁建立客戶檔案。
+            </div>
         </div>
     </div>
-    <div class="notif-box nb-risk">
-        <span class="notif-icon">⚠️</span>
-        <div>
-            <div style="font-size:0.8em;">潛在風險關注</div>
-            <div class="notif-content" id="riskList">安全</div>
+
+    <div class="sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-title"><span>🎂</span> 近期壽星 (30天內)</div>
+            <ul class="birthday-list" id="birthdayList">
+                <li style="color:#666; font-style:italic;">掃描中...</li>
+            </ul>
         </div>
-    </div>
-</div>
 
-<div class="filter-bar">
-    <div class="search-group">
-        <label>🔍 關鍵字搜尋</label>
-        <input type="text" id="searchInput" class="search-input" placeholder="輸入姓名、電話或備註..." onkeypress="if(event.key==='Enter') loadData()">
-    </div>
-    <button class="action-btn" onclick="loadData()">搜尋客戶</button>
-</div>
-
-<div class="table-container">
-    <table>
-        <thead>
-            <tr>
-                <th width="10%">諮詢日期</th>
-                <th width="15%">客戶姓名</th>
-                <th width="20%">本命參數</th>
-                <th width="15%">聯絡電話</th>
-                <th width="20%">戰略筆記 & 熱點</th>
-                <th width="20%">戰術行動</th>
-            </tr>
-        </thead>
-        <tbody id="crmTableBody">
-            </tbody>
-    </table>
-    <div id="loading"><div class="spinner"></div><br>正在讀取卷宗...</div>
-    <div id="emptyMsg" style="text-align:center; padding:40px; color:#666; display:none;">
-        📭 查無資料，請先至首頁建立客戶檔案。
+        <div class="sidebar-section" style="border:none;">
+            <div class="sidebar-title"><span>📝</span> 戰略待辦事項</div>
+            <div class="todo-input-group">
+                <input type="text" id="todoInput" class="todo-input" placeholder="新增待辦..." onkeypress="if(event.key==='Enter') addTodo()">
+                <button class="todo-add-btn" onclick="addTodo()">+</button>
+            </div>
+            <ul class="todo-list" id="todoList"></ul>
+        </div>
     </div>
 </div>
 
@@ -246,7 +277,10 @@
     let currentData = [];
     let selectedItem = null;
 
-    window.onload = function() { loadData(); };
+    window.onload = function() { 
+        loadData(); 
+        loadTodos(); // 載入待辦
+    };
 
     async function loadData() {
         const keyword = document.getElementById('searchInput').value;
@@ -264,8 +298,8 @@
             loading.style.display = 'none';
             if (!data || data.length === 0) { emptyMsg.style.display = 'block'; return; }
 
-            // [V13.0] 壽星掃描器
-            scanBirthdays(data);
+            // [V13.1] 壽星掃描 -> 渲染到右側 Sidebar
+            renderBirthdays(data);
 
             data.forEach((item, index) => {
                 const tr = document.createElement('tr');
@@ -273,7 +307,6 @@
                 const genderBadge = item.gender === 1 ? `<span class="gender-badge gender-m">乾(男)</span>` : `<span class="gender-badge gender-f">坤(女)</span>`;
                 const birthInfo = `${item.solar_date} [${item.hour}時]`;
                 
-                // 標籤
                 let tagsHtml = '';
                 if(item.tags && item.tags.length > 0) {
                     item.tags.forEach(t => {
@@ -282,7 +315,6 @@
                     });
                 }
 
-                // [V13.0] 關注熱點 (從 ai_log.click_heatmap 抓取)
                 let heatHtml = '';
                 if (item.ai_log && item.ai_log.click_heatmap) {
                     const sorted = Object.entries(item.ai_log.click_heatmap).sort((a,b)=>b[1]-a[1]).slice(0,3);
@@ -306,8 +338,9 @@
         } catch (e) { console.error(e); loading.innerText = "❌ 連線失敗"; }
     }
 
-    // [V13.0] 壽星邏輯 (簡易版：只比對月/日)
-    function scanBirthdays(data) {
+    // [V13.1] 壽星渲染 (Sidebar)
+    function renderBirthdays(data) {
+        const listEl = document.getElementById('birthdayList');
         const today = new Date();
         const tMonth = today.getMonth() + 1;
         const tDay = today.getDate();
@@ -315,30 +348,64 @@
 
         data.forEach(d => {
             if(!d.solar_date) return;
-            const parts = d.solar_date.split('-'); // YYYY-MM-DD
+            const parts = d.solar_date.split('-');
             if(parts.length < 3) return;
             const bMonth = parseInt(parts[1]);
             const bDay = parseInt(parts[2]);
 
-            // 判斷是否為「未來30天內」的壽星
-            // 這裡用簡單邏輯：只要月份相同或下個月，且日期接近
-            if (bMonth === tMonth && bDay >= tDay) {
-                bList.push(`${d.client_name} (${bMonth}/${bDay})`);
-            } else if (bMonth === (tMonth % 12) + 1 && bDay < 15) {
-                bList.push(`${d.client_name} (${bMonth}/${bDay})`);
+            // 簡單判斷：同月且日期>=今天，或下個月15號前
+            let isComing = false;
+            if (bMonth === tMonth && bDay >= tDay) isComing = true;
+            else if (bMonth === (tMonth % 12) + 1 && bDay < 15) isComing = true;
+
+            if (isComing) {
+                bList.push({name: d.client_name, date: `${bMonth}/${bDay}`});
             }
         });
 
-        const listEl = document.getElementById('birthdayList');
+        // 排序：日期近的在上面
+        // (這裡省略複雜排序，直接渲染)
+        
         if (bList.length > 0) {
-            listEl.innerHTML = bList.join('、');
-            listEl.style.color = "var(--cyan)";
+            listEl.innerHTML = bList.map(b => 
+                `<li class="birthday-item"><span class="b-icon">🎂</span> <span>${b.name}</span> <span class="b-date">${b.date}</span></li>`
+            ).join('');
         } else {
-            listEl.innerHTML = "近期無壽星";
-            listEl.style.color = "#666";
+            listEl.innerHTML = `<li style="color:#666; text-align:center;">近期無壽星</li>`;
         }
     }
 
+    // [V13.1] 待辦事項 (LocalStorage)
+    function loadTodos() {
+        const todos = JSON.parse(localStorage.getItem('damo_todos') || '[]');
+        const list = document.getElementById('todoList');
+        list.innerHTML = todos.map((t, i) => `
+            <li class="todo-item">
+                <span>${t}</span>
+                <span class="todo-del" onclick="removeTodo(${i})">×</span>
+            </li>
+        `).join('');
+    }
+
+    function addTodo() {
+        const input = document.getElementById('todoInput');
+        const val = input.value.trim();
+        if(!val) return;
+        const todos = JSON.parse(localStorage.getItem('damo_todos') || '[]');
+        todos.push(val);
+        localStorage.setItem('damo_todos', JSON.stringify(todos));
+        input.value = '';
+        loadTodos();
+    }
+
+    function removeTodo(i) {
+        const todos = JSON.parse(localStorage.getItem('damo_todos') || '[]');
+        todos.splice(i, 1);
+        localStorage.setItem('damo_todos', JSON.stringify(todos));
+        loadTodos();
+    }
+
+    // ... (以下為標準 CRM 邏輯，保持 V12.0 功能) ...
     function restoreRecord(index) {
         localStorage.setItem('damo_restore_data', JSON.stringify(currentData[index]));
         window.location.href = '/';
