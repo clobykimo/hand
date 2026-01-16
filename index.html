@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V10.1 完美介面版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V10.2 戰略詳解版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -49,44 +49,31 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
-        /* [V10.1 戰略級 UI] HUD 膠囊儀表板 (極度清晰) */
-        .hud-container { 
-            display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 15px; 
-        }
-        .hud-capsule { 
-            display: flex; align-items: center; 
-            background: rgba(0, 0, 0, 0.4); 
-            border-radius: 4px; 
-            border: 1px solid #333; 
-            overflow: hidden; 
-            font-family: "Microsoft JhengHei", monospace; 
-            font-size: 0.85em; 
-        }
+        /* [V10.1] HUD 膠囊儀表板 */
+        .hud-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 15px; }
+        .hud-capsule { display: flex; align-items: center; background: rgba(0, 0, 0, 0.4); border-radius: 4px; border: 1px solid #333; overflow: hidden; font-family: "Microsoft JhengHei", monospace; font-size: 0.85em; }
         .hud-capsule.solar { border-color: rgba(79, 209, 197, 0.3); }
         .hud-capsule.lunar { border-color: rgba(163, 163, 255, 0.3); }
-        
-        .hud-label { 
-            padding: 2px 6px; 
-            font-weight: bold; 
-            font-size: 0.8em; 
-            color: #1a2634; 
-        }
+        .hud-label { padding: 2px 6px; font-weight: bold; font-size: 0.8em; color: #1a2634; }
         .hud-label.solar-bg { background: var(--cyan); }
         .hud-label.lunar-bg { background: #a3a3ff; }
-        
-        .hud-value { 
-            padding: 2px 8px; 
-            color: #eee; 
-            font-weight: bold; 
-            letter-spacing: 0.5px; 
+        .hud-value { padding: 2px 8px; color: #eee; font-weight: bold; letter-spacing: 0.5px; }
+        .hud-transfer-icon { color: var(--gold); font-size: 1.1em; font-weight: bold; opacity: 0.8; }
+
+        /* [V10.2] 四柱詳解卡片樣式 */
+        .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .pillar-card { 
+            background: #252f3a; border: 1px solid #4a5568; border-radius: 6px; 
+            padding: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease; 
+            position: relative; overflow: hidden;
         }
-        
-        .hud-transfer-icon { 
-            color: var(--gold); 
-            font-size: 1.1em; 
-            font-weight: bold; 
-            opacity: 0.8; 
-        }
+        .pillar-card:hover { transform: translateY(-3px); border-color: var(--gold); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .pillar-card.active { border-color: var(--gold); opacity: 1; }
+        .pillar-header { font-size: 0.8em; color: #888; margin-bottom: 5px; font-weight: bold; }
+        .pillar-star { font-size: 1.2em; font-weight: bold; color: #eee; margin-bottom: 5px; }
+        .pillar-slogan { font-size: 0.75em; color: var(--cyan); opacity: 0.8; line-height: 1.3; min-height: 2.6em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .click-hint { position: absolute; bottom: 2px; right: 2px; font-size: 0.6em; color: #555; opacity: 0; transition: opacity 0.3s; }
+        .pillar-card:hover .click-hint { opacity: 1; }
 
         /* [V10.0] 聊天室樣式 */
         .chat-window { background: #0f1319; border: 1px solid #333; border-radius: 8px; height: 300px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px; }
@@ -184,8 +171,6 @@
         .input-group { display: none; }
         .input-group.show { display: block; }
         .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .pillar-box { background: #252f3a; padding: 10px; text-align: center; border: 1px solid #444; border-radius: 6px; opacity: 0.3; }
-        .pillar-box.active { opacity: 1; border-color: var(--gold); }
         .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; opacity: 0.3; pointer-events: none; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
         .ai-btn { background: var(--gpt-color); color: white; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight:bold; }
     </style>
@@ -286,8 +271,11 @@
         </div>
 
         <div class="card">
-            <h3 class="card-header" onclick="toggleCard('pillarsBody')">本命根基 <span class="arrow-icon collapsed">▼</span></h3>
-            <div id="pillarsBody" class="card-body collapsed"><div class="four-pillars" id="pillarsArea"></div></div>
+            <h3 class="card-header" onclick="toggleCard('pillarsBody')">本命根基 <span style="font-size:0.7em; color:var(--cyan); margin-left:10px;">(點擊卡片查看詳解)</span> <span class="arrow-icon collapsed" style="margin-left:auto;">▼</span></h3>
+            <div id="pillarsBody" class="card-body collapsed">
+                <div class="four-pillars" id="pillarsArea">
+                    </div>
+            </div>
         </div>
 
         <div class="card" style="border-left:5px solid var(--cyan);">
@@ -352,6 +340,25 @@
     </div>
 </div>
 
+<div id="pillarModal" class="modal">
+    <div class="modal-content" style="max-width: 500px; border-color: var(--cyan);">
+        <h3 style="color:var(--cyan); border-bottom:1px solid #444; margin-bottom:15px; display:flex; justify-content:space-between;">
+            <span id="modalPillarTitle">年柱解析</span>
+            <span style="font-size:0.7em; color:#888;" id="modalPillarZhi">子 (天貴)</span>
+        </h3>
+        
+        <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:6px; margin-bottom:20px;">
+            <div id="modalPillarSlogan" style="color:var(--gold); font-weight:bold; margin-bottom:10px; border-bottom:1px dashed #555; padding-bottom:5px;"></div>
+            <div id="modalPillarDesc" style="color:#eee; line-height:1.6; font-size:1.1em;"></div>
+        </div>
+
+        <div class="modal-footer" style="justify-content: space-between;">
+            <button class="btn-main" style="width:auto; margin:0; background:var(--gpt-color); font-size:0.9em; padding:8px 15px;" onclick="analyzePillarWithAI()">🤖 請 AI 深度分析此特質</button>
+            <button class="ctrl-btn" onclick="document.getElementById('pillarModal').style.display='none'">關閉</button>
+        </div>
+    </div>
+</div>
+
 <div id="exportContainer">
     <div class="export-header">
         <div class="export-title">達摩一掌經．生命藍圖導航</div>
@@ -395,6 +402,7 @@
     let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
     let isAnimEnabled = false;
     let chatHistory = [];
+    let currentPillarData = null; // [V10.2] 暫存當前點擊的柱位資料
 
     // 2. 基礎工具
     function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
@@ -468,16 +476,61 @@
         setText('lunarInfo', `| 虛歲 ${result.age} | ${result.lunar_info}`);
         
         const p = result.base_chart;
-        const list = [{z:p.年柱.zhi, n:p.年柱.name, c:'var(--p-year)', k:'年'}, {z:p.月柱.zhi, n:p.月柱.name, c:'var(--p-month)', k:'月'}, {z:p.日柱.zhi, n:p.日柱.name, c:'var(--p-day)', k:'日'}, {z:p.時柱.zhi, n:p.時柱.name, c:'var(--p-hour)', k:'命'}];
+        // [V10.2] 更新 Pillars List 邏輯，準備生成互動卡片
+        const list = [
+            {z:p.年柱.zhi, n:p.年柱.name, c:'var(--p-year)', k:'年', s:p.年柱.slogan, d:p.年柱.desc, key:'年柱'}, 
+            {z:p.月柱.zhi, n:p.月柱.name, c:'var(--p-month)', k:'月', s:p.月柱.slogan, d:p.月柱.desc, key:'月柱'}, 
+            {z:p.日柱.zhi, n:p.日柱.name, c:'var(--p-day)', k:'日', s:p.日柱.slogan, d:p.日柱.desc, key:'日柱'}, 
+            {z:p.時柱.zhi, n:p.時柱.name, c:'var(--p-hour)', k:'命', s:p.時柱.slogan, d:p.時柱.desc, key:'時柱'}
+        ];
         const isMale = (parseInt(document.getElementById('gender').value)===1);
         
         for(let item of list) { 
             if(globalSkipAnimation) break; 
             if (isAnimEnabled) await runRoulette(item.z, isMale); 
             addBadgeToCell(item.z, item.k, item.c, !isAnimEnabled); 
-            document.getElementById('pillarsArea').innerHTML += `<div class="pillar-box active" style="border-color:${item.c}"><div style="color:${item.c}">${item.n}</div><div>${item.z}</div></div>`; 
+            
+            // [V10.2] 生成互動卡片 HTML
+            const pillarHtml = `
+                <div class="pillar-card active" onclick="showPillarModal('${item.key}', '${item.n}', '${item.z}', '${item.s}', '${item.d}')" style="border-color:${item.c}">
+                    <div class="pillar-header" style="color:${item.c}">${item.key}</div>
+                    <div class="pillar-star">${item.n}</div>
+                    <div class="pillar-slogan">${item.s}</div>
+                    <div class="click-hint">詳細 ▶</div>
+                </div>`;
+            document.getElementById('pillarsArea').innerHTML += pillarHtml; 
         }
         renderFullView(result);
+    }
+
+    // [V10.2] 顯示四柱詳解 Modal
+    function showPillarModal(title, star, zhi, slogan, desc) {
+        currentPillarData = { title, star, zhi, slogan, desc }; // 暫存給 AI 用
+        setText('modalPillarTitle', title + "解析");
+        setText('modalPillarZhi', `${zhi}宮 (${star})`);
+        setText('modalPillarSlogan', slogan);
+        setText('modalPillarDesc', desc);
+        document.getElementById('pillarModal').style.display = 'flex';
+    }
+
+    // [V10.2] 呼叫 AI 解析四柱
+    function analyzePillarWithAI() {
+        if (!currentPillarData) return;
+        document.getElementById('pillarModal').style.display = 'none'; // 關閉 Modal
+        
+        // 自動捲動到 AI 區域並展開
+        document.getElementById('aiBody').classList.remove('collapsed');
+        document.querySelector('#aiBody .arrow-icon').classList.remove('collapsed');
+        document.getElementById('aiBody').scrollIntoView({behavior: "smooth"});
+
+        const prompt = `請針對案主的【${currentPillarData.title}】進行深度解析。
+        星宿：${currentPillarData.star} (${currentPillarData.zhi}宮)
+        核心特質：${currentPillarData.slogan}
+        詳細描述：${currentPillarData.desc}
+        
+        請分析這代表案主的什麼性格特質、潛在優勢與人生課題？`;
+        
+        sendToAI(prompt);
     }
 
     function runRoulette(targetZhi, isMale) { return new Promise(resolve => { let rounds=0, maxRounds=1, speed=50; const targetIndex = ROULETTE_PATH.indexOf(targetZhi); const step = isMale ? 1 : -1; function nextStep() { if(globalSkipAnimation) { resolve(); return; } if(globalIsPaused) { setTimeout(nextStep, 100); return; } const prev = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(prev) prev.classList.remove('roulette-active'); currentLightIndex = (currentLightIndex + step + 12) % 12; const curr = document.getElementById('cell-'+ROULETTE_PATH[currentLightIndex]); if(curr) curr.classList.add('roulette-active'); if(rounds>=maxRounds && currentLightIndex===targetIndex) { if(curr) curr.classList.add('flash-stop'); setTimeout(()=>{ if(curr){curr.classList.remove('roulette-active'); curr.classList.remove('flash-stop');} resolve(); }, 800); return; } if(currentLightIndex===0) rounds++; if(rounds>=maxRounds) speed+=30; setTimeout(nextStep, speed); } nextStep(); }); }
@@ -578,21 +631,17 @@
         const ctx = document.getElementById('trendChart').getContext('2d');
         if (trendChartInstance) trendChartInstance.destroy();
 
-        // [V10.1 UI 清理] 確保只有一個 HUD 容器，且為膠囊樣式
         const hudDisplay = (globalLastResult && globalLastResult.dual_info) ? 'flex' : 'none';
         const solarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.solar : '-';
         const lunarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.lunar : '-';
 
-        // 重新生成標題區塊，確保沒有舊的殘留
         document.getElementById('trendHeaderContainer').innerHTML = `
             <span style="white-space:nowrap;">運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span></span>
-            
             <div id="headerTimeInfo" class="hud-container" style="display:${hudDisplay};">
                 <div class="hud-capsule solar"><span class="hud-label solar-bg">國</span><span class="hud-value">${solarVal}</span></div>
                 <span class="hud-transfer-icon">⇄</span>
                 <div class="hud-capsule lunar"><span class="hud-label lunar-bg">農</span><span class="hud-value">${lunarVal}</span></div>
             </div>
-
             <span class="arrow-icon" style="margin-left:10px;">▼</span>
         `;
         
