@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V10.3.5 旗艦版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V10.3.6 旗艦版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -147,16 +147,16 @@
         .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; opacity: 0.3; pointer-events: none; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
         .ai-btn { background: var(--gpt-color); color: white; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight:bold; }
 
-        /* [V10.3.5 回歸原始版] 全能結案神器樣式 (A4 比例戰略報告) */
+        /* [V10.3.6 旗艦版] 全能結案神器 (修復運勢重點與佈局) */
         #exportContainer {
             position: fixed; left: -9999px; top: 0; /* 隱藏在螢幕外 */
-            width: 1200px; /* 寬度足夠容納所有資訊 */
+            width: 1200px; /* A4 寬度感 */
             background: #101015; color: #e0e0e0;
             padding: 40px;
             border: 10px double var(--gold); /* 增加邊框厚度 */
             font-family: "Microsoft JhengHei", serif;
             box-sizing: border-box;
-            display: flex; flex-direction: column; gap: 20px;
+            display: flex; flex-direction: column; gap: 25px;
         }
         .export-header { 
             border-bottom: 2px solid var(--gold); padding-bottom: 20px; margin-bottom: 10px; 
@@ -165,16 +165,36 @@
         .export-title { font-size: 2.5em; color: var(--gold); font-weight: bold; letter-spacing: 5px; text-shadow: 0 0 10px rgba(212,175,55,0.3); }
         .export-info { text-align: right; color: #aaa; font-size: 1.1em; line-height: 1.5; }
         
-        .export-body-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .export-body-grid { display: grid; grid-template-columns: 450px 1fr; gap: 30px; }
         
-        .export-section-title { color: var(--cyan); border-left: 5px solid var(--gold); padding-left: 15px; margin-bottom: 15px; font-size: 1.5em; font-weight: bold; margin-top: 10px;}
+        .export-section-title { color: var(--cyan); border-left: 5px solid var(--gold); padding-left: 15px; margin-bottom: 10px; font-size: 1.4em; font-weight: bold; margin-top: 10px;}
         
         .export-chart-img { width: 100%; border-radius: 8px; border: 1px solid #444; background: #1e2732; padding: 10px; }
         
+        /* 列表樣式 */
         .export-list-item { 
             display: flex; align-items: center; justify-content: space-between; 
             padding: 8px 0; border-bottom: 1px solid #333; font-size: 1.1em; 
         }
+        
+        /* [V10.3.6] 導出專用的四柱卡片樣式 */
+        .export-pillar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .export-pillar-item { 
+            background: #1e2732; border: 1px solid #444; border-radius: 6px; padding: 10px; text-align: center; 
+        }
+        .export-p-head { font-size: 0.9em; color: #888; font-weight: bold; }
+        .export-p-star { font-size: 1.4em; font-weight: bold; color: #eee; margin: 5px 0; }
+        .export-p-slogan { font-size: 0.8em; color: var(--cyan); line-height: 1.3; }
+
+        /* [V10.3.6] 運勢重點提示樣式 (復刻 V9.0) */
+        .highlight-box {
+            background: rgba(212, 175, 55, 0.05); 
+            border: 1px solid var(--gold);
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-top: 10px;
+        }
+        .highlight-content { font-size: 1.1em; line-height: 1.8; color: #ddd; }
         
         .export-footer { 
             text-align: center; margin-top: 20px; padding-top: 20px; 
@@ -376,8 +396,12 @@
     <div class="export-body-grid">
         <div>
             <div class="export-section-title">本命全息圖 (十二宮)</div>
-            <div id="exportMapContainer" style="transform: scale(0.95); transform-origin: top left;"></div>
+            <div id="exportMapContainer" style="transform: scale(0.95); transform-origin: top left; margin-bottom:15px;"></div>
+            
+            <div class="export-section-title">本命根基 (四柱)</div>
+            <div id="exportPillarsContainer" class="export-pillar-grid"></div>
         </div>
+
         <div>
             <div class="export-section-title">十二宮位運程分析</div>
             <div id="exportAspectList"></div>
@@ -388,6 +412,11 @@
         <div class="export-section-title">運勢能量走勢圖</div>
         <h4 style="color:var(--gold); text-align:center; margin:0 0 10px 0;" id="exportChartTitle"></h4>
         <img id="exportChartImg" class="export-chart-img">
+        
+        <div class="highlight-box">
+            <h4 style="color:var(--gold); margin:0 0 10px 0;">🔮 運勢重點提示</h4>
+            <div id="exportHighlights" class="highlight-content"></div>
+        </div>
     </div>
 
     <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V10.3</div>
@@ -771,44 +800,85 @@
         return div.id;
     }
 
-    // [V10.3.5 回歸原始版] 完整報告導出功能
+    // [V10.3.6 旗艦版] 全能結案神器 (修復運勢重點與佈局)
     async function exportToImage() {
         if (!globalLastResult || !trendChartInstance) { alert("請先排盤"); return; }
         document.getElementById('loadingOverlay').style.display = 'flex';
 
+        // 1. 準備資料與檔名
         const clientName = document.getElementById('crmName').value || '貴賓';
         const targetYear = document.getElementById('tYear').value;
-        const clientInfo = `姓名: ${clientName} | 生辰: ${document.getElementById('solarDate').value} ${document.getElementById('hour').value}時 | 性別: ${document.getElementById('gender').value==1?'男':'女'} | 預測年份: ${targetYear}年`;
+        const scope = document.getElementById('targetScope').value;
+        const scopeMap = {'year':'流年','month':'流月','day':'流日','hour':'流時'};
+        const clientInfo = `姓名: ${clientName} | 生辰: ${document.getElementById('solarDate').value} ${document.getElementById('hour').value}時 | 性別: ${document.getElementById('gender').value==1?'男':'女'} | 預測: ${targetYear}年`;
         setText('exportInfo', clientInfo);
 
+        // 2. 複製【命盤全息圖】
         const mapHtml = document.getElementById('mainMap').innerHTML;
         const exportMap = document.getElementById('exportMapContainer');
         exportMap.innerHTML = mapHtml;
         exportMap.className = 'twelve-palaces-map';
-        exportMap.querySelectorAll('.grid-cell').forEach(cell => {
-            cell.classList.remove('roulette-active');
-            cell.style.boxShadow = 'none';
-        });
+        exportMap.querySelectorAll('.grid-cell').forEach(cell => { cell.classList.remove('roulette-active'); cell.style.boxShadow = 'none'; });
 
+        // 3. [新增] 複製【本命根基 (四柱)】
+        const p = globalLastResult.base_chart;
+        const pillars = [
+            {k:'年柱', n:p.年柱.name, s:p.年柱.slogan, c:'var(--p-year)'},
+            {k:'月柱', n:p.月柱.name, s:p.月柱.slogan, c:'var(--p-month)'},
+            {k:'日柱', n:p.日柱.name, s:p.日柱.slogan, c:'var(--p-day)'},
+            {k:'時柱', n:p.時柱.name, s:p.時柱.slogan, c:'var(--p-hour)'}
+        ];
+        let pillarsHtml = "";
+        pillars.forEach(item => {
+            pillarsHtml += `<div class="export-pillar-item" style="border-color:${item.c}">
+                <div class="export-p-head" style="color:${item.c}">${item.k}</div>
+                <div class="export-p-star">${item.n}</div>
+                <div class="export-p-slogan">${item.s}</div>
+            </div>`;
+        });
+        setHTML('exportPillarsContainer', pillarsHtml);
+
+        // 4. 複製【運程列表】
         const listHtml = document.getElementById('aspectsList').innerHTML;
         const exportList = document.getElementById('exportAspectList');
         exportList.innerHTML = listHtml;
         exportList.querySelectorAll('button').forEach(btn => btn.remove());
-        exportList.querySelectorAll('.aspect-row').forEach(row => { 
-            row.style.borderBottom = '1px solid #444'; 
-            row.style.padding = '8px 0'; 
-            row.style.background = 'transparent';
-        });
+        exportList.querySelectorAll('.aspect-row').forEach(row => { row.style.borderBottom = '1px solid #444'; row.style.padding = '8px 0'; row.style.background = 'transparent'; });
 
+        // 5. 複製【運勢圖表】
         setText('exportChartTitle', `【${lastActiveAspect}】運勢能量走勢`);
         const chartBase64 = trendChartInstance.toBase64Image();
         document.getElementById('exportChartImg').src = chartBase64;
 
+        // 6. [新增] 自動生成【運勢重點提示】(復刻 V9.0)
+        if (globalTrendData && globalTrendData.datasets[lastActiveAspect]) {
+            const scores = globalTrendData.datasets[lastActiveAspect];
+            let maxS = -1, minS = 101, maxYear = "", minYear = "";
+            scores.forEach((s, i) => {
+                const lbl = Array.isArray(globalTrendData.axis_labels[i]) ? globalTrendData.axis_labels[i][0] : globalTrendData.axis_labels[i];
+                if (s > maxS) { maxS = s; maxYear = lbl; }
+                if (s < minS) { minS = s; minYear = lbl; }
+            });
+            
+            const highlightsHTML = `
+                <ul style="margin:0; padding-left:20px;">
+                    <li style="margin-bottom:8px;"><span style="color:#ffd700;">★ 運勢高點：</span> ${maxYear} (能量指數: ${maxS}) - 適合進攻、擴張。</li>
+                    <li style="margin-bottom:8px;"><span style="color:#ff4d4d;">⚠️ 運勢低點：</span> ${minYear} (能量指數: ${minS}) - 建議守成、避險。</li>
+                    <li><span style="color:#4fd1c5;">💡 戰略建議：</span> 請參考上方波形圖，在紅燈區(低分)前預先儲備糧草，在金燈區(高分)全力衝刺。</li>
+                </ul>
+            `;
+            setHTML('exportHighlights', highlightsHTML);
+        }
+
+        // 7. 執行截圖
         setTimeout(() => {
             const container = document.getElementById('exportContainer');
             html2canvas(container, { scale: 2, backgroundColor: "#101015", useCORS: true }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `達摩完整報告_${clientName}_${targetYear}.jpg`;
+                // [V10.3.6] 檔名標準化
+                const safeDate = document.getElementById('solarDate').value;
+                const safeScope = scopeMap[scope] || scope;
+                link.download = `達摩戰略_${clientName}_${safeDate}_${safeScope}(${targetYear}).jpg`;
                 link.href = canvas.toDataURL('image/jpeg', 0.9);
                 link.click();
                 document.getElementById('loadingOverlay').style.display = 'none';
