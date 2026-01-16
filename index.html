@@ -617,26 +617,22 @@
         if(globalTrendData) updateTrendChart('總命運');
     }
 
-    // [V10.3.4 修復] 繪製走勢圖 (含防呆機制)
+  // [V10.3.4 強韌修復版] 繪圖核心
     function renderTrendChart(labels, scores, tooltips, title) {
-        // 1. 獲取畫布 (Canvas)
-        const canvas = document.getElementById('trendChart');
-        if (!canvas) {
-            console.error("❌ 錯誤：找不到 id='trendChart' 的畫布");
+        // 1. 先獲取容器，確保 DOM 存在
+        const headerContainer = document.getElementById('trendHeaderContainer');
+        if (!headerContainer) {
+            console.error("找不到 trendHeaderContainer，無法更新標題");
             return;
         }
-        const ctx = canvas.getContext('2d');
 
-        // 2. 清除舊圖表
-        if (trendChartInstance) trendChartInstance.destroy();
+        // 2. 準備 HUD 數據 (防呆處理)
+        const hudDisplay = (globalLastResult && globalLastResult.dual_info) ? 'flex' : 'none';
+        const solarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.solar : '-';
+        const lunarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.lunar : '-';
 
-        // 3. 更新標題與 HUD (安全寫法)
-        const headerContainer = document.getElementById('trendHeaderContainer');
-        if (headerContainer) {
-            const hudDisplay = (globalLastResult && globalLastResult.dual_info) ? 'flex' : 'none';
-            const solarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.solar : '-';
-            const lunarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.lunar : '-';
-
+        // 3. 【關鍵修正】先更新標題文字 (確保介面有反應)
+        try {
             headerContainer.innerHTML = `
                 <span style="white-space:nowrap;">運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span></span>
                 <div id="headerTimeInfo" class="hud-container" style="display:${hudDisplay};">
@@ -646,49 +642,42 @@
                 </div>
                 <span class="arrow-icon" style="margin-left:10px;">▼</span>
             `;
-        } else {
-            console.warn("⚠️ 警告：找不到 id='trendHeaderContainer'，跳過標題更新，直接繪圖。");
+        } catch (e) {
+            console.error("標題更新失敗", e);
         }
-        
-        const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-        gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); 
-        gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
-        
-        const radarPulsePlugin = {
-            id: 'radarPulse',
-            afterDatasetsDraw(chart, args, options) {
-                const { ctx, data } = chart;
-                const activeIndex = globalTrendData ? globalTrendData.target_index : -1;
-                if (activeIndex === -1 || activeIndex === undefined) return;
 
-                const meta = chart.getDatasetMeta(0);
-                if (!meta.data[activeIndex]) return; // 防呆
-
-                const x = meta.data[activeIndex].x;
-                const y = meta.data[activeIndex].y;
-
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(x, y, 15, 0, 2 * Math.PI);
-                ctx.fillStyle = 'rgba(255, 77, 77, 0.3)'; 
-                ctx.fill();
-                ctx.restore();
-
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(x, y, 22, 0, 2 * Math.PI);
-                ctx.strokeStyle = 'rgba(255, 77, 77, 0.6)';
-                ctx.lineWidth = 1;
-                ctx.setLineDash([2, 4]); 
-                ctx.stroke();
-                ctx.restore();
-            }
-        };
-
-        const pointColors = labels.map((l, i) => (globalTrendData && i === globalTrendData.target_index) ? '#ff4d4d' : '#fff');
-        const pointRadii = labels.map((l, i) => (globalTrendData && i === globalTrendData.target_index) ? 8 : 4);
-
+        // 4. 開始繪圖 (包在 Try-Catch 中防止崩潰)
         try {
+            const canvas = document.getElementById('trendChart');
+            if (!canvas) throw new Error("找不到 Canvas 元素");
+            
+            const ctx = canvas.getContext('2d');
+            if (trendChartInstance) trendChartInstance.destroy();
+
+            // 漸層特效
+            const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+            gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); 
+            gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+            
+            // 脈衝特效插件
+            const radarPulsePlugin = {
+                id: 'radarPulse',
+                afterDatasetsDraw(chart, args, options) {
+                    const { ctx, data } = chart;
+                    const activeIndex = globalTrendData.target_index; 
+                    if (activeIndex === -1 || activeIndex === undefined) return;
+                    const meta = chart.getDatasetMeta(0);
+                    if (!meta.data[activeIndex]) return; 
+                    const x = meta.data[activeIndex].x;
+                    const y = meta.data[activeIndex].y;
+                    ctx.save(); ctx.beginPath(); ctx.arc(x, y, 15, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(255, 77, 77, 0.3)'; ctx.fill(); ctx.restore();
+                    ctx.save(); ctx.beginPath(); ctx.arc(x, y, 22, 0, 2 * Math.PI); ctx.strokeStyle = 'rgba(255, 77, 77, 0.6)'; ctx.lineWidth = 1; ctx.setLineDash([2, 4]); ctx.stroke(); ctx.restore();
+                }
+            };
+
+            const pointColors = labels.map((l, i) => i === globalTrendData.target_index ? '#ff4d4d' : '#fff');
+            const pointRadii = labels.map((l, i) => i === globalTrendData.target_index ? 8 : 4);
+
             trendChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: { 
@@ -726,9 +715,62 @@
                 },
                 plugins: [radarPulsePlugin] 
             });
-        } catch (e) {
-            console.error("❌ Chart.js 繪圖失敗:", e);
+
+        } catch (error) {
+            console.error("Chart.js 繪圖失敗:", error);
+            // 若失敗，在標題後顯示錯誤，方便除錯
+            headerContainer.innerHTML += ` <span style="color:red; font-size:0.7em;">(⚠️ 繪圖失敗)</span>`;
         }
+    }
+
+    // [V10.3.4 強韌修復版] 數據處理
+    function updateTrendChart(aspectName) {
+        // 1. 檢查數據源
+        if (!globalTrendData) {
+            console.warn("updateTrendChart: globalTrendData 為空");
+            return;
+        }
+        if (!globalTrendData.datasets[aspectName]) {
+            console.warn(`updateTrendChart: 找不到 ${aspectName} 的數據`);
+            return;
+        }
+
+        lastActiveAspect = aspectName;
+        if (!aspectClickCounts[aspectName]) aspectClickCounts[aspectName] = 0;
+        aspectClickCounts[aspectName]++;
+        
+        // 2. 計算分數
+        const useGrade = document.getElementById('gradeCheckbox').checked;
+        const useRenhe = document.getElementById('renheCheckbox').checked;
+        
+        const baseScores = globalTrendData.datasets[aspectName];
+        const adjustments = globalTrendData.adjustments[aspectName] || [];
+        const renheScores = globalTrendData.renhe_scores || [];
+
+        const finalScores = baseScores.map((score, i) => {
+            let s = score;
+            if (useGrade) s += (adjustments[i] || 0);
+            if (useRenhe && renheScores[i]) s += (renheScores[i].score || 0);
+            return Math.max(5, Math.min(95, s));
+        });
+
+        // 3. 準備標題後綴
+        let titleSuffix = "";
+        if (useGrade) titleSuffix += " +宮位";
+        if (useRenhe) titleSuffix += " +人和";
+
+        // 4. 呼叫繪圖
+        renderTrendChart(
+            globalTrendData.axis_labels, 
+            finalScores, 
+            globalTrendData.tooltips[aspectName], 
+            aspectName + titleSuffix
+        );
+
+        // 5. 更新列表高亮
+        document.querySelectorAll('.aspect-row').forEach(row => row.classList.remove('active-aspect'));
+        const activeRow = document.getElementById(`row-${aspectName}`);
+        if(activeRow) activeRow.classList.add('active-aspect');
     }
 
     async function sendToAI(message) {
@@ -844,3 +886,4 @@
 </script>
 </body>
 </html>
+
