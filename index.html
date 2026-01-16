@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V10.3 戰略快照版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V10.3.3 藏經閣版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -85,7 +85,7 @@
         /* [V10.3] 隱藏式 Viral Card 版型 (供 html2canvas 截圖用) */
         #viralCardContainer {
             position: absolute; left: -9999px; top: 0;
-            width: 480px; /* 手機寬度模擬 */
+            width: 480px;
             background: linear-gradient(180deg, #121820 0%, #1a202c 100%);
             padding: 30px; box-sizing: border-box;
             border: 4px double var(--gold);
@@ -98,17 +98,11 @@
         .vc-subtitle { font-size: 1em; color: var(--cyan); margin-top: 5px; }
         .vc-chart-area { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; border: 1px solid #333; height: 250px; position:relative; }
         .vc-pillars-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .vc-pillar-item { 
-            background: #252f3a; border: 1px solid #4a5568; border-radius: 6px; 
-            padding: 10px; text-align: center; 
-        }
+        .vc-pillar-item { background: #252f3a; border: 1px solid #4a5568; border-radius: 6px; padding: 10px; text-align: center; }
         .vc-p-head { font-size: 0.8em; color: #888; }
         .vc-p-star { font-size: 1.3em; font-weight: bold; color: #eee; margin: 4px 0; }
         .vc-p-slogan { font-size: 0.7em; color: var(--cyan); opacity: 0.9; line-height: 1.3; }
-        .vc-summary { 
-            background: rgba(212, 175, 55, 0.1); border-left: 4px solid var(--gold); 
-            padding: 15px; font-size: 0.95em; line-height: 1.5; color: #ddd;
-        }
+        .vc-summary { background: rgba(212, 175, 55, 0.1); border-left: 4px solid var(--gold); padding: 15px; font-size: 0.95em; line-height: 1.5; color: #ddd; }
         .vc-footer { text-align: center; font-size: 0.8em; color: #666; margin-top: 10px; letter-spacing: 1px; }
 
         /* [V10.0] 聊天室樣式 */
@@ -322,17 +316,17 @@
 
         <div class="card" style="background:#161625; border-color:var(--gpt-color);">
             <h3 class="card-header" onclick="toggleCard('aiBody')" style="color:var(--gpt-color);">
-                🤖 AI 戰略顧問 <span style="font-size:0.7em; color:#888;">(V10.3)</span>
-                <span class="arrow-icon collapsed">▼</span>
+                📜 達摩智囊．戰略參謀 <span style="font-size:0.7em; color:#888;">(V10.3)</span>
+                <span class="arrow-icon collapsed" style="margin-left:auto;">▼</span>
             </h3>
             <div id="aiBody" class="card-body collapsed">
                 <div class="ai-controls">
-                    <button class="ai-shortcut-btn" onclick="sendToAI('請幫我找出這張盤最致命的弱點(分數最低)，並給出戰略建議。')">💔 找痛點</button>
-                    <button class="ai-shortcut-btn" onclick="sendToAI('請分析目前的戰略時機，現在適合進攻還是防守？')">📅 定時機</button>
-                    <button class="ai-shortcut-btn" onclick="sendToAI('針對目前的運勢，請給我一段建議客戶的話術，語氣要委婉但堅定。')">🗣️ 求話術</button>
+                    <button class="ai-shortcut-btn" onclick="sendToAI('請幫我找出這張盤最致命的弱點(分數最低)，並給出戰略建議。')">🗡️ 直擊痛點</button>
+                    <button class="ai-shortcut-btn" onclick="sendToAI('請分析目前的戰略時機，現在適合進攻還是防守？')">⚖️ 審視時局</button>
+                    <button class="ai-shortcut-btn" onclick="sendToAI('針對目前的運勢，請給我一段建議客戶的話術，語氣要委婉但堅定。')">🗣️ 諮詢話術</button>
                 </div>
                 <div class="chat-window" id="chatWindow">
-                    <div class="chat-message ai">徐峰老師您好，我是您的達摩戰略顧問。請先完成排盤，我將為您解析。</div>
+                    <div class="chat-message ai">徐峰老師您好，我是您的【達摩智囊】。命盤已備妥，請賜教或點選上方功能進行推演。</div>
                 </div>
                 <div class="chat-input-area">
                     <input type="text" id="userChatInput" class="chat-input" placeholder="輸入您的問題..." onkeypress="if(event.key==='Enter') manualSend()">
@@ -355,7 +349,7 @@
             <div id="modalPillarDesc" style="color:#eee; line-height:1.6; font-size:1.1em;"></div>
         </div>
         <div class="modal-footer" style="justify-content: space-between;">
-            <button class="btn-main" style="width:auto; margin:0; background:var(--gpt-color); font-size:0.9em; padding:8px 15px;" onclick="analyzePillarWithAI()">🤖 請 AI 深度分析此特質</button>
+            <button class="btn-main" style="width:auto; margin:0; background:var(--gpt-color); font-size:0.9em; padding:8px 15px;" onclick="analyzePillarWithAI()">📜 恭請智囊．深度解盤</button>
             <button class="ctrl-btn" onclick="document.getElementById('pillarModal').style.display='none'">關閉</button>
         </div>
     </div>
@@ -602,57 +596,18 @@
                     <div style="font-size:0.75em;color:#888; margin-top:2px;">${a.zhi}|<b style="color:#ddd;">${a.star}</b></div>
                 </div>
                 <div style="flex:1;padding:0 5px;"><div style="display:flex;align-items:center;"><div style="width:70px;text-align:right;font-weight:bold;color:${barColor};">${score} ${compHtml}</div><div class="progress-container"><div class="progress-bar" style="width:${score}%;background:${barColor};"></div></div></div><div class="aspect-advice" style="font-size:0.8em;opacity:0.8;">${getStrategicAdvice(a.name, a.relation, a.star)}</div></div>
-                <div style="display:flex;align-items:center;gap:5px;"><div class="aspect-tag" style="background:${getStatusColor(a.relation)};font-size:0.7em;">${a.relation}</div><button class="mini-ai-btn" onclick="event.stopPropagation();lastActiveAspect='${a.name}';callAIWithMode('script')">🤖</button></div>
+                <div style="display:flex;align-items:center;gap:5px;"><div class="aspect-tag" style="background:${getStatusColor(a.relation)};font-size:0.7em;">${a.relation}</div><button class="mini-ai-btn" onclick="event.stopPropagation();lastActiveAspect='${a.name}';callAIWithMode('script')">📜</button></div>
             </div>`;
         });
         setHTML('aspectsList', aHtml);
         if(globalTrendData) updateTrendChart('總命運');
     }
 
-    function renderTrendChart(labels, scores, tooltips, title) {
-        const ctx = document.getElementById('trendChart').getContext('2d');
-        if (trendChartInstance) trendChartInstance.destroy();
-        const hudDisplay = (globalLastResult && globalLastResult.dual_info) ? 'flex' : 'none';
-        const solarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.solar : '-';
-        const lunarVal = (globalLastResult && globalLastResult.dual_info) ? globalLastResult.dual_info.lunar : '-';
-        document.getElementById('trendHeaderContainer').innerHTML = `
-            <span style="white-space:nowrap;">運勢能量走勢圖 <span style="font-size:0.7em; color:var(--cyan);">(${title})</span></span>
-            <div id="headerTimeInfo" class="hud-container" style="display:${hudDisplay};">
-                <div class="hud-capsule solar"><span class="hud-label solar-bg">國</span><span class="hud-value">${solarVal}</span></div>
-                <span class="hud-transfer-icon">⇄</span>
-                <div class="hud-capsule lunar"><span class="hud-label lunar-bg">農</span><span class="hud-value">${lunarVal}</span></div>
-            </div>
-            <span class="arrow-icon" style="margin-left:10px;">▼</span>
-        `;
-        const gradient = ctx.createLinearGradient(0, 0, 0, 250); gradient.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
-        const radarPulsePlugin = { id: 'radarPulse', afterDatasetsDraw(chart, args, options) { const { ctx, data } = chart; const activeIndex = globalTrendData.target_index; if (activeIndex === -1 || activeIndex === undefined) return; const meta = chart.getDatasetMeta(0); if (!meta.data[activeIndex]) return; const x = meta.data[activeIndex].x; const y = meta.data[activeIndex].y; ctx.save(); ctx.beginPath(); ctx.arc(x, y, 15, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(255, 77, 77, 0.3)'; ctx.fill(); ctx.restore(); ctx.save(); ctx.beginPath(); ctx.arc(x, y, 22, 0, 2 * Math.PI); ctx.strokeStyle = 'rgba(255, 77, 77, 0.6)'; ctx.lineWidth = 1; ctx.setLineDash([2, 4]); ctx.stroke(); ctx.restore(); } };
-        const pointColors = labels.map((l, i) => i === globalTrendData.target_index ? '#ff4d4d' : '#fff');
-        const pointRadii = labels.map((l, i) => i === globalTrendData.target_index ? 8 : 4);
-        trendChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: '運勢能量', data: scores, borderColor: '#d4af37', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: pointColors, pointRadius: pointRadii, pointHoverRadius: 10, fill: true, tension: 0.4 }] }, options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, min: 0, grid: {color:'#333'}, ticks: {color:'#888'} }, x: { grid: {color:'#333'}, ticks: {color:'#888', autoSkip: false, maxRotation: 0} } }, plugins: { legend: {display:false}, tooltip: { callbacks: { title: i=>Array.isArray(i[0].label)?i[0].label.join(" "):i[0].label, afterLabel: ctx=>tooltips[ctx.dataIndex] }, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#d4af37' } } }, plugins: [radarPulsePlugin] });
-    }
-
-    function updateTrendChart(aspectName) {
-        if (!globalTrendData || !globalTrendData.datasets[aspectName]) return;
-        lastActiveAspect = aspectName;
-        if (!aspectClickCounts[aspectName]) aspectClickCounts[aspectName] = 0; aspectClickCounts[aspectName]++;
-        const useGrade = document.getElementById('gradeCheckbox').checked;
-        const useRenhe = document.getElementById('renheCheckbox').checked;
-        const baseScores = globalTrendData.datasets[aspectName];
-        const adjustments = globalTrendData.adjustments[aspectName] || [];
-        const renheScores = globalTrendData.renhe_scores || [];
-        const finalScores = baseScores.map((score, i) => { let s = score; if (useGrade) s += (adjustments[i] || 0); if (useRenhe && renheScores[i]) s += (renheScores[i].score || 0); return Math.max(5, Math.min(95, s)); });
-        let titleSuffix = ""; if (useGrade) titleSuffix += " +宮位"; if (useRenhe) titleSuffix += " +人和";
-        renderTrendChart(globalTrendData.axis_labels, finalScores, globalTrendData.tooltips[aspectName], aspectName + titleSuffix);
-        document.querySelectorAll('.aspect-row').forEach(row => row.classList.remove('active-aspect'));
-        const activeRow = document.getElementById(`row-${aspectName}`);
-        if(activeRow) activeRow.classList.add('active-aspect');
-    }
-
     async function sendToAI(message) {
         if (!globalLastResult) { alert("請先進行排盤"); return; }
         if (!message) return;
         addChatBubble(message, 'user'); document.getElementById('userChatInput').value = '';
-        const loadingId = addChatBubble("思考運算中", 'ai', true);
+        const loadingId = addChatBubble("智囊推演中...", 'ai', true);
         const scoreIndex = globalTrendData.target_index || 0;
         const contextData = { age: globalLastResult.age, target_display: globalLastResult.target_display, special_patterns: globalLastResult.special_patterns || [], aspects: globalLastResult.aspects.map(a => { const score = globalTrendData.datasets[a.name][scoreIndex]; return `${a.name}: ${a.star} (${a.relation}, ${score}分)`; }) };
         try {
