@@ -894,7 +894,57 @@
     function closeSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
     function toggleTag(el) { el.classList.toggle('selected'); }
     function openAiNote() { const t = document.getElementById('aiResponseArea') ? document.getElementById('aiResponseArea').innerText : ''; document.getElementById('crmAiContent').value = (t.includes('請點擊')?'':t); }
-    async function confirmSave() { const data = { solar_date: document.getElementById('solarDate').value, gender: parseInt(document.getElementById('gender').value), hour: document.getElementById('hour').value, target_year: parseInt(document.getElementById('tYear').value), client_name: document.getElementById('crmName').value, phone: document.getElementById('crmPhone').value, note: document.getElementById('crmNote').value, ai_log: {saved_content: document.getElementById('crmAiContent').value, click_heatmap: aspectClickCounts} }; try { const res = await fetch('/api/save_record', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); if((await res.json()).status === 'success') { alert("已儲存"); closeSaveModal(); loadHistory(); } else alert("失敗"); } catch(e) { alert("錯誤"); } }
+    // [V10.3.7 修復版] 修正標籤(Tags)與熱點(Heatmap)漏傳問題
+    async function confirmSave() {
+        // 1. 採集標籤 (修復點：原本漏了這一段)
+        const selectedTags = Array.from(document.querySelectorAll('#tagList .tag-chip.selected'))
+                                  .map(chip => chip.innerText);
+
+        // 2. 準備資料封包
+        const data = {
+            // 基本參數
+            solar_date: document.getElementById('solarDate').value,
+            gender: parseInt(document.getElementById('gender').value),
+            hour: document.getElementById('hour').value,
+            target_year: parseInt(document.getElementById('tYear').value),
+            
+            // 客戶資料
+            client_name: document.getElementById('crmName').value,
+            phone: document.getElementById('crmPhone').value,
+            note: document.getElementById('crmNote').value,
+            
+            // [關鍵修復] 補上標籤陣列
+            tags: selectedTags, 
+
+            // [關鍵修復] 確保熱點數據結構正確 (供 CRM 顯示 🔥 關注)
+            ai_log: {
+                saved_content: document.getElementById('crmAiContent').value,
+                click_heatmap: aspectClickCounts || {} 
+            }
+        };
+
+        // 3. 發送請求
+        try {
+            const res = await fetch('/api/save_record', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            
+            if(result.status === 'success') {
+                alert("✅ 諮詢紀錄已完整儲存 (含標籤與熱點)");
+                closeSaveModal();
+                // 選擇性：存檔後是否要自動跳轉到 CRM？
+                // window.location.href = '/crm'; 
+            } else {
+                alert("❌ 儲存失敗，請檢查網路或欄位");
+            }
+        } catch(e) {
+            alert("❌ 系統錯誤：" + e.message);
+            console.error(e);
+        }
+    }
     async function loadHistory() { window.location.href = '/crm'; }
     function restoreFromHistory(item) { document.getElementById('solarDate').value = item.solar_date; document.getElementById('gender').value = item.gender; document.getElementById('hour').value = item.hour; document.getElementById('tYear').value = item.target_year || 2026; document.getElementById('tMonth').value = 1; document.getElementById('tDay').value = 1; document.getElementById('targetScope').value = 'year'; updateFormUI(); alert(`已載入：${item.client_name}\n(自動切換為流年模式)`); setTimeout(() => calculate(), 200); }
     async function callAIWithMode(mode) { if (!globalTrendData) { alert("請先排盤"); return; } const prompt = `分析${lastActiveAspect}，模式:${mode}`; try { const res = await fetch('/api/ask_ai', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:prompt})}); const d = await res.json(); console.log(d.reply); } catch(e) { console.error("AI Error"); } }
@@ -913,3 +963,4 @@
 </script>
 </body>
 </html>
+
