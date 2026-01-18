@@ -1,26 +1,17 @@
-# 1. 使用官方 Python 基礎映像檔 (建議用 3.9 或 3.10)
-FROM python:3.10-slim
+# 使用輕量級 Python 基礎映像
+FROM python:3.9-slim
 
-# 2. 設定工作目錄
+# 設定工作目錄
 WORKDIR /app
 
-# 3. 複製 requirements.txt 並安裝 Python 套件
+# 關鍵戰略：先複製 requirements.txt 並安裝依賴
+# 這樣只要 requirements.txt 沒變，Docker 就會直接用快取，跳過安裝步驟！
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# --- 請刪除或註解以下這幾行 ---
-# RUN pip install playwright
-# RUN playwright install chromium
-# RUN playwright install-deps
-# ---------------------------
-
-# 5. 複製所有程式碼到容器內
+# 最後才複製程式碼 (index.html, main.py)
+# 因為這些變動最頻繁，放在最後一層，才不會破壞前面的快取
 COPY . .
 
-# 6. 設定環境變數 (讓 Python 知道即時輸出 Log)
-ENV PYTHONUNBUFFERED=1
-
-# 7. 啟動服務 (GCP Cloud Run 預設 Port 為 8080)
-# 注意：這裡必須用 0.0.0.0 和 port 8080
+# 啟動命令
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
-
