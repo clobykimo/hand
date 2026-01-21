@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩戰情室 (CRM V13.3 全知全能版)</title>
+    <title>達摩戰情室 (CRM V13.4 最終穩定版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
@@ -15,15 +15,11 @@
         
         /* 雙欄佈局容器 */
         .layout-container {
-            display: grid;
-            grid-template-columns: 1fr 320px;
-            gap: 20px;
-            width: 100%;
-            max-width: 1600px;
-            align-items: start;
+            display: grid; grid-template-columns: 1fr 320px; gap: 20px;
+            width: 100%; max-width: 1600px; align-items: start;
         }
 
-        /* 手機響應式設計 */
+        /* 手機響應式設計 (V13.2+) */
         @media screen and (max-width: 950px) {
             body { padding: 10px; }
             .layout-container { display: flex; flex-direction: column; }
@@ -144,7 +140,7 @@
     <div class="main-content">
         <div class="header">
             <div class="title">
-                <span>📜</span> 達摩戰情室 <span style="font-size:0.5em; color:#666; margin-top:10px; margin-left:10px;">CRM V13.3</span>
+                <span>📜</span> 達摩戰情室 <span style="font-size:0.5em; color:#666; margin-top:10px; margin-left:10px;">CRM V13.4</span>
             </div>
             <a href="/" class="back-btn">⇦ 返回推演盤</a>
         </div>
@@ -402,16 +398,26 @@
         loadTodos();
     }
 
-    // [V13.3 修復版] 強化復盤機制
+    // [V13.4 關鍵修復] 復盤機制強化：錯誤攔截 + 延遲跳轉
     function restoreRecord(index) {
-        const item = currentData[index];
-        if(!item) { alert("❌ 資料讀取錯誤，請刷新頁面"); return; }
-        
-        // 寫入 LocalStorage
-        localStorage.setItem('damo_restore_data', JSON.stringify(item));
-        
-        // 強制跳轉回首頁
-        window.location.href = '/';
+        try {
+            const item = currentData[index];
+            if (!item) throw new Error("找不到該筆資料索引");
+            
+            console.log("Saving to restore:", item);
+            localStorage.setItem('damo_restore_data', JSON.stringify(item));
+            
+            // 給予按鈕反饋
+            const btn = document.activeElement;
+            if(btn) btn.innerText = "🔄 載入中...";
+            
+            // 延遲 100ms 確保資料寫入，並使用絕對路徑跳轉
+            setTimeout(() => {
+                window.location.href = window.location.origin; 
+            }, 100);
+        } catch(e) {
+            alert("復盤失敗：" + e.message);
+        }
     }
 
     async function deleteRecord(id) {
@@ -426,7 +432,7 @@
         document.getElementById('editPhone').value = selectedItem.phone || '';
         document.getElementById('editNote').value = selectedItem.note || '';
         
-        // [V13.3] 讀取 AI 存檔
+        // [V13.4] 讀取 AI 存檔，確保欄位有值
         const aiContent = (selectedItem.ai_log && selectedItem.ai_log.saved_content) ? selectedItem.ai_log.saved_content : "";
         document.getElementById('editAiSummary').value = aiContent;
 
@@ -449,7 +455,7 @@
         selectedItem.phone = document.getElementById('editPhone').value;
         selectedItem.note = document.getElementById('editNote').value;
         
-        // [V13.3] 儲存 AI 筆記
+        // [V13.4] 儲存 AI 筆記
         if (!selectedItem.ai_log) selectedItem.ai_log = {};
         selectedItem.ai_log.saved_content = document.getElementById('editAiSummary').value;
 
