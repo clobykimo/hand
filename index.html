@@ -1043,15 +1043,35 @@
     function openAuditModal() { if (!globalLastResult || !globalTrendData) { alert("請先排盤"); return; } const modal = document.getElementById('auditModal'); const contentDiv = modal.querySelector('.modal-content'); contentDiv.style.cssText = `background-color: #1e2732; border: 1px solid var(--gold); border-radius: 8px; width: 95%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; padding: 0; box-shadow: 0 0 50px rgba(0,0,0,0.9);`; const currentYear = document.getElementById('tYear').value; const headerHTML = `<div style="padding:15px 20px; border-bottom:1px solid #444; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; background:#151b24; border-radius:8px 8px 0 0;"><h3 style="margin:0; color:var(--gold);">📊 戰略算分稽核表 (年份: <span id="auditYear">${currentYear}</span>)</h3><button onclick="document.getElementById('auditModal').style.display='none'" style="background:none; border:none; color:#888; font-size:1.5em; cursor:pointer;">×</button></div>`; const bodyStartHTML = `<div style="padding:20px; overflow-y:auto; flex:1;"><div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:6px; margin-bottom:15px; font-size:0.9em; color:#ccc; line-height:1.6;"><strong style="color:var(--gold);">💡 達摩一掌經・核心邏輯 (主客對調版)</strong><br><ul style="margin:5px 0 0 20px; padding:0; color:#aaa;"><li><strong>主角 (我/Host)：</strong>流年總命運 (當年的本命能量)。</li><li><strong>客人 (他/Guest)：</strong>各個宮位 (事業、健康、財運...)。</li><li><strong>吉凶判斷：</strong>看「客人」對「我」做了什麼？(客生我=吉，客剋我=凶)。</li><li><strong>分數範圍：</strong>80(生我), 75(比旺), 60(我生), 35(我剋), 20(剋我)。</li></ul></div><div style="overflow-x:auto;"><table style="width:100%; border-collapse: collapse; font-size:0.9em; color:#ddd;"><thead style="background:#252f3a; color:var(--cyan);"><tr><th style="padding:10px; text-align:left;">客 (宮位)</th><th style="padding:10px; text-align:left;">互動關係 (客 vs 我)</th><th style="padding:10px; text-align:right; color:#bbb;">運氣(L1)</th><th style="padding:10px; text-align:right; color:#bbb;">宮位(L2)</th><th style="padding:10px; text-align:right; color:#bbb;">人和(L3)</th><th style="padding:10px; text-align:right; border-left:1px solid #444; color:var(--gold);">原始</th><th style="padding:10px; text-align:right; color:var(--cyan);">最終</th></tr></thead><tbody id="auditTableBody">`; let rowsHTML = ''; let dataIndex = -1; if (globalTrendData.target_index !== undefined) { dataIndex = globalTrendData.target_index; } else if (globalTrendData.axis_labels.length > 0) { dataIndex = Math.floor(globalTrendData.axis_labels.length/2); } if (dataIndex === -1) { rowsHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">無法取得此年份數據</td></tr>'; } else { const renheObj = globalTrendData.renhe_scores[dataIndex]; const renheScore = renheObj ? renheObj.score : 0; const renheStar = renheObj ? renheObj.star : "-"; globalLastResult.aspects.forEach(aspect => { const name = aspect.name; const baseScore = globalTrendData.datasets[name][dataIndex]; const gradeAndRoot = globalTrendData.adjustments[name][dataIndex]; const rawSum = baseScore + gradeAndRoot + renheScore; const finalScore = Math.max(5, Math.min(95, rawSum)); const details = getInteractionDetails(aspect.element, baseScore); let gradeColor = gradeAndRoot > 0 ? '#ffd700' : (gradeAndRoot < 0 ? '#ff4d4d' : '#666'); let renheColor = renheScore > 0 ? '#4fd1c5' : (renheScore < 0 ? '#ff4d4d' : '#666'); rowsHTML += `<tr style="border-bottom:1px solid #333;"><td style="padding:10px;"><div style="font-weight:bold; color:var(--cyan);">${name}</div><div style="font-size:0.8em; color:#888;">${aspect.zhi}宮 ${aspect.star}</div></td><td style="padding:10px; font-family:monospace; font-size:0.9em;">${details.icon}<br><span style="color:#aaa; font-size:0.8em;">${details.desc}</span></td><td style="padding:10px; text-align:right; font-family:monospace; color:#bbb; font-size:1.1em;">${baseScore}</td><td style="padding:10px; text-align:right; font-family:monospace; color:${gradeColor}; font-size:0.9em;">${gradeAndRoot>0?'+'+gradeAndRoot:gradeAndRoot}</td><td style="padding:10px; text-align:right; font-family:monospace; color:${renheColor}; font-size:0.9em;">${renheScore>0?'+'+renheScore:renheScore}<br><span style="font-size:0.7em; color:#888;">(${renheStar})</span></td><td style="padding:10px; text-align:right; border-left:1px solid #444; color:#ddd; font-family:monospace; font-size:1.1em;">${rawSum}</td><td style="padding:10px; text-align:right;"><div style="background:${finalScore>=80?'var(--status-best)':(finalScore<=40?'var(--status-bad)':'#444')}; color:#1a2634; padding:2px 8px; border-radius:4px; font-weight:bold;">${finalScore}</div></td></tr>`; }); } const bodyEndHTML = `</tbody></table></div></div>`; contentDiv.innerHTML = headerHTML + bodyStartHTML + rowsHTML + bodyEndHTML; modal.style.display = 'flex'; }
 
     updateFormUI(); initMap();
-    window.onload = function() {
+    // [V10.7 修復] 強制監聽頁面顯示事件，解決快取問題
+    function checkAndRestore() {
+        console.log("Checking for restore data...");
         const restoreDataStr = localStorage.getItem('damo_restore_data');
         if (restoreDataStr) {
-            const item = JSON.parse(restoreDataStr);
-            restoreFromHistory(item);
-            localStorage.removeItem('damo_restore_data');
+            try {
+                const item = JSON.parse(restoreDataStr);
+                console.log("Restoring:", item);
+                restoreFromHistory(item);
+                localStorage.removeItem('damo_restore_data'); // 讀取後清除，避免重複
+            } catch(e) {
+                console.error("Restore failed:", e);
+                localStorage.removeItem('damo_restore_data'); // 壞檔也清除
+            }
+        }
+    }
+
+    updateFormUI(); initMap();
+    
+    // 同時綁定 onload 和 pageshow，雙重保險
+    window.onload = checkAndRestore;
+    window.onpageshow = function(event) {
+        if (event.persisted) {
+            // 如果是從快取載入 (BFCache)，強制再檢查一次
+            checkAndRestore();
         }
     };
 </script>
 </body>
 </html>
+
 
