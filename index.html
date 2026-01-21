@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V10.4 UI優化版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V10.5 深度批文版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -16,7 +16,6 @@
         }
         body { background-color: var(--bg-color); color: var(--text-main); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; position: relative; }
         
-        /* [V10.4] 標題與頂部按鈕 */
         h1 { color: var(--gold); letter-spacing: 5px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(212,175,55,0.4); text-align: center; }
         .header-controls { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; }
         .btn-crm { 
@@ -30,20 +29,16 @@
         .control-panel, .card { background: var(--panel-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--bronze); margin-bottom: 20px; }
         .control-panel { height: fit-content; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: sticky; top: 20px; }
         
-        /* [V10.4] UI 瘦身樣式 */
         label { display: block; margin-bottom: 5px; color: var(--cyan); font-size: 0.9em; }
         input, select, textarea { width: 100%; padding: 10px; margin-bottom: 10px; background: #151b24; border: 1px solid #4a5568; color: white; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
         
-        /* 單行選項 (農曆/西元) */
         .radio-group { display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 4px; border: 1px solid #444; margin-bottom: 10px; }
         .radio-label { display: flex; align-items: center; gap: 5px; cursor: pointer; color: #ddd; font-size: 0.95em; margin: 0; }
         .radio-label input { width: auto; margin: 0; cursor: pointer; }
 
-        /* 主按鈕 */
         button.btn-main { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--bronze), var(--gold)); border: none; font-weight: bold; font-size: 1.2em; border-radius: 4px; cursor: pointer; color: #1a2634; margin-top: 5px; box-shadow: 0 4px 15px rgba(212,175,55,0.3); }
         button.btn-main:hover { filter: brightness(1.15); transform: translateY(-2px); }
 
-        /* [V10.4] 功能矩陣 (Action Grid) */
         .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
         .btn-icon { 
             display: flex; align-items: center; justify-content: center; gap: 5px;
@@ -66,7 +61,6 @@
         .card-body { overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), opacity 0.4s ease-in-out, margin-top 0.4s; max-height: 2000px; opacity: 1; margin-top: 15px; }
         .card-body.collapsed { max-height: 0; opacity: 0; margin-top: 0; }
         
-        /* Map Styles */
         .twelve-palaces-map { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 130px); gap: 12px; padding: 15px; margin-top: 0; background: rgba(0,0,0,0.2); border: 1px solid #444; border-radius: 8px; grid-template-areas: "si wu wei shen" "chen . . you" "mao . . xu" "yin chou zi hai"; }
         .grid-cell { position: relative; background: #2a3544; border: 1px solid #3f4a5a; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
         .grid-cell.active { border-color: var(--gold); background: #3a4555; }
@@ -82,7 +76,6 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
-        /* HUD Capsule */
         .hud-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 15px; }
         .hud-capsule { display: flex; align-items: center; background: rgba(0, 0, 0, 0.4); border-radius: 4px; border: 1px solid #333; overflow: hidden; font-family: "Microsoft JhengHei", monospace; font-size: 0.85em; }
         .hud-capsule.solar { border-color: rgba(79, 209, 197, 0.3); }
@@ -93,7 +86,6 @@
         .hud-value { padding: 2px 8px; color: #eee; font-weight: bold; letter-spacing: 0.5px; }
         .hud-transfer-icon { color: var(--gold); font-size: 1.1em; font-weight: bold; opacity: 0.8; }
 
-        /* Four Pillars Cards */
         .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         .pillar-card { background: #252f3a; border: 1px solid #4a5568; border-radius: 6px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
         .pillar-card:hover { transform: translateY(-3px); border-color: var(--gold); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
@@ -104,7 +96,6 @@
         .click-hint { position: absolute; bottom: 2px; right: 2px; font-size: 0.6em; color: #555; opacity: 0; transition: opacity 0.3s; }
         .pillar-card:hover .click-hint { opacity: 1; }
 
-        /* Pattern Badges */
         .pattern-area { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; justify-content: center; }
         .pattern-badge { 
             background: linear-gradient(135deg, #1a202c, #2d3748); 
@@ -115,7 +106,6 @@
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Chat Window */
         .chat-window { background: #0f1319; border: 1px solid #333; border-radius: 8px; height: 300px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px; }
         .chat-message { max-width: 85%; padding: 10px 14px; border-radius: 12px; line-height: 1.5; font-size: 0.95em; position: relative; word-wrap: break-word; }
         .chat-message.user { align-self: flex-end; background: linear-gradient(135deg, var(--bronze), var(--gold)); color: #1a2634; border-bottom-right-radius: 2px; font-weight: bold; }
@@ -125,7 +115,6 @@
         .chat-input-area { display: flex; gap: 10px; }
         .chat-input { flex: 1; background: #151b24; border: 1px solid #4a5568; color: white; padding: 10px; border-radius: 4px; }
 
-        /* Dashboard Components */
         .aspect-row { border-bottom: 1px solid #333; padding: 14px 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: background 0.2s; }
         .aspect-row.clickable { cursor: pointer; border-left: 3px solid transparent; }
         .aspect-row.clickable:hover { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
@@ -184,60 +173,26 @@
         .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; opacity: 0.3; pointer-events: none; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
         .ai-btn { background: var(--gpt-color); color: white; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight:bold; }
 
-        /* [V10.3.6] 全能結案神器導出容器 (含運勢重點與根基) */
         #exportContainer {
-            position: fixed; left: -9999px; top: 0; /* 隱藏在螢幕外 */
-            width: 1200px; /* A4 寬度感 */
-            background: #101015; color: #e0e0e0;
-            padding: 40px;
-            border: 10px double var(--gold); /* 增加邊框厚度 */
-            font-family: "Microsoft JhengHei", serif;
-            box-sizing: border-box;
-            display: flex; flex-direction: column; gap: 25px;
+            position: fixed; left: -9999px; top: 0; width: 1200px; background: #101015; color: #e0e0e0;
+            padding: 40px; border: 10px double var(--gold); font-family: "Microsoft JhengHei", serif;
+            box-sizing: border-box; display: flex; flex-direction: column; gap: 25px;
         }
-        .export-header { 
-            border-bottom: 2px solid var(--gold); padding-bottom: 20px; margin-bottom: 10px; 
-            display: flex; justify-content: space-between; align-items: center; 
-        }
+        .export-header { border-bottom: 2px solid var(--gold); padding-bottom: 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .export-title { font-size: 2.5em; color: var(--gold); font-weight: bold; letter-spacing: 5px; text-shadow: 0 0 10px rgba(212,175,55,0.3); }
         .export-info { text-align: right; color: #aaa; font-size: 1.1em; line-height: 1.5; }
-        
         .export-body-grid { display: grid; grid-template-columns: 450px 1fr; gap: 30px; }
-        
         .export-section-title { color: var(--cyan); border-left: 5px solid var(--gold); padding-left: 15px; margin-bottom: 10px; font-size: 1.4em; font-weight: bold; margin-top: 10px;}
-        
         .export-chart-img { width: 100%; border-radius: 8px; border: 1px solid #444; background: #1e2732; padding: 10px; }
-        
-        /* 列表樣式 */
-        .export-list-item { 
-            display: flex; align-items: center; justify-content: space-between; 
-            padding: 8px 0; border-bottom: 1px solid #333; font-size: 1.1em; 
-        }
-        
-        /* [V10.3.6] 導出專用的四柱卡片樣式 */
+        .export-list-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #333; font-size: 1.1em; }
         .export-pillar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .export-pillar-item { 
-            background: #1e2732; border: 1px solid #444; border-radius: 6px; padding: 10px; text-align: center; 
-        }
+        .export-pillar-item { background: #1e2732; border: 1px solid #444; border-radius: 6px; padding: 10px; text-align: center; }
         .export-p-head { font-size: 0.9em; color: #888; font-weight: bold; }
         .export-p-star { font-size: 1.4em; font-weight: bold; color: #eee; margin: 5px 0; }
         .export-p-slogan { font-size: 0.8em; color: var(--cyan); line-height: 1.3; }
-
-        /* [V10.3.6] 運勢重點提示樣式 (復刻 V9.0) */
-        .highlight-box {
-            background: rgba(212, 175, 55, 0.05); 
-            border: 1px solid var(--gold);
-            padding: 20px; 
-            border-radius: 8px; 
-            margin-top: 10px;
-        }
+        .highlight-box { background: rgba(212, 175, 55, 0.05); border: 1px solid var(--gold); padding: 20px; border-radius: 8px; margin-top: 10px; }
         .highlight-content { font-size: 1.1em; line-height: 1.8; color: #ddd; }
-        
-        .export-footer { 
-            text-align: center; margin-top: 20px; padding-top: 20px; 
-            border-top: 1px solid #333; color: var(--bronze); font-size: 1.2em; 
-            letter-spacing: 2px; font-weight: bold;
-        }
+        .export-footer { text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #333; color: var(--bronze); font-size: 1.2em; letter-spacing: 2px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -351,8 +306,7 @@
         <div class="card">
             <h3 class="card-header" onclick="toggleCard('pillarsBody')">本命根基 <span style="font-size:0.7em; color:var(--cyan); margin-left:10px;">(點擊卡片查看詳解)</span> <span class="arrow-icon collapsed" style="margin-left:auto;">▼</span></h3>
             <div id="pillarsBody" class="card-body collapsed">
-                <div class="four-pillars" id="pillarsArea">
-                    </div>
+                <div class="four-pillars" id="pillarsArea"></div>
                 <div id="specialPatternsArea" class="pattern-area"></div>
             </div>
         </div>
@@ -442,34 +396,28 @@
         <div class="export-title">達摩一掌經．生命藍圖導航</div>
         <div class="export-info" id="exportInfo"></div>
     </div>
-    
     <div class="export-body-grid">
         <div>
             <div class="export-section-title">本命全息圖 (十二宮)</div>
             <div id="exportMapContainer" style="transform: scale(0.95); transform-origin: top left; margin-bottom:15px;"></div>
-            
             <div class="export-section-title">本命根基 (四柱)</div>
             <div id="exportPillarsContainer" class="export-pillar-grid"></div>
         </div>
-
         <div>
             <div class="export-section-title">十二宮位運程分析</div>
             <div id="exportAspectList"></div>
         </div>
     </div>
-
     <div>
         <div class="export-section-title">運勢能量走勢圖</div>
         <h4 style="color:var(--gold); text-align:center; margin:0 0 10px 0;" id="exportChartTitle"></h4>
         <img id="exportChartImg" class="export-chart-img">
-        
         <div class="highlight-box">
             <h4 style="color:var(--gold); margin:0 0 10px 0;">🔮 運勢重點提示</h4>
             <div id="exportHighlights" class="highlight-content"></div>
         </div>
     </div>
-
-    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V10.3</div>
+    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V10.5</div>
 </div>
 
 <div id="saveModal" class="modal">
@@ -486,7 +434,94 @@
 <div id="auditModal" class="modal"><div class="modal-content" style="max-width: 900px; width: 95%;"></div></div>
 
 <script>
-    // 1. 全域變數
+    // 1. [V10.5] 達摩戰略批文庫 (Deep Matrix)
+    const PALACE_STRATEGY = {
+        "總命運": {
+            "生我": "吉運．貴人提攜，坐享其成，事半功倍。",
+            "比旺": "吉運．運勢平順，朋友相助，合作共榮。",
+            "我生": "平運．才華展現，能者多勞，付出有成。",
+            "我剋": "勞運．披荊斬棘，親力親為，掌控大局。",
+            "剋我": "凶運．壓力沈重，小人作祟，有志難伸。"
+        },
+        "形象": {
+            "生我": "人緣極佳，形象正面，受人歡迎。",
+            "比旺": "平易近人，社交活躍，廣結善緣。",
+            "我生": "熱心助人，勤奮努力，建立口碑。",
+            "我剋": "強勢主導，風格獨特，雖有爭議如同名聲。",
+            "剋我": "易招誤解，小人中傷，形象受損。"
+        },
+        "幸福": {
+            "生我": "內心滿足，備受寵愛，福氣滿滿。",
+            "比旺": "知足常樂，心情愉快，家庭和諧。",
+            "我生": "樂於付出，關懷他人，施比受更有福。",
+            "我剋": "追求卓越，自我要求高，容易操心。",
+            "剋我": "內心壓抑，焦慮不安，易有精神壓力。"
+        },
+        "事業": {
+            "生我": "上司提拔，資源湧入，升遷順利。",
+            "比旺": "團隊合作，同事得力，工作穩定。",
+            "我生": "專業展現，創意發揮，多勞多得。",
+            "我剋": "創業開拓，獨當一面，驚濤駭浪中求勝。",
+            "剋我": "職場險惡，小人阻礙，懷才不遇。"
+        },
+        "變動": {
+            "生我": "越動越旺，搬遷升官，異地發展吉。",
+            "比旺": "適應力強，隨遇而安，變動平順。",
+            "我生": "主動求變，集思廣益，開創新局。",
+            "我剋": "被迫奔波，四處勞碌，變動中求生存。",
+            "剋我": "動盪不安，漂泊不定，不宜躁進。"
+        },
+        "健康": {
+            "生我": "體質強健，精力充沛，病痛遠離。",
+            "比旺": "保養得宜，身心平衡，健康無虞。",
+            "我生": "消耗體力，注意休息，避免過勞。",
+            "我剋": "身體緊繃，易有外傷，需注意安全。",
+            "剋我": "體弱多病，痼疾復發，需密切調養。"
+        },
+        "愛情": {
+            "生我": "如膠似漆，伴侶體貼，備受呵護。",
+            "比旺": "志同道合，相處融洽，如朋友般自在。",
+            "我生": "主動付出，照顧對方，用情至深。",
+            "我剋": "佔有慾強，想要掌控，易有爭執。",
+            "剋我": "貌合神離，意見不合，互相折磨。"
+        },
+        "領導": {
+            "生我": "威望崇高，部屬擁戴，一呼百應。",
+            "比旺": "平起平坐，以德服人，團隊和諧。",
+            "我生": "親力親為，教導部屬，勞心勞力。",
+            "我剋": "嚴格管理，鐵腕作風，部屬敬畏。",
+            "剋我": "領導無方，部屬反叛，權力被架空。"
+        },
+        "親信": {
+            "生我": "得力助手，忠心耿耿，為你分憂解勞。",
+            "比旺": "互信互助，合作無間，如手足般可靠。",
+            "我生": "用心栽培，給予機會，需時間養成。",
+            "我剋": "用人唯才，嚴加考核，需防範背叛。",
+            "剋我": "親信無能，甚至扯後腿，用人需謹慎。"
+        },
+        "根基": {
+            "生我": "祖蔭豐厚，家底殷實，後盾強大。",
+            "比旺": "根基穩固，守成有餘，安居樂業。",
+            "我生": "白手起家，開枝散葉，為後代積福。",
+            "我剋": "離鄉背井，自立門戶，辛苦建立基業。",
+            "剋我": "家道中落，根基動搖，需防範破產。"
+        },
+        "朋友": {
+            "生我": "貴人環繞，朋友相挺，人脈即錢脈。",
+            "比旺": "知己眾多，各方支援，社交圈活躍。",
+            "我生": "熱情好客，慷慨解囊，雖有人氣但耗財。",
+            "我剋": "交友謹慎，利用關係，朋友多為利益之交。",
+            "剋我": "交友不慎，誤信損友，易受連累。"
+        },
+        "錢財": {
+            "生我": "財源廣進，投資獲利，輕鬆得財。",
+            "比旺": "資金通暢，收支平衡，財運穩定。",
+            "我生": "投資支出，花錢佈局，先出後進。",
+            "我剋": "辛苦賺錢，錙銖必較，財富險中求。",
+            "剋我": "破財消災，資金周轉不靈，防詐騙。"
+        }
+    };
+
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
     const ROULETTE_PATH = ['巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰'];
     
@@ -495,13 +530,20 @@
     let chatHistory = [];
     let currentPillarData = null; 
 
-    // 2. 基礎工具
     function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
     function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
     function toggleCard(bodyId) { const body = document.getElementById(bodyId); const arrow = body.previousElementSibling.querySelector('.arrow-icon'); if (body.classList.contains('collapsed')) { body.classList.remove('collapsed'); if(arrow) arrow.classList.remove('collapsed'); } else { body.classList.add('collapsed'); if(arrow) arrow.classList.add('collapsed'); } }
     function getRealmColor(realm) { if(realm.includes('佛')) return '#ffd700'; if(realm.includes('仙')) return '#4fd1c5'; if(realm.includes('修羅')) return '#ff9f43'; if(realm.includes('鬼')) return '#a0aec0'; if(realm.includes('畜')) return '#8c7853'; return '#e0e0e0'; }
     function getStatusColor(relation) { if(relation==='生我'||relation==='比旺') return 'var(--status-best)'; if(relation==='我生') return 'var(--status-good)'; if(relation==='我剋') return 'var(--status-growth)'; if(relation==='剋我') return 'var(--status-bad)'; return '#888'; }
-    function getStrategicAdvice(aspect, relation, star) { return `運勢：${relation}`; } // 簡化
+    
+    // [V10.5] 戰略建議查詢函數
+    function getStrategicAdvice(aspect, relation, star) { 
+        if (PALACE_STRATEGY[aspect] && PALACE_STRATEGY[aspect][relation]) {
+            return PALACE_STRATEGY[aspect][relation];
+        }
+        return `運勢：${relation} | 建議：善用${star}特性`; 
+    }
+    
     function toggleAnim(el) { isAnimEnabled = el.checked; }
 
     function updateFormUI() {
@@ -512,7 +554,6 @@
         else { solarRadio.disabled = false; solarRadio.parentElement.style.opacity = '1'; }
         const isSolar = document.querySelector('input[name="calendarType"]:checked').value === 'solar';
         const prefix = isSolar ? '西元' : '農曆';
-        setText('lblYear', `${prefix}年份`); setText('lblMonth', `${prefix}月份`); setText('lblDay', `${prefix}日期`);
         document.getElementById('monthInput').className = (scope !== 'year') ? 'input-group show' : 'input-group';
         document.getElementById('dayInput').className = (scope === 'day' || scope === 'hour') ? 'input-group show' : 'input-group';
         document.getElementById('hourInput').className = (scope === 'hour') ? 'input-group show' : 'input-group';
@@ -530,7 +571,6 @@
         }
     }
 
-    // 3. 核心計算
     async function calculate() {
         document.getElementById('loadingOverlay').style.display='flex';
         const data = { 
@@ -592,7 +632,6 @@
         document.getElementById('pillarModal').style.display = 'flex';
     }
 
-    // [V10.3.2 修正版] 修正箭頭選取錯誤，防止崩潰
     function analyzePillarWithAI() {
         console.log("正在啟動 AI 分析程序...");
         if (!currentPillarData) { alert("❌ 錯誤：找不到當前選中的柱位資料"); return; }
@@ -735,7 +774,6 @@
         if(globalTrendData) updateTrendChart('總命運');
     }
 
-    // [V10.3.4 強韌修復版] 繪圖核心
     function renderTrendChart(labels, scores, tooltips, title) {
         const headerContainer = document.getElementById('trendHeaderContainer');
         if (!headerContainer) { console.error("找不到 trendHeaderContainer"); return; }
@@ -793,7 +831,6 @@
         } catch (error) { console.error("Chart.js 繪圖失敗:", error); headerContainer.innerHTML += ` <span style="color:red; font-size:0.7em;">(⚠️ 繪圖失敗)</span>`; }
     }
 
-    // [V10.3.4 強韌修復版] 數據處理
     function updateTrendChart(aspectName) {
         if (!globalTrendData) { console.warn("updateTrendChart: globalTrendData 為空"); return; }
         if (!globalTrendData.datasets[aspectName]) { console.warn(`updateTrendChart: 找不到 ${aspectName} 的數據`); return; }
@@ -850,12 +887,10 @@
         return div.id;
     }
 
-    // [V10.3.6 旗艦版] 全能結案神器 (修復運勢重點與佈局)
     async function exportToImage() {
         if (!globalLastResult || !trendChartInstance) { alert("請先排盤"); return; }
         document.getElementById('loadingOverlay').style.display = 'flex';
 
-        // 1. 準備資料與檔名
         const clientName = document.getElementById('crmName').value || '貴賓';
         const targetYear = document.getElementById('tYear').value;
         const scope = document.getElementById('targetScope').value;
@@ -863,14 +898,12 @@
         const clientInfo = `姓名: ${clientName} | 生辰: ${document.getElementById('solarDate').value} ${document.getElementById('hour').value}時 | 性別: ${document.getElementById('gender').value==1?'男':'女'} | 預測: ${targetYear}年`;
         setText('exportInfo', clientInfo);
 
-        // 2. 複製【命盤全息圖】
         const mapHtml = document.getElementById('mainMap').innerHTML;
         const exportMap = document.getElementById('exportMapContainer');
         exportMap.innerHTML = mapHtml;
         exportMap.className = 'twelve-palaces-map';
         exportMap.querySelectorAll('.grid-cell').forEach(cell => { cell.classList.remove('roulette-active'); cell.style.boxShadow = 'none'; });
 
-        // 3. [新增] 複製【本命根基 (四柱)】
         const p = globalLastResult.base_chart;
         const pillars = [
             {k:'年柱', n:p.年柱.name, s:p.年柱.slogan, c:'var(--p-year)'},
@@ -888,19 +921,16 @@
         });
         setHTML('exportPillarsContainer', pillarsHtml);
 
-        // 4. 複製【運程列表】
         const listHtml = document.getElementById('aspectsList').innerHTML;
         const exportList = document.getElementById('exportAspectList');
         exportList.innerHTML = listHtml;
         exportList.querySelectorAll('button').forEach(btn => btn.remove());
         exportList.querySelectorAll('.aspect-row').forEach(row => { row.style.borderBottom = '1px solid #444'; row.style.padding = '8px 0'; row.style.background = 'transparent'; });
 
-        // 5. 複製【運勢圖表】
         setText('exportChartTitle', `【${lastActiveAspect}】運勢能量走勢`);
         const chartBase64 = trendChartInstance.toBase64Image();
         document.getElementById('exportChartImg').src = chartBase64;
 
-        // 6. [新增] 自動生成【運勢重點提示】(復刻 V9.0)
         if (globalTrendData && globalTrendData.datasets[lastActiveAspect]) {
             const scores = globalTrendData.datasets[lastActiveAspect];
             let maxS = -1, minS = 101, maxYear = "", minYear = "";
@@ -920,12 +950,10 @@
             setHTML('exportHighlights', highlightsHTML);
         }
 
-        // 7. 執行截圖
         setTimeout(() => {
             const container = document.getElementById('exportContainer');
             html2canvas(container, { scale: 2, backgroundColor: "#101015", useCORS: true }).then(canvas => {
                 const link = document.createElement('a');
-                // [V10.3.6] 檔名標準化
                 const safeDate = document.getElementById('solarDate').value;
                 const safeScope = scopeMap[scope] || scope;
                 link.download = `達摩戰略_${clientName}_${safeDate}_${safeScope}(${targetYear}).jpg`;
@@ -945,36 +973,25 @@
     function toggleTag(el) { el.classList.toggle('selected'); }
     function openAiNote() { const t = document.getElementById('aiResponseArea') ? document.getElementById('aiResponseArea').innerText : ''; document.getElementById('crmAiContent').value = (t.includes('請點擊')?'':t); }
     
-    // [V10.3.7 修復版] 修正標籤(Tags)與熱點(Heatmap)漏傳問題
     async function confirmSave() {
-        // 1. 採集標籤 (修復點：原本漏了這一段)
         const selectedTags = Array.from(document.querySelectorAll('#tagList .tag-chip.selected'))
                                   .map(chip => chip.innerText);
 
-        // 2. 準備資料封包
         const data = {
-            // 基本參數
             solar_date: document.getElementById('solarDate').value,
             gender: parseInt(document.getElementById('gender').value),
             hour: document.getElementById('hour').value,
             target_year: parseInt(document.getElementById('tYear').value),
-            
-            // 客戶資料
             client_name: document.getElementById('crmName').value,
             phone: document.getElementById('crmPhone').value,
             note: document.getElementById('crmNote').value,
-            
-            // [關鍵修復] 補上標籤陣列
             tags: selectedTags, 
-
-            // [關鍵修復] 確保熱點數據結構正確 (供 CRM 顯示 🔥 關注)
             ai_log: {
                 saved_content: document.getElementById('crmAiContent').value,
                 click_heatmap: aspectClickCounts || {} 
             }
         };
 
-        // 3. 發送請求
         try {
             const res = await fetch('/api/save_record', {
                 method: 'POST',
