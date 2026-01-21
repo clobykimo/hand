@@ -1013,8 +1013,68 @@
     }
 
     async function loadHistory() { window.location.href = '/crm'; }
-    function restoreFromHistory(item) { document.getElementById('solarDate').value = item.solar_date; document.getElementById('gender').value = item.gender; document.getElementById('hour').value = item.hour; document.getElementById('tYear').value = item.target_year || 2026; document.getElementById('tMonth').value = 1; document.getElementById('tDay').value = 1; document.getElementById('targetScope').value = 'year'; updateFormUI(); alert(`已載入：${item.client_name}\n(自動切換為流年模式)`); setTimeout(() => calculate(), 200); }
-    async // [V10.6 修復版] 讓按鈕真的會說話
+    // [V13.5 修復版] 完整復盤機制 (包含客戶基本資料回填)
+    function restoreFromHistory(item) {
+        console.log("正在復盤客戶資料:", item);
+
+        // 1. 恢復排盤參數 (原本只有這一段)
+        document.getElementById('solarDate').value = item.solar_date;
+        document.getElementById('gender').value = item.gender;
+        document.getElementById('hour').value = item.hour;
+        
+        // 設定目標時間 (若無則預設 2026)
+        document.getElementById('tYear').value = item.target_year || new Date().getFullYear() + 1;
+        document.getElementById('tMonth').value = item.target_month || 1;
+        document.getElementById('tDay').value = item.target_day || 1;
+        
+        // 恢復曆法設定
+        const calType = item.target_calendar || 'lunar';
+        const radio = document.querySelector(`input[name="calendarType"][value="${calType}"]`);
+        if(radio) radio.checked = true;
+        
+        const scope = item.target_scope || 'year';
+        document.getElementById('targetScope').value = scope;
+
+        // 2. [關鍵修復] 恢復客戶基本資料 (回填到存檔視窗中)
+        if(document.getElementById('crmName')) document.getElementById('crmName').value = item.client_name || '';
+        if(document.getElementById('crmPhone')) document.getElementById('crmPhone').value = item.phone || '';
+        if(document.getElementById('crmNote')) document.getElementById('crmNote').value = item.note || '';
+        
+        // 3. [關鍵修復] 恢復 AI 建議存檔
+        if(document.getElementById('crmAiContent')) {
+            if (item.ai_log && item.ai_log.saved_content) {
+                document.getElementById('crmAiContent').value = item.ai_log.saved_content;
+            } else {
+                document.getElementById('crmAiContent').value = '';
+            }
+        }
+
+        // 4. [關鍵修復] 恢復標籤 (Tags)
+        // 先清空現有選取
+        document.querySelectorAll('#tagList .tag-chip').forEach(chip => chip.classList.remove('selected'));
+        // 若有標籤，則重新點亮
+        if (item.tags && Array.isArray(item.tags)) {
+            item.tags.forEach(tagText => {
+                // 尋找對應文字的標籤並加上 selected class
+                const chips = document.querySelectorAll('#tagList .tag-chip');
+                for (let chip of chips) {
+                    if (chip.innerText === tagText) {
+                        chip.classList.add('selected');
+                        break;
+                    }
+                }
+            });
+        }
+
+        // 5. 更新介面並執行排盤
+        updateFormUI();
+        
+        // 顯示提示訊息 (包含客戶姓名，讓使用者有感)
+        const clientName = item.client_name || '未命名客戶';
+        alert(`📂 檔案調閱成功！\n\n案主：${clientName}\n參數：${item.solar_date} ${item.hour}時\n\n系統將自動開始推演...`);
+        
+        setTimeout(() => calculate(), 200);
+    }
     function callAIWithMode(mode) {
         if (!globalLastResult || !lastActiveAspect) { alert("請先排盤並選擇宮位"); return; }
         
@@ -1073,5 +1133,6 @@
 </script>
 </body>
 </html>
+
 
 
