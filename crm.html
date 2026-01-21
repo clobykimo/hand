@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩戰情室 (CRM V13.1 雙塔版)</title>
+    <title>達摩戰情室 (CRM V13.2 全頻段版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
@@ -13,51 +13,133 @@
         }
         body { background-color: var(--bg-color); color: var(--text-main); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        /* [V13.1] 雙欄佈局容器 */
+        /* 雙欄佈局容器 (Desktop First) */
         .layout-container {
             display: grid;
-            grid-template-columns: 1fr 320px; /* 左側彈性，右側固定 320px */
+            grid-template-columns: 1fr 320px; /* 左側彈性，右側固定 */
             gap: 20px;
             width: 100%;
-            max-width: 1600px; /* 加寬整體版面 */
+            max-width: 1600px;
             align-items: start;
         }
-        @media (max-width: 1000px) { .layout-container { grid-template-columns: 1fr; } } /* 手機版自動變單欄 */
+
+        /* -----------------------------------------------------------
+           [V13.2 核心] 手機響應式設計 (Media Query)
+           當螢幕小於 950px 時，啟動「戰術平板模式」
+           ----------------------------------------------------------- */
+        @media screen and (max-width: 950px) {
+            body { padding: 10px; }
+            
+            /* 1. 佈局重組：單欄模式 */
+            .layout-container { display: flex; flex-direction: column; }
+            
+            /* 2. 指揮塔 (Sidebar)：移到最上方 (Radar First) */
+            .sidebar { 
+                order: -1; /* CSS Flexbox 魔法：把順序改到最前 */
+                width: 100% !important; 
+                position: static !important; 
+                margin-bottom: 20px;
+                box-sizing: border-box;
+            }
+
+            /* 3. 表格變身：卡片化 (Card View) */
+            table, thead, tbody, th, td, tr { display: block; }
+            
+            /* 隱藏表頭 */
+            thead { display: none; }
+            
+            /* 將每一列 (tr) 變成一張卡片 */
+            tr {
+                margin-bottom: 20px;
+                background: #1a202c;
+                border: 1px solid var(--gold); /* 金邊卡片 */
+                border-radius: 8px;
+                padding: 15px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                position: relative;
+            }
+            
+            /* 每一格 (td) 變成一列 */
+            td {
+                padding: 8px 0;
+                border-bottom: 1px solid #333;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                text-align: right;
+                font-size: 1rem;
+            }
+            
+            /* 利用 data-label 屬性顯示標題 (如：客戶姓名) */
+            td::before {
+                content: attr(data-label);
+                color: var(--cyan);
+                font-weight: bold;
+                float: left;
+                margin-right: 10px;
+            }
+
+            /* 最後一格 (操作按鈕) 特殊處理 */
+            td:last-child {
+                border-bottom: none;
+                display: block; /* 讓按鈕垂直堆疊 */
+                margin-top: 15px;
+                padding-top: 10px;
+                border-top: 1px dashed #555;
+            }
+            td:last-child::before { display: none; } /* 不顯示 "操作" 兩字 */
+
+            /* 4. 按鈕優化：全寬大按鈕 */
+            .op-btn {
+                width: 100%;
+                margin: 0 0 10px 0 !important;
+                padding: 12px !important;
+                font-size: 1.1em !important;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            /* 搜尋列變形 */
+            .filter-bar { flex-direction: column; align-items: stretch !important; gap: 10px; }
+            .action-btn { width: 100%; margin-top: 10px; }
+            .header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .back-btn { width: 100%; justify-content: center; padding: 12px; border-radius: 8px; background: rgba(79,209,197,0.1); }
+        }
+        /* ----------------------------------------------------------- */
 
         /* 左側主內容區 */
-        .main-content { width: 100%; min-width: 0; /* 防止表格撐爆 Grid */ }
+        .main-content { width: 100%; min-width: 0; }
 
-        /* [V13.1] 右側指揮塔 (Sidebar) */
+        /* 右側指揮塔 (Sidebar) */
         .sidebar {
             background: var(--panel-bg);
             border: 1px solid #444;
             border-radius: 8px;
             padding: 20px;
             position: sticky;
-            top: 20px; /* 固定在視窗右側 */
+            top: 20px;
             height: fit-content;
             box-shadow: -5px 5px 15px rgba(0,0,0,0.3);
+            width: 320px; /* PC版固定寬度 */
         }
         .sidebar-section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #444; }
         .sidebar-title { color: var(--gold); font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-size: 1.1em; letter-spacing: 1px; }
         
-        /* 生日列表樣式 */
         .birthday-list { list-style: none; padding: 0; margin: 0; font-size: 0.9em; }
         .birthday-item { margin-bottom: 10px; display: flex; align-items: center; gap: 8px; color: #ccc; }
         .b-icon { color: var(--danger); font-size: 1.2em; }
         .b-date { color: var(--cyan); font-family: monospace; font-weight: bold; }
 
-        /* 待辦事項樣式 */
         .todo-input-group { display: flex; gap: 5px; margin-bottom: 10px; }
-        .todo-input { flex: 1; background: #111; border: 1px solid #555; color: #ddd; padding: 5px 8px; border-radius: 4px; font-size: 0.9em; }
-        .todo-add-btn { background: var(--cyan); border: none; color: #000; border-radius: 4px; padding: 0 10px; font-weight: bold; cursor: pointer; }
+        .todo-input { flex: 1; background: #111; border: 1px solid #555; color: #ddd; padding: 8px; border-radius: 4px; font-size: 0.9em; }
+        .todo-add-btn { background: var(--cyan); border: none; color: #000; border-radius: 4px; padding: 0 12px; font-weight: bold; cursor: pointer; }
         .todo-list { list-style: none; padding: 0; margin: 0; }
-        .todo-item { background: #151b24; padding: 8px; border-radius: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; border-left: 2px solid #555; transition: all 0.2s; }
+        .todo-item { background: #151b24; padding: 10px; border-radius: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; border-left: 2px solid #555; transition: all 0.2s; }
         .todo-item:hover { border-left-color: var(--gold); transform: translateX(3px); }
-        .todo-del { color: #666; cursor: pointer; font-size: 1.2em; line-height: 1; }
+        .todo-del { color: #666; cursor: pointer; font-size: 1.2em; line-height: 1; padding: 0 5px; }
         .todo-del:hover { color: var(--danger); }
 
-        /* 通用元件 */
         .header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--gold); padding-bottom: 15px; }
         .title { font-size: 1.8em; color: var(--gold); font-weight: bold; letter-spacing: 3px; display: flex; align-items: center; gap: 10px; }
         .back-btn { background: transparent; border: 1px solid var(--cyan); color: var(--cyan); padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 1em; transition: all 0.3s; text-decoration: none; display: flex; align-items: center; gap: 5px; }
@@ -75,7 +157,6 @@
         thead { background: #252f3a; color: var(--cyan); font-weight: bold; }
         th { padding: 15px; border-bottom: 2px solid var(--gold); white-space: nowrap; }
         td { padding: 15px; border-bottom: 1px solid #333; color: #ddd; vertical-align: middle; }
-        tr:hover { background: rgba(212, 175, 55, 0.05); }
         
         .col-date { color: #888; font-size: 0.9em; font-family: monospace; }
         .col-name { font-size: 1.1em; font-weight: bold; color: #fff; }
@@ -88,7 +169,7 @@
         .tag-pill { display: inline-block; background: #333; border: 1px solid #555; color: #aaa; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; margin-right: 4px; }
         .tag-vip { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.1); }
         
-        .heat-row { font-size: 0.75em; color: #ff6b6b; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+        .heat-row { font-size: 0.75em; color: #ff6b6b; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
         .heat-item { background: rgba(255, 77, 77, 0.1); border: 1px solid #553333; padding: 1px 5px; border-radius: 3px; }
 
         .op-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85em; font-weight: bold; transition: all 0.2s; margin-right: 5px; }
@@ -99,15 +180,15 @@
         .btn-del { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
         .btn-del:hover { background: var(--danger); color: white; }
 
-        /* Modal 相關 */
+        /* Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
         .modal-content { background: var(--panel-bg); border: 1px solid var(--gold); width: 900px; max-width: 95%; height: 85vh; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
         .modal-header { padding: 20px; border-bottom: 1px solid #444; background: #151b24; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; }
         .modal-title { margin: 0; color: var(--gold); font-size: 1.5em; letter-spacing: 2px; }
         .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
         
-        .tabs { display: flex; border-bottom: 1px solid #444; margin-bottom: 20px; }
-        .tab { padding: 10px 20px; cursor: pointer; color: #888; border-bottom: 3px solid transparent; font-weight: bold; transition: all 0.3s; }
+        .tabs { display: flex; border-bottom: 1px solid #444; margin-bottom: 20px; overflow-x: auto; }
+        .tab { padding: 10px 20px; cursor: pointer; color: #888; border-bottom: 3px solid transparent; font-weight: bold; transition: all 0.3s; white-space: nowrap; }
         .tab:hover { color: #ccc; }
         .tab.active { color: var(--cyan); border-color: var(--cyan); background: rgba(79, 209, 197, 0.05); }
         .tab-content { display: none; animation: fadeIn 0.3s; }
@@ -124,9 +205,12 @@
         .rel-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
         .rel-table th { text-align: left; color: var(--cyan); border-bottom: 1px solid #444; padding: 8px; }
         .rel-table td { padding: 8px; border-bottom: 1px solid #333; color: #eee; }
-        .add-rel-form { display: grid; grid-template-columns: 100px 100px 140px 60px 60px auto; gap: 10px; background: #111; padding: 15px; border-radius: 4px; margin-top: 15px; border: 1px dashed #444; }
+        .add-rel-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #111; padding: 15px; border-radius: 4px; margin-top: 15px; border: 1px dashed #444; }
+        @media (min-width: 600px) { .add-rel-form { grid-template-columns: 100px 100px 140px 60px 60px auto; } }
         
-        .consent-section { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 15px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #333; }
+        .consent-section { display: flex; flex-direction: column; gap: 10px; background: #111; padding: 15px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #333; }
+        @media (min-width: 600px) { .consent-section { flex-direction: row; justify-content: space-between; align-items: center; } }
+        
         .status-badge { padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
         .status-signed { background: var(--cyan); color: #000; }
         .status-unsigned { background: #555; color: #ccc; }
@@ -144,7 +228,7 @@
     <div class="main-content">
         <div class="header">
             <div class="title">
-                <span>📜</span> 達摩戰情室 <span style="font-size:0.5em; color:#666; margin-top:10px; margin-left:10px;">CRM V13.1</span>
+                <span>📜</span> 達摩戰情室 <span style="font-size:0.5em; color:#666; margin-top:10px; margin-left:10px;">CRM V13.2</span>
             </div>
             <a href="/" class="back-btn">⇦ 返回推演盤</a>
         </div>
@@ -244,7 +328,7 @@
                         <option value="子">子</option><option value="丑">丑</option><option value="寅">寅</option><option value="卯">卯</option><option value="辰">辰</option><option value="巳">巳</option>
                         <option value="午">午</option><option value="未">未</option><option value="申">申</option><option value="酉">酉</option><option value="戌">戌</option><option value="亥">亥</option>
                     </select>
-                    <button class="action-btn" style="height:42px; padding:0 15px;" onclick="addRelation()">＋</button>
+                    <button class="action-btn" style="padding:0 15px;" onclick="addRelation()">＋</button>
                 </div>
             </div>
 
@@ -279,7 +363,7 @@
 
     window.onload = function() { 
         loadData(); 
-        loadTodos(); // 載入待辦
+        loadTodos(); 
     };
 
     async function loadData() {
@@ -298,7 +382,6 @@
             loading.style.display = 'none';
             if (!data || data.length === 0) { emptyMsg.style.display = 'block'; return; }
 
-            // [V13.1] 壽星掃描 -> 渲染到右側 Sidebar
             renderBirthdays(data);
 
             data.forEach((item, index) => {
@@ -321,13 +404,14 @@
                     if(sorted.length > 0) heatHtml = `<div class="heat-row">🔥 關注: ${sorted.map(s=>`<span class="heat-item">${s[0]}</span>`).join('')}</div>`;
                 }
 
+                // [V13.2] 加入 data-label 屬性，供手機版 CSS 使用
                 tr.innerHTML = `
-                    <td class="col-date">${dateStr}</td>
-                    <td class="col-name">${item.client_name || '貴賓'}</td>
-                    <td class="col-chart">${genderBadge} ${birthInfo}</td>
-                    <td class="col-phone">${item.phone || '-'}</td>
-                    <td class="col-note">${heatHtml} ${tagsHtml} ${item.note || '<span style="opacity:0.3">無筆記</span>'}</td>
-                    <td>
+                    <td class="col-date" data-label="諮詢日期">${dateStr}</td>
+                    <td class="col-name" data-label="客戶姓名">${item.client_name || '貴賓'}</td>
+                    <td class="col-chart" data-label="本命參數">${genderBadge} ${birthInfo}</td>
+                    <td class="col-phone" data-label="聯絡電話">${item.phone || '-'}</td>
+                    <td class="col-note" data-label="戰略筆記">${heatHtml} ${tagsHtml} ${item.note || '<span style="opacity:0.3">無筆記</span>'}</td>
+                    <td data-label="戰術行動">
                         <button class="op-btn btn-load" onclick='restoreRecord(${index})'>📂 復盤</button>
                         <button class="op-btn btn-edit" onclick='openDetail(${index})'>✏️ 檔案</button>
                         <button class="op-btn btn-del" onclick="deleteRecord('${item.id}')">🗑️</button>
@@ -338,7 +422,6 @@
         } catch (e) { console.error(e); loading.innerText = "❌ 連線失敗"; }
     }
 
-    // [V13.1] 壽星渲染 (Sidebar)
     function renderBirthdays(data) {
         const listEl = document.getElementById('birthdayList');
         const today = new Date();
@@ -353,7 +436,6 @@
             const bMonth = parseInt(parts[1]);
             const bDay = parseInt(parts[2]);
 
-            // 簡單判斷：同月且日期>=今天，或下個月15號前
             let isComing = false;
             if (bMonth === tMonth && bDay >= tDay) isComing = true;
             else if (bMonth === (tMonth % 12) + 1 && bDay < 15) isComing = true;
@@ -362,9 +444,6 @@
                 bList.push({name: d.client_name, date: `${bMonth}/${bDay}`});
             }
         });
-
-        // 排序：日期近的在上面
-        // (這裡省略複雜排序，直接渲染)
         
         if (bList.length > 0) {
             listEl.innerHTML = bList.map(b => 
@@ -375,7 +454,6 @@
         }
     }
 
-    // [V13.1] 待辦事項 (LocalStorage)
     function loadTodos() {
         const todos = JSON.parse(localStorage.getItem('damo_todos') || '[]');
         const list = document.getElementById('todoList');
@@ -405,7 +483,6 @@
         loadTodos();
     }
 
-    // ... (以下為標準 CRM 邏輯，保持 V12.0 功能) ...
     function restoreRecord(index) {
         localStorage.setItem('damo_restore_data', JSON.stringify(currentData[index]));
         window.location.href = '/';
