@@ -399,21 +399,21 @@
     }
 
     // [V13.4 關鍵修復] 復盤機制強化：錯誤攔截 + 延遲跳轉
+// (CRM 端檢查用，不用修改，確認邏輯即可)
     function restoreRecord(index) {
         try {
-            const item = currentData[index];
+            // 這裡的 currentData[index] 必須是包含 client_name, phone 等所有欄位的完整物件
+            const item = currentData[index]; 
             if (!item) throw new Error("找不到該筆資料索引");
             
-            console.log("Saving to restore:", item);
+            // 這裡把「整包資料」塞進公事包
             localStorage.setItem('damo_restore_data', JSON.stringify(item));
             
-            // 給予按鈕反饋
             const btn = document.activeElement;
             if(btn) btn.innerText = "🔄 載入中...";
             
-            // 延遲 100ms 確保資料寫入，並使用絕對路徑跳轉
             setTimeout(() => {
-                window.location.href = window.location.origin; 
+                window.location.href = '/'; // 這裡跳轉回首頁
             }, 100);
         } catch(e) {
             alert("復盤失敗：" + e.message);
