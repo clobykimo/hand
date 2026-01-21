@@ -3,134 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩戰情室 (CRM V13.2 全頻段版)</title>
+    <title>達摩戰情室 (CRM V13.3 全知全能版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --bg-color: #121820; --panel-bg: #1e2732; --gold: #d4af37;
             --bronze: #8c7853; --cyan: #4fd1c5; --danger: #ff4d4d;
-            --text-main: #e0e0e0; --text-sub: #a0a0a0;
+            --text-main: #e0e0e0; --text-sub: #a0a0a0; --gpt-color: #10a37f;
         }
         body { background-color: var(--bg-color); color: var(--text-main); font-family: "Microsoft JhengHei", serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        /* 雙欄佈局容器 (Desktop First) */
+        /* 雙欄佈局容器 */
         .layout-container {
             display: grid;
-            grid-template-columns: 1fr 320px; /* 左側彈性，右側固定 */
+            grid-template-columns: 1fr 320px;
             gap: 20px;
             width: 100%;
             max-width: 1600px;
             align-items: start;
         }
 
-        /* -----------------------------------------------------------
-           [V13.2 核心] 手機響應式設計 (Media Query)
-           當螢幕小於 950px 時，啟動「戰術平板模式」
-           ----------------------------------------------------------- */
+        /* 手機響應式設計 */
         @media screen and (max-width: 950px) {
             body { padding: 10px; }
-            
-            /* 1. 佈局重組：單欄模式 */
             .layout-container { display: flex; flex-direction: column; }
-            
-            /* 2. 指揮塔 (Sidebar)：移到最上方 (Radar First) */
-            .sidebar { 
-                order: -1; /* CSS Flexbox 魔法：把順序改到最前 */
-                width: 100% !important; 
-                position: static !important; 
-                margin-bottom: 20px;
-                box-sizing: border-box;
-            }
-
-            /* 3. 表格變身：卡片化 (Card View) */
+            .sidebar { order: -1; width: 100% !important; position: static !important; margin-bottom: 20px; box-sizing: border-box; }
             table, thead, tbody, th, td, tr { display: block; }
-            
-            /* 隱藏表頭 */
             thead { display: none; }
-            
-            /* 將每一列 (tr) 變成一張卡片 */
-            tr {
-                margin-bottom: 20px;
-                background: #1a202c;
-                border: 1px solid var(--gold); /* 金邊卡片 */
-                border-radius: 8px;
-                padding: 15px;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-                position: relative;
-            }
-            
-            /* 每一格 (td) 變成一列 */
-            td {
-                padding: 8px 0;
-                border-bottom: 1px solid #333;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                text-align: right;
-                font-size: 1rem;
-            }
-            
-            /* 利用 data-label 屬性顯示標題 (如：客戶姓名) */
-            td::before {
-                content: attr(data-label);
-                color: var(--cyan);
-                font-weight: bold;
-                float: left;
-                margin-right: 10px;
-            }
-
-            /* 最後一格 (操作按鈕) 特殊處理 */
-            td:last-child {
-                border-bottom: none;
-                display: block; /* 讓按鈕垂直堆疊 */
-                margin-top: 15px;
-                padding-top: 10px;
-                border-top: 1px dashed #555;
-            }
-            td:last-child::before { display: none; } /* 不顯示 "操作" 兩字 */
-
-            /* 4. 按鈕優化：全寬大按鈕 */
-            .op-btn {
-                width: 100%;
-                margin: 0 0 10px 0 !important;
-                padding: 12px !important;
-                font-size: 1.1em !important;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
-
-            /* 搜尋列變形 */
+            tr { margin-bottom: 20px; background: #1a202c; border: 1px solid var(--gold); border-radius: 8px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+            td { padding: 8px 0; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; text-align: right; font-size: 1rem; }
+            td::before { content: attr(data-label); color: var(--cyan); font-weight: bold; float: left; margin-right: 10px; }
+            td:last-child { border-bottom: none; display: block; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #555; }
+            td:last-child::before { display: none; }
+            .op-btn { width: 100%; margin: 0 0 10px 0 !important; padding: 12px !important; font-size: 1.1em !important; display: flex; justify-content: center; align-items: center; }
             .filter-bar { flex-direction: column; align-items: stretch !important; gap: 10px; }
             .action-btn { width: 100%; margin-top: 10px; }
             .header { flex-direction: column; align-items: flex-start; gap: 10px; }
             .back-btn { width: 100%; justify-content: center; padding: 12px; border-radius: 8px; background: rgba(79,209,197,0.1); }
         }
-        /* ----------------------------------------------------------- */
 
-        /* 左側主內容區 */
         .main-content { width: 100%; min-width: 0; }
-
-        /* 右側指揮塔 (Sidebar) */
-        .sidebar {
-            background: var(--panel-bg);
-            border: 1px solid #444;
-            border-radius: 8px;
-            padding: 20px;
-            position: sticky;
-            top: 20px;
-            height: fit-content;
-            box-shadow: -5px 5px 15px rgba(0,0,0,0.3);
-            width: 320px; /* PC版固定寬度 */
-        }
+        .sidebar { background: var(--panel-bg); border: 1px solid #444; border-radius: 8px; padding: 20px; position: sticky; top: 20px; height: fit-content; box-shadow: -5px 5px 15px rgba(0,0,0,0.3); width: 320px; }
         .sidebar-section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #444; }
         .sidebar-title { color: var(--gold); font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-size: 1.1em; letter-spacing: 1px; }
-        
         .birthday-list { list-style: none; padding: 0; margin: 0; font-size: 0.9em; }
         .birthday-item { margin-bottom: 10px; display: flex; align-items: center; gap: 8px; color: #ccc; }
         .b-icon { color: var(--danger); font-size: 1.2em; }
         .b-date { color: var(--cyan); font-family: monospace; font-weight: bold; }
-
         .todo-input-group { display: flex; gap: 5px; margin-bottom: 10px; }
         .todo-input { flex: 1; background: #111; border: 1px solid #555; color: #ddd; padding: 8px; border-radius: 4px; font-size: 0.9em; }
         .todo-add-btn { background: var(--cyan); border: none; color: #000; border-radius: 4px; padding: 0 12px; font-weight: bold; cursor: pointer; }
@@ -157,7 +76,6 @@
         thead { background: #252f3a; color: var(--cyan); font-weight: bold; }
         th { padding: 15px; border-bottom: 2px solid var(--gold); white-space: nowrap; }
         td { padding: 15px; border-bottom: 1px solid #333; color: #ddd; vertical-align: middle; }
-        
         .col-date { color: #888; font-size: 0.9em; font-family: monospace; }
         .col-name { font-size: 1.1em; font-weight: bold; color: #fff; }
         .col-chart { font-size: 0.9em; color: #bbb; }
@@ -168,7 +86,6 @@
         .col-note { max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #888; font-style: italic; }
         .tag-pill { display: inline-block; background: #333; border: 1px solid #555; color: #aaa; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; margin-right: 4px; }
         .tag-vip { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.1); }
-        
         .heat-row { font-size: 0.75em; color: #ff6b6b; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
         .heat-item { background: rgba(255, 77, 77, 0.1); border: 1px solid #553333; padding: 1px 5px; border-radius: 3px; }
 
@@ -180,7 +97,6 @@
         .btn-del { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
         .btn-del:hover { background: var(--danger); color: white; }
 
-        /* Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
         .modal-content { background: var(--panel-bg); border: 1px solid var(--gold); width: 900px; max-width: 95%; height: 85vh; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
         .modal-header { padding: 20px; border-bottom: 1px solid #444; background: #151b24; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; }
@@ -228,7 +144,7 @@
     <div class="main-content">
         <div class="header">
             <div class="title">
-                <span>📜</span> 達摩戰情室 <span style="font-size:0.5em; color:#666; margin-top:10px; margin-left:10px;">CRM V13.2</span>
+                <span>📜</span> 達摩戰情室 <span style="font-size:0.5em; color:#666; margin-top:10px; margin-left:10px;">CRM V13.3</span>
             </div>
             <a href="/" class="back-btn">⇦ 返回推演盤</a>
         </div>
@@ -307,7 +223,11 @@
                     <div><label style="color:var(--cyan); font-size:0.9em;">電話</label><input type="text" id="editPhone" class="search-input"></div>
                 </div>
                 <label style="color:var(--cyan); font-size:0.9em;">戰略筆記</label>
-                <textarea id="editNote" style="width:100%; height:150px; background:#121820; color:#ddd; border:1px solid #555; padding:10px; margin-top:5px; border-radius:4px;"></textarea>
+                <textarea id="editNote" style="width:100%; height:100px; background:#121820; color:#ddd; border:1px solid #555; padding:10px; margin-top:5px; border-radius:4px; margin-bottom:15px;"></textarea>
+                
+                <label style="color:var(--gpt-color); font-size:0.9em;">🤖 AI 戰略存檔 (自動帶入)</label>
+                <textarea id="editAiSummary" style="width:100%; height:100px; background:#1a222c; color:#a0aec0; border:1px solid var(--gpt-color); padding:10px; margin-top:5px; border-radius:4px;"></textarea>
+
                 <div style="text-align:right; margin-top:15px;">
                     <button class="action-btn" onclick="saveData()">💾 更新檔案</button>
                 </div>
@@ -404,7 +324,6 @@
                     if(sorted.length > 0) heatHtml = `<div class="heat-row">🔥 關注: ${sorted.map(s=>`<span class="heat-item">${s[0]}</span>`).join('')}</div>`;
                 }
 
-                // [V13.2] 加入 data-label 屬性，供手機版 CSS 使用
                 tr.innerHTML = `
                     <td class="col-date" data-label="諮詢日期">${dateStr}</td>
                     <td class="col-name" data-label="客戶姓名">${item.client_name || '貴賓'}</td>
@@ -483,8 +402,15 @@
         loadTodos();
     }
 
+    // [V13.3 修復版] 強化復盤機制
     function restoreRecord(index) {
-        localStorage.setItem('damo_restore_data', JSON.stringify(currentData[index]));
+        const item = currentData[index];
+        if(!item) { alert("❌ 資料讀取錯誤，請刷新頁面"); return; }
+        
+        // 寫入 LocalStorage
+        localStorage.setItem('damo_restore_data', JSON.stringify(item));
+        
+        // 強制跳轉回首頁
         window.location.href = '/';
     }
 
@@ -500,6 +426,10 @@
         document.getElementById('editPhone').value = selectedItem.phone || '';
         document.getElementById('editNote').value = selectedItem.note || '';
         
+        // [V13.3] 讀取 AI 存檔
+        const aiContent = (selectedItem.ai_log && selectedItem.ai_log.saved_content) ? selectedItem.ai_log.saved_content : "";
+        document.getElementById('editAiSummary').value = aiContent;
+
         const badge = document.getElementById('consentBadge');
         if(selectedItem.consent_signed) { badge.innerText="已簽署"; badge.className="status-badge status-signed"; }
         else { badge.innerText="未簽署"; badge.className="status-badge status-unsigned"; }
@@ -518,6 +448,11 @@
         selectedItem.client_name = document.getElementById('editName').value;
         selectedItem.phone = document.getElementById('editPhone').value;
         selectedItem.note = document.getElementById('editNote').value;
+        
+        // [V13.3] 儲存 AI 筆記
+        if (!selectedItem.ai_log) selectedItem.ai_log = {};
+        selectedItem.ai_log.saved_content = document.getElementById('editAiSummary').value;
+
         try {
             await fetch(`/api/update_record/${selectedItem.id}`, {
                 method: 'POST',
@@ -525,7 +460,7 @@
                 body: JSON.stringify(selectedItem)
             });
             if(autoScan) await scanRisks();
-            else { alert("✅ 檔案已更新"); loadData(); }
+            else { alert("✅ 檔案已更新 (含 AI 筆記)"); loadData(); }
         } catch(e) { alert("存檔失敗"); }
     }
 
