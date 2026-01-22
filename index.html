@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V11.0 帝王決策版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V11.2 白話戰略版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -173,64 +173,61 @@
         .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; opacity: 0.3; pointer-events: none; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
         .ai-btn { background: var(--gpt-color); color: white; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight:bold; }
 
-/* [V11.1] 達摩時空羅盤 (左文右圖佈局) */
-    .compass-layout {
-        display: flex; align-items: center; justify-content: center; gap: 20px;
-        background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 20px;
-        min-height: 320px; position: relative;
-    }
+        /* [V11.1] 達摩時空羅盤 (左文右圖佈局) */
+        .compass-layout {
+            display: flex; align-items: center; justify-content: center; gap: 20px;
+            background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 20px;
+            min-height: 320px; position: relative;
+        }
+        .strategy-side {
+            flex: 1; display: flex; flex-direction: column; justify-content: center;
+            padding-left: 10px; border-left: 3px solid var(--gold); text-align: left; z-index: 10;
+        }
+        .strategy-title { color: var(--cyan); font-size: 0.9em; letter-spacing: 2px; margin-bottom: 10px; font-weight: bold; }
+        .strategy-text { color: #eee; font-size: 1.1em; font-weight: bold; line-height: 1.6; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .strategy-sub { font-size: 0.85em; color: #888; margin-top: 10px; font-style: italic; }
+        .strategy-detail { margin-top: 15px; font-size: 0.9em; line-height: 1.6; }
+        .strategy-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; margin-right: 5px; font-weight: bold; font-size: 0.8em; }
+        .badge-yi { background: rgba(79, 209, 197, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+        .badge-ji { background: rgba(255, 77, 77, 0.15); color: var(--danger); border: 1px solid var(--danger); }
+        
+        .compass-side {
+            width: 300px; height: 300px; position: relative;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .orbit-ring {
+            position: absolute; border-radius: 50%;
+            border: 1px dashed rgba(212, 175, 55, 0.3);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .orbit-outer { width: 100%; height: 100%; animation: rotate-slow 60s linear infinite; }
+        .orbit-middle { width: 65%; height: 65%; animation: rotate-rev 40s linear infinite; }
+        .orbit-inner { width: 35%; height: 35%; border: 2px solid var(--gold); background: rgba(212, 175, 55, 0.05); box-shadow: 0 0 15px rgba(212, 175, 55, 0.2); }
+        .star-node {
+            position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #1a202c; border: 1px solid var(--cyan); color: #ddd;
+            border-radius: 50%; font-size: 0.75em; font-weight: bold;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5); z-index: 2;
+            width: 50px; height: 50px; text-align: center;
+        }
+        .node-label { font-size: 0.7em; color: #888; margin-bottom: 0; line-height: 1; }
+        .node-star { color: var(--gold); font-size: 1.1em; line-height: 1.2; }
+        .pos-top { top: -25px; }
+        @keyframes rotate-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes rotate-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+        @media (max-width: 768px) {
+            .compass-layout { flex-direction: column-reverse; padding: 15px; }
+            .strategy-side { width: 100%; border-left: none; border-top: 3px solid var(--gold); padding-left: 0; padding-top: 15px; text-align: center; }
+            .compass-side { width: 260px; height: 260px; }
+            .star-node { width: 45px; height: 45px; font-size: 0.7em; }
+        }
 
-    /* 左側：戰略文字區 */
-    .strategy-side {
-        flex: 1; /* 佔用剩餘空間 */
-        display: flex; flex-direction: column; justify-content: center;
-        padding-left: 10px; border-left: 3px solid var(--gold);
-        text-align: left; z-index: 10;
-    }
-    .strategy-title { color: var(--cyan); font-size: 0.9em; letter-spacing: 2px; margin-bottom: 10px; font-weight: bold; }
-    .strategy-text { color: #eee; font-size: 1.1em; font-weight: bold; line-height: 1.6; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-    .strategy-sub { font-size: 0.85em; color: #888; margin-top: 10px; font-style: italic; }
-
-    /* 右側：羅盤動畫區 */
-    .compass-side {
-        width: 300px; height: 300px; position: relative;
-        display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0; /* 防止被擠壓 */
-    }
-
-    /* 羅盤軌道 (維持原樣) */
-    .orbit-ring {
-        position: absolute; border-radius: 50%;
-        border: 1px dashed rgba(212, 175, 55, 0.3);
-        display: flex; align-items: center; justify-content: center;
-    }
-    .orbit-outer { width: 100%; height: 100%; animation: rotate-slow 60s linear infinite; }
-    .orbit-middle { width: 65%; height: 65%; animation: rotate-rev 40s linear infinite; }
-    .orbit-inner { width: 35%; height: 35%; border: 2px solid var(--gold); background: rgba(212, 175, 55, 0.05); box-shadow: 0 0 15px rgba(212, 175, 55, 0.2); }
-
-    /* 星宿節點 */
-    .star-node {
-        position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        background: #1a202c; border: 1px solid var(--cyan); color: #ddd;
-        border-radius: 50%; font-size: 0.75em; font-weight: bold;
-        box-shadow: 0 0 10px rgba(0,0,0,0.5); z-index: 2;
-        width: 50px; height: 50px; text-align: center;
-    }
-    .node-label { font-size: 0.7em; color: #888; margin-bottom: 0; line-height: 1; }
-    .node-star { color: var(--gold); font-size: 1.1em; line-height: 1.2; }
-    
-    .pos-top { top: -25px; } /* 定位點修正 */
-
-    @keyframes rotate-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @keyframes rotate-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-    
-    /* 手機適配：改為上下排列 */
-    @media (max-width: 768px) {
-        .compass-layout { flex-direction: column-reverse; padding: 15px; }
-        .strategy-side { width: 100%; border-left: none; border-top: 3px solid var(--gold); padding-left: 0; padding-top: 15px; text-align: center; }
-        .compass-side { width: 260px; height: 260px; }
-        .star-node { width: 45px; height: 45px; font-size: 0.7em; }
-    }
+        #exportContainer {
+            position: fixed; left: -9999px; top: 0; width: 1200px; background: #101015; color: #e0e0e0;
+            padding: 40px; border: 10px double var(--gold); font-family: "Microsoft JhengHei", serif;
+            box-sizing: border-box; display: flex; flex-direction: column; gap: 25px;
+        }
         .export-header { border-bottom: 2px solid var(--gold); padding-bottom: 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .export-title { font-size: 2.5em; color: var(--gold); font-weight: bold; letter-spacing: 5px; text-shadow: 0 0 10px rgba(212,175,55,0.3); }
         .export-info { text-align: right; color: #aaa; font-size: 1.1em; line-height: 1.5; }
@@ -405,7 +402,7 @@
 
         <div class="card" style="background:#161625; border-color:var(--gpt-color);">
             <h3 class="card-header" onclick="toggleCard('aiBody')" style="color:var(--gpt-color);">
-                📜 達摩智囊．戰略參謀 <span style="font-size:0.7em; color:#888;">(V11.0)</span>
+                📜 達摩智囊．戰略參謀 <span style="font-size:0.7em; color:#888;">(V11.2)</span>
                 <span class="arrow-icon collapsed" style="margin-left:auto;">▼</span>
             </h3>
             <div id="aiBody" class="card-body collapsed">
@@ -470,7 +467,7 @@
             <div id="exportHighlights" class="highlight-content"></div>
         </div>
     </div>
-    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V11.0</div>
+    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V11.2</div>
 </div>
 
 <div id="saveModal" class="modal">
@@ -575,20 +572,80 @@
         }
     };
 
-    // [V11.0] 星宿戰略角色定義 (Strategic Roles)
-    const STAR_ROLES = {
-        '天貴': { role: '資源整合', action: '連結人脈', vibe: '吉' },
-        '天厄': { role: '風險控管', action: '防守避險', vibe: '凶' },
-        '天權': { role: '權力擴張', action: '展現魄力', vibe: '吉' },
-        '天破': { role: '破舊立新', action: '重組架構', vibe: '耗' },
-        '天奸': { role: '謀略佈局', action: '靈活談判', vibe: '智' },
-        '天文': { role: '知識深耕', action: '學習規劃', vibe: '吉' },
-        '天福': { role: '穩健獲利', action: '享受成果', vibe: '吉' },
-        '天驛': { role: '市場開拓', action: '向外奔波', vibe: '動' },
-        '天孤': { role: '核心聚焦', action: '獨立作業', vibe: '靜' },
-        '天刃': { role: '強勢執行', action: '斬斷亂麻', vibe: '殺' },
-        '天藝': { role: '技能展現', action: '精益求精', vibe: '才' },
-        '天壽': { role: '長期經營', action: '休養生息', vibe: '壽' }
+    // [V11.2] 星宿戰略情境地圖 (Strategic Context Map)
+    const STAR_STRATEGY_MAP = {
+        '天貴': { 
+            mood: '🌤️ 貴人相助期 (資源湧入)', 
+            yi: '連結人脈、尋求指導、整合資源', 
+            ji: '獨斷獨行、拒絕援助、傲慢自大',
+            insight_template: (yearRole) => `本月貴人運強，應借力使力，運用人脈來推動年度的【${yearRole}】目標。`
+        },
+        '天厄': { 
+            mood: '⛈️ 亂流顛簸期 (風險控管)', 
+            yi: '保守防禦、低調潛伏、盤點內部', 
+            ji: '擴大投資、輕率承諾、強出頭',
+            insight_template: (yearRole) => `本月運勢受阻，年度目標【${yearRole}】宜暫緩推進，首要任務是保存實力，留得青山在。`
+        },
+        '天權': { 
+            mood: '🦁 權力擴張期 (展現魄力)', 
+            yi: '建立威信、領導統御、果斷決策', 
+            ji: '猶豫不決、授權過度、依賴他人',
+            insight_template: (yearRole) => `本月氣場強大，是執行年度目標【${yearRole}】的最佳時機，請大膽展現領導力。`
+        },
+        '天破': { 
+            mood: '💔 破舊立新期 (重組架構)', 
+            yi: '清理舊帳、斷捨離、修正錯誤', 
+            ji: '墨守成規、修補爛攤、借貸擔保',
+            insight_template: (yearRole) => `本月易有耗損，這是在提醒您修正年度目標【${yearRole}】的執行方向，該捨則捨。`
+        },
+        '天奸': { 
+            mood: '🦊 謀略佈局期 (靈活應變)', 
+            yi: '談判協商、策略規劃、收集情報', 
+            ji: '誠實憨厚、正面衝突、亮出底牌',
+            insight_template: (yearRole) => `本月適合智取，請運用靈活手腕為年度目標【${yearRole}】掃除障礙。`
+        },
+        '天文': { 
+            mood: '📚 潛心修習期 (知識深耕)', 
+            yi: '進修學習、考取證照、規劃藍圖', 
+            ji: '盲目行動、急功近利、荒廢學業',
+            insight_template: (yearRole) => `本月利於思考，請透過學習為年度目標【${yearRole}】累積知識資本。`
+        },
+        '天福': { 
+            mood: '🎉 豐收享受期 (穩健獲利)', 
+            yi: '慶功宴客、享受生活、廣結善緣', 
+            ji: '孤僻自閉、過度節儉、愁眉苦臉',
+            insight_template: (yearRole) => `本月福氣滿滿，保持愉快心情有助於吸引好運，讓年度目標【${yearRole}】水到渠成。`
+        },
+        '天驛': { 
+            mood: '✈️ 奔波開拓期 (動中求財)', 
+            yi: '出差拜訪、開拓市場、搬遷異動', 
+            ji: '安於現狀、足不出戶、抗拒改變',
+            insight_template: (yearRole) => `本月宜動不宜靜，請走出去尋找機會，為年度目標【${yearRole}】注入新活水。`
+        },
+        '天孤': { 
+            mood: '🧘 孤獨專注期 (核心聚焦)', 
+            yi: '獨立作業、深度思考、專業鑽研', 
+            ji: '社交應酬、依賴團隊、隨波逐流',
+            insight_template: (yearRole) => `本月適合獨處，請專注於核心技術，為年度目標【${yearRole}】打造不可取代的優勢。`
+        },
+        '天刃': { 
+            mood: '⚔️ 強勢執行期 (斬斷亂麻)', 
+            yi: '快刀斬亂麻、執行紀律、外科手術', 
+            ji: '婦人之仁、拖泥帶水、感情用事',
+            insight_template: (yearRole) => `本月殺氣較重，利用這股力量剷除阻礙年度目標【${yearRole}】的絆腳石。`
+        },
+        '天藝': { 
+            mood: '🎨 才華展現期 (精益求精)', 
+            yi: '作品發表、技能展示、追求完美', 
+            ji: '粗製濫造、模仿抄襲、隱藏實力',
+            insight_template: (yearRole) => `本月是秀場，請展現您的專業才華，讓年度目標【${yearRole}】更具說服力。`
+        },
+        '天壽': { 
+            mood: '🐢 養精蓄銳期 (長線佈局)', 
+            yi: '休養生息、長期規劃、固守根本', 
+            ji: '急於求成、短線操作、過度透支',
+            insight_template: (yearRole) => `本月節奏放緩，請藉此機會調整呼吸，為年度目標【${yearRole}】的長跑儲備體力。`
+        }
     };
 
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
@@ -776,76 +833,82 @@
         fillLists(result, h);
     }
 
- // [V11.1] 時空羅盤生成器 (修復 undefined 與 佈局問題)
+    // [V11.2] 時空羅盤生成器 (白話戰略版)
     function fillLists(result, h) {
         if (result.trend_data) globalTrendData = result.trend_data;
         
-        // 1. 數據清洗函數 (解決 "天壽星" vs "天壽" 的匹配問題)
+        // 1. 數據清洗函數
         function getStarInfo(sourceObj) {
             if (!sourceObj) return null;
-            // 移除可能存在的 "星" 字，確保能對應到 STAR_ROLES
             const cleanName = sourceObj.name.replace('星', '');
-            const roleInfo = STAR_ROLES[cleanName] || { role: '運籌帷幄', action: '順勢而為', vibe: '吉' }; // 防呆預設值
+            // 優先讀取 STAR_STRATEGY_MAP，若無則讀取預設
+            const stratInfo = STAR_STRATEGY_MAP[cleanName] || { mood: '吉凶未定', yi: '待定', ji: '待定', insight_template: (y)=>`資料分析中` };
             return { 
                 zhi: sourceObj.zhi, 
-                star: cleanName, // 顯示時也不要帶 "星" 字，比較簡潔
-                ...roleInfo 
+                star: cleanName,
+                ...stratInfo
             };
         }
 
-        // 2. 提取並清洗戰略數據
         const sYear = getStarInfo(h.year);
         const sMonth = getStarInfo(h.month);
         const sDay = getStarInfo(h.day);
         
-        // 3. 生成帝王決策金句
-        let strategySentence = "運籌帷幄之中，決勝千里之外。";
-        let subSentence = "";
+        // 2. 生成情境戰略面板
+        let compassHtml = "";
         
         if (sYear && sMonth) {
-            // 邏輯：用 [流月手段] 來達成 [流年目標]
-            strategySentence = `本月戰術：運用<span style="color:var(--cyan)">【${sMonth.action}】</span>之手段，<br>以達成今年<span style="color:var(--gold)">【${sYear.role}】</span>之戰略目標。`;
-            
-            if (sDay) {
-                subSentence = `今日行動指南：${sDay.action} (${sDay.star}星)`;
-            }
-        } else {
-            strategySentence = "資料初始化中，請檢查排盤參數。";
-        }
+            // 自動生成戰略心法 (代入流年目標)
+            const yearRole = STAR_ROLES[sYear.star] ? STAR_ROLES[sYear.star].role : sYear.star; // 取得流年的「角色」 (如：權力擴張)
+            const insight = sMonth.insight_template(yearRole);
 
-        // 4. 繪製達摩時空羅盤 (左文右圖結構)
-        let compassHtml = `
-        <div class="compass-layout">
-            <div class="strategy-side">
-                <div class="strategy-title">⚔️ 時空戰略指引 ⚔️</div>
-                <div class="strategy-text">${strategySentence}</div>
-                ${subSentence ? `<div class="strategy-sub">${subSentence}</div>` : ''}
-            </div>
+            compassHtml = `
+            <div class="compass-layout">
+                <div class="strategy-side">
+                    <div class="strategy-title">⚔️ 達摩戰略指引 ⚔️</div>
+                    
+                    <div style="margin-bottom:12px;">
+                        <span style="font-size:1.1em; color:var(--gold); font-weight:bold;">${sMonth.mood}</span>
+                    </div>
+                    
+                    <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;">
+                        <div style="background:rgba(79, 209, 197, 0.1); padding:8px; border-radius:4px; border-left:3px solid var(--cyan);">
+                            <span style="color:var(--cyan); font-weight:bold;">✅ 宜：</span><span style="color:#eee;">${sMonth.yi}</span>
+                        </div>
+                        <div style="background:rgba(255, 77, 77, 0.1); padding:8px; border-radius:4px; border-left:3px solid var(--danger);">
+                            <span style="color:var(--danger); font-weight:bold;">❌ 忌：</span><span style="color:#ccc;">${sMonth.ji}</span>
+                        </div>
+                    </div>
 
-            <div class="compass-side">
-                <div class="orbit-ring orbit-outer">
-                    ${sDay ? `<div class="star-node pos-top" style="border-color:var(--p-day);">
-                                <span class="node-label">日</span>
-                                <span class="node-star" style="color:var(--p-day)">${sDay.star}</span>
-                              </div>` : ''}
-                </div>
-                
-                <div class="orbit-ring orbit-middle">
-                    ${sMonth ? `<div class="star-node pos-top" style="border-color:var(--p-month);">
-                                    <span class="node-label">月</span>
-                                    <span class="node-star" style="color:var(--p-month)">${sMonth.star}</span>
-                                </div>` : ''}
-                </div>
-                
-                <div class="orbit-ring orbit-inner">
-                    <div class="star-node" style="border:none; background:transparent; width:100%; height:100%; box-shadow:none;">
-                        <span class="node-label" style="color:var(--gold); margin-bottom:5px;">年戰略</span>
-                        <span class="node-star" style="font-size:1.3em;">${sYear ? sYear.star : '-'}</span>
+                    <div style="font-size:0.95em; color:#ddd; line-height:1.5; font-style:italic;">
+                        💡 顧問洞察：${insight}
                     </div>
                 </div>
-            </div>
-        </div>
-        `;
+
+                <div class="compass-side">
+                    <div class="orbit-ring orbit-outer">
+                        ${sDay ? `<div class="star-node pos-top" style="border-color:var(--p-day);">
+                                    <span class="node-label">日</span>
+                                    <span class="node-star" style="color:var(--p-day)">${sDay.star}</span>
+                                  </div>` : ''}
+                    </div>
+                    <div class="orbit-ring orbit-middle">
+                        ${sMonth ? `<div class="star-node pos-top" style="border-color:var(--p-month);">
+                                        <span class="node-label">月</span>
+                                        <span class="node-star" style="color:var(--p-month)">${sMonth.star}</span>
+                                    </div>` : ''}
+                    </div>
+                    <div class="orbit-ring orbit-inner">
+                        <div class="star-node" style="border:none; background:transparent; width:100%; height:100%; box-shadow:none;">
+                            <span class="node-label" style="color:var(--gold); margin-bottom:5px;">年戰略</span>
+                            <span class="node-star" style="font-size:1.3em;">${sYear ? sYear.star : '-'}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        } else {
+            compassHtml = `<div style="text-align:center; padding:20px; color:#888;">資料初始化中，請檢查排盤參數。</div>`;
+        }
         
         setHTML('hierarchyArea', compassHtml);
 
@@ -1148,7 +1211,8 @@
     function toggleTag(el) { el.classList.toggle('selected'); }
     function openAiNote() { const t = document.getElementById('aiResponseArea') ? document.getElementById('aiResponseArea').innerText : ''; document.getElementById('crmAiContent').value = (t.includes('請點擊')?'':t); }
     
-    async function confirmSave() {
+    // [V13.5 修復版] 完整復盤機制 (包含客戶基本資料回填)
+    function confirmSave() {
         const selectedTags = Array.from(document.querySelectorAll('#tagList .tag-chip.selected'))
                                   .map(chip => chip.innerText);
 
@@ -1188,8 +1252,6 @@
     }
 
     async function loadHistory() { window.location.href = '/crm'; }
-    
-    // [V13.5 修復版] 完整復盤機制 (包含客戶基本資料回填)
     function restoreFromHistory(item) {
         console.log("正在復盤客戶資料:", item);
 
@@ -1271,4 +1333,3 @@
 </script>
 </body>
 </html>
-
