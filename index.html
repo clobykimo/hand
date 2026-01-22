@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V10.5 深度批文版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V11.0 帝王決策版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -172,6 +172,43 @@
         .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; opacity: 0.3; pointer-events: none; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
         .ai-btn { background: var(--gpt-color); color: white; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight:bold; }
+
+        /* [V11.0] 達摩時空羅盤 (Time-Space Compass) */
+        .compass-container {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; position: relative;
+            min-height: 320px; overflow: hidden;
+        }
+        .orbit-ring {
+            position: absolute; border-radius: 50%;
+            border: 1px dashed rgba(212, 175, 55, 0.3);
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.5s ease-out;
+        }
+        .orbit-outer { width: 280px; height: 280px; animation: rotate-slow 60s linear infinite; }
+        .orbit-middle { width: 190px; height: 190px; animation: rotate-rev 40s linear infinite; }
+        .orbit-inner { width: 110px; height: 110px; border: 2px solid var(--gold); background: rgba(212, 175, 55, 0.05); box-shadow: 0 0 15px rgba(212, 175, 55, 0.2); }
+        .star-node {
+            position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #1a202c; border: 1px solid var(--cyan); color: #ddd;
+            border-radius: 50%; font-size: 0.8em; font-weight: bold;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5); z-index: 2;
+            width: 60px; height: 60px; text-align: center;
+        }
+        .node-label { font-size: 0.7em; color: #888; margin-bottom: 2px; }
+        .node-star { color: var(--gold); font-size: 1.1em; }
+        .pos-top { top: -30px; } 
+        .strategy-banner {
+            margin-top: 170px;
+            width: 100%; text-align: center; z-index: 10;
+            background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(212,175,55,0.1) 50%, rgba(0,0,0,0) 100%);
+            padding: 10px 0; border-top: 1px solid rgba(212,175,55,0.3); border-bottom: 1px solid rgba(212,175,55,0.3);
+        }
+        .strategy-title { color: var(--cyan); font-size: 0.8em; letter-spacing: 2px; margin-bottom: 5px; text-transform: uppercase; }
+        .strategy-text { color: #eee; font-size: 1.1em; font-weight: bold; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        @keyframes rotate-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes rotate-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+        @media (max-width: 400px) { .compass-container { transform: scale(0.9); } }
 
         #exportContainer {
             position: fixed; left: -9999px; top: 0; width: 1200px; background: #101015; color: #e0e0e0;
@@ -352,7 +389,7 @@
 
         <div class="card" style="background:#161625; border-color:var(--gpt-color);">
             <h3 class="card-header" onclick="toggleCard('aiBody')" style="color:var(--gpt-color);">
-                📜 達摩智囊．戰略參謀 <span style="font-size:0.7em; color:#888;">(V10.3)</span>
+                📜 達摩智囊．戰略參謀 <span style="font-size:0.7em; color:#888;">(V11.0)</span>
                 <span class="arrow-icon collapsed" style="margin-left:auto;">▼</span>
             </h3>
             <div id="aiBody" class="card-body collapsed">
@@ -417,7 +454,7 @@
             <div id="exportHighlights" class="highlight-content"></div>
         </div>
     </div>
-    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V10.5</div>
+    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V11.0</div>
 </div>
 
 <div id="saveModal" class="modal">
@@ -520,6 +557,22 @@
             "我剋": "批文: 辛苦求財，錙銖必較，財富險中求，勞碌奔波，每一分皆血汗。",
             "剋我": "批文: 財庫破洞，資金周轉不靈，防詐騙與劫奪，宜保守理財，佈施消災。"
         }
+    };
+
+    // [V11.0] 星宿戰略角色定義 (Strategic Roles)
+    const STAR_ROLES = {
+        '天貴': { role: '資源整合', action: '連結人脈', vibe: '吉' },
+        '天厄': { role: '風險控管', action: '防守避險', vibe: '凶' },
+        '天權': { role: '權力擴張', action: '展現魄力', vibe: '吉' },
+        '天破': { role: '破舊立新', action: '重組架構', vibe: '耗' },
+        '天奸': { role: '謀略佈局', action: '靈活談判', vibe: '智' },
+        '天文': { role: '知識深耕', action: '學習規劃', vibe: '吉' },
+        '天福': { role: '穩健獲利', action: '享受成果', vibe: '吉' },
+        '天驛': { role: '市場開拓', action: '向外奔波', vibe: '動' },
+        '天孤': { role: '核心聚焦', action: '獨立作業', vibe: '靜' },
+        '天刃': { role: '強勢執行', action: '斬斷亂麻', vibe: '殺' },
+        '天藝': { role: '技能展現', action: '精益求精', vibe: '才' },
+        '天壽': { role: '長期經營', action: '休養生息', vibe: '壽' }
     };
 
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
@@ -707,13 +760,63 @@
         fillLists(result, h);
     }
 
+    // [V11.0 帝王版] 時空羅盤生成器 (取代原本的純文字列表)
     function fillLists(result, h) {
         if (result.trend_data) globalTrendData = result.trend_data;
-        let hHtml = `<div class="hierarchy-step"><span class="step-label">大運</span><span class="step-value">${result.hierarchy.big_luck.zhi}宮 ${result.hierarchy.big_luck.name}</span></div>`;
-        hHtml += `<div class="hierarchy-step"><span class="step-label">流年</span><span class="step-value">${result.hierarchy.year.zhi}宮 ${result.hierarchy.year.name}</span></div>`;
-        if(result.hierarchy.month) hHtml += `<div class="hierarchy-step"><span class="step-label">流月</span><span class="step-value">${result.hierarchy.month.zhi}宮 ${result.hierarchy.month.name}</span></div>`;
-        setHTML('hierarchyArea', hHtml);
+        
+        // --- 1. 提取戰略數據 ---
+        const sYear = h.year ? { zhi: h.year.zhi, star: h.year.name, ...STAR_ROLES[h.year.name] } : null;
+        const sMonth = h.month ? { zhi: h.month.zhi, star: h.month.name, ...STAR_ROLES[h.month.name] } : null;
+        const sDay = h.day ? { zhi: h.day.zhi, star: h.day.name, ...STAR_ROLES[h.day.name] } : null;
+        
+        // --- 2. 生成帝王決策金句 ---
+        let strategySentence = "運籌帷幄之中，決勝千里之外。";
+        let strategyTitle = "時空戰略指引";
+        
+        if (sYear && sMonth) {
+            // 邏輯：用 [流月手段] 來達成 [流年目標]
+            strategySentence = `本月戰術：運用<span style="color:var(--cyan)">【${sMonth.action}】</span>之手段，<br>以達成今年<span style="color:var(--gold)">【${sYear.role}】</span>之戰略目標。`;
+            
+            if (sDay) {
+                strategySentence += `<br><span style="font-size:0.8em; color:#888; margin-top:5px; display:block;">今日行動：${sDay.action} (${sDay.star})</span>`;
+            }
+        }
 
+        // --- 3. 繪製達摩時空羅盤 (HTML) ---
+        let compassHtml = `
+        <div class="compass-container">
+            <div class="orbit-ring orbit-outer">
+                ${sDay ? `<div class="star-node pos-top" style="border-color:var(--p-day);">
+                            <span class="node-label">今日行動</span>
+                            <span class="node-star" style="color:var(--p-day)">${sDay.star}</span>
+                          </div>` : ''}
+            </div>
+            
+            <div class="orbit-ring orbit-middle">
+                ${sMonth ? `<div class="star-node pos-top" style="border-color:var(--p-month);">
+                                <span class="node-label">本月戰術</span>
+                                <span class="node-star" style="color:var(--p-month)">${sMonth.star}</span>
+                            </div>` : ''}
+            </div>
+            
+            <div class="orbit-ring orbit-inner">
+                <div class="star-node" style="border:none; background:transparent; width:100%; height:100%;">
+                    <span class="node-label" style="color:var(--gold); font-weight:bold;">年度戰略</span>
+                    <span class="node-star" style="font-size:1.4em;">${sYear ? sYear.star : '-'}</span>
+                    <span class="node-label" style="margin-top:2px;">${sYear ? sYear.role : ''}</span>
+                </div>
+            </div>
+
+            <div class="strategy-banner">
+                <div class="strategy-title">⚔️ ${strategyTitle} ⚔️</div>
+                <div class="strategy-text">${strategySentence}</div>
+            </div>
+        </div>
+        `;
+        
+        setHTML('hierarchyArea', compassHtml);
+
+        // --- 以下維持原有的運勢列表邏輯 (不變) ---
         let aHtml = '';
         let dataIndex = result.trend_data.target_index; 
         if (dataIndex === -1 && globalTrendData.axis_labels.length > 0) dataIndex = Math.floor(globalTrendData.axis_labels.length / 2);
@@ -767,7 +870,10 @@
                     <div style="font-size:0.75em;color:#888; margin-top:2px;">${a.zhi}|<b style="color:#ddd;">${a.star}</b></div>
                 </div>
                 <div style="flex:1;padding:0 5px;"><div style="display:flex;align-items:center;"><div style="width:70px;text-align:right;font-weight:bold;color:${barColor};">${score} ${compHtml}</div><div class="progress-container"><div class="progress-bar" style="width:${score}%;background:${barColor};"></div></div></div><div class="aspect-advice" style="font-size:0.8em;opacity:0.8;">${getStrategicAdvice(a.name, a.relation, a.star)}</div></div>
-                <div style="display:flex;align-items:center;gap:5px;"><div class="aspect-tag" style="background:${getStatusColor(a.relation)};font-size:0.7em;">${a.relation}</div><button class="mini-ai-btn" onclick="event.stopPropagation();lastActiveAspect='${a.name}';callAIWithMode('script')">📜</button></div>
+                <div style="display:flex;align-items:center;gap:5px;">
+                    <div class="aspect-tag" style="background:${getStatusColor(a.relation)};font-size:0.7em;">${a.relation}</div>
+                    <button class="mini-ai-btn" onclick="event.stopPropagation();lastActiveAspect='${a.name}';callAIWithMode('script')">📜</button>
+                </div>
             </div>`;
         });
         setHTML('aspectsList', aHtml);
@@ -864,6 +970,14 @@
     async function sendToAI(message) {
         if (!globalLastResult) { alert("請先進行排盤"); return; }
         if (!message) return;
+        
+        // 如果側邊欄是收起來的，自動打開
+        const aiBody = document.getElementById('aiBody');
+        if (aiBody.classList.contains('collapsed')) {
+            toggleCard('aiBody');
+        }
+        aiBody.scrollIntoView({behavior: "smooth"});
+
         addChatBubble(message, 'user'); document.getElementById('userChatInput').value = '';
         const loadingId = addChatBubble("智囊推演中...", 'ai', true);
         const scoreIndex = globalTrendData.target_index || 0;
@@ -875,6 +989,32 @@
             addChatBubble(data.reply, 'ai');
             chatHistory.push({"role": "user", "content": message}); chatHistory.push({"role": "assistant", "content": data.reply});
         } catch (e) { document.getElementById(loadingId).innerText = "連線錯誤，請重試。"; }
+    }
+
+    // [V10.6 修復版] 讓按鈕真的會說話
+    function callAIWithMode(mode) {
+        if (!globalLastResult || !lastActiveAspect) { alert("請先排盤並選擇宮位"); return; }
+        
+        // 1. 取得當前宮位的關係 (生我/剋我)
+        const aspectData = globalLastResult.aspects.find(a => a.name === lastActiveAspect);
+        const relation = aspectData ? aspectData.relation : "未知";
+        const star = aspectData ? aspectData.star : "未知";
+        
+        // 2. 構建戰略指令 (引用新的禪機批文)
+        const prompt = `請以徐峰老師的戰略顧問身分，針對案主的【${lastActiveAspect}宮】進行深度解析。
+        
+        【當前參數】：
+        - 星宿：${star}
+        - 關係：${relation} (請解釋這代表什麼能量互動)
+        - 批文參考：${getStrategicAdvice(lastActiveAspect, relation, star)}
+        
+        【回答要求】：
+        1. 用白話文解釋這個宮位目前的吉凶趨勢。
+        2. 給出 3 個具體的行動建議（Action Plan）。
+        3. 語氣要專業、肯定，帶有戰略指導的高度。`;
+
+        // 3. 發送給 AI
+        sendToAI(prompt);
     }
 
     function manualSend() { const input = document.getElementById('userChatInput'); sendToAI(input.value); }
@@ -1013,21 +1153,19 @@
     }
 
     async function loadHistory() { window.location.href = '/crm'; }
+    
     // [V13.5 修復版] 完整復盤機制 (包含客戶基本資料回填)
     function restoreFromHistory(item) {
         console.log("正在復盤客戶資料:", item);
 
-        // 1. 恢復排盤參數 (原本只有這一段)
         document.getElementById('solarDate').value = item.solar_date;
         document.getElementById('gender').value = item.gender;
         document.getElementById('hour').value = item.hour;
         
-        // 設定目標時間 (若無則預設 2026)
         document.getElementById('tYear').value = item.target_year || new Date().getFullYear() + 1;
         document.getElementById('tMonth').value = item.target_month || 1;
         document.getElementById('tDay').value = item.target_day || 1;
         
-        // 恢復曆法設定
         const calType = item.target_calendar || 'lunar';
         const radio = document.querySelector(`input[name="calendarType"][value="${calType}"]`);
         if(radio) radio.checked = true;
@@ -1035,12 +1173,10 @@
         const scope = item.target_scope || 'year';
         document.getElementById('targetScope').value = scope;
 
-        // 2. [關鍵修復] 恢復客戶基本資料 (回填到存檔視窗中)
         if(document.getElementById('crmName')) document.getElementById('crmName').value = item.client_name || '';
         if(document.getElementById('crmPhone')) document.getElementById('crmPhone').value = item.phone || '';
         if(document.getElementById('crmNote')) document.getElementById('crmNote').value = item.note || '';
         
-        // 3. [關鍵修復] 恢復 AI 建議存檔
         if(document.getElementById('crmAiContent')) {
             if (item.ai_log && item.ai_log.saved_content) {
                 document.getElementById('crmAiContent').value = item.ai_log.saved_content;
@@ -1049,13 +1185,9 @@
             }
         }
 
-        // 4. [關鍵修復] 恢復標籤 (Tags)
-        // 先清空現有選取
         document.querySelectorAll('#tagList .tag-chip').forEach(chip => chip.classList.remove('selected'));
-        // 若有標籤，則重新點亮
         if (item.tags && Array.isArray(item.tags)) {
             item.tags.forEach(tagText => {
-                // 尋找對應文字的標籤並加上 selected class
                 const chips = document.querySelectorAll('#tagList .tag-chip');
                 for (let chip of chips) {
                     if (chip.innerText === tagText) {
@@ -1066,43 +1198,17 @@
             });
         }
 
-        // 5. 更新介面並執行排盤
         updateFormUI();
         
-        // 顯示提示訊息 (包含客戶姓名，讓使用者有感)
         const clientName = item.client_name || '未命名客戶';
         alert(`📂 檔案調閱成功！\n\n案主：${clientName}\n參數：${item.solar_date} ${item.hour}時\n\n系統將自動開始推演...`);
         
         setTimeout(() => calculate(), 200);
     }
-    function callAIWithMode(mode) {
-        if (!globalLastResult || !lastActiveAspect) { alert("請先排盤並選擇宮位"); return; }
-        
-        // 1. 取得當前宮位的關係 (生我/剋我)
-        const aspectData = globalLastResult.aspects.find(a => a.name === lastActiveAspect);
-        const relation = aspectData ? aspectData.relation : "未知";
-        const star = aspectData ? aspectData.star : "未知";
-        
-        // 2. 構建戰略指令 (引用新的禪機批文)
-        const prompt = `請以徐峰老師的戰略顧問身分，針對案主的【${lastActiveAspect}宮】進行深度解析。
-        
-        【當前參數】：
-        - 星宿：${star}
-        - 關係：${relation} (請解釋這代表什麼能量互動)
-        - 批文參考：${getStrategicAdvice(lastActiveAspect, relation, star)}
-        
-        【回答要求】：
-        1. 用白話文解釋這個宮位目前的吉凶趨勢。
-        2. 給出 3 個具體的行動建議（Action Plan）。
-        3. 語氣要專業、肯定，帶有戰略指導的高度。`;
 
-        // 3. 發送給 AI
-        sendToAI(prompt);
-    }
     function getInteractionDetails(guestEl, score) { let icon = "", desc = ""; if (score >= 80) { icon = `<span style="color:#888;">客(${guestEl})</span> <span style="color:var(--status-best); font-weight:bold;">滋養➝</span> <span style="color:#fff;">我(主)</span>`; desc = "運氣好：此宮位的人事物來成就我"; } else if (score >= 75) { icon = `<span style="color:#888;">客(${guestEl})</span> <span style="color:var(--status-good); font-weight:bold;">幫扶＝</span> <span style="color:#fff;">我(主)</span>`; desc = "運氣平順：此宮位與我同心協力"; } else if (score >= 60) { icon = `<span style="color:#fff;">我(主)</span> <span style="color:#aaa;">洩氣➝</span> <span style="color:#888;">客(${guestEl})</span>`; desc = "平運(及格)：我在滋養這個宮位，才華展現"; } else if (score >= 35) { icon = `<span style="color:#fff;">我(主)</span> <span style="color:#d69e2e;">壓制⚔️</span> <span style="color:#888;">客(${guestEl})</span>`; desc = "驚濤駭浪：我要去奮鬥、掌控局面"; } else { icon = `<span style="color:#888;">客(${guestEl})</span> <span style="color:var(--status-bad);">折磨⚔️</span> <span style="color:#fff;">我(主)</span>`; desc = "有災難：此宮位的人事物來攻擊我"; } return { icon, desc }; }
     function openAuditModal() { if (!globalLastResult || !globalTrendData) { alert("請先排盤"); return; } const modal = document.getElementById('auditModal'); const contentDiv = modal.querySelector('.modal-content'); contentDiv.style.cssText = `background-color: #1e2732; border: 1px solid var(--gold); border-radius: 8px; width: 95%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; padding: 0; box-shadow: 0 0 50px rgba(0,0,0,0.9);`; const currentYear = document.getElementById('tYear').value; const headerHTML = `<div style="padding:15px 20px; border-bottom:1px solid #444; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; background:#151b24; border-radius:8px 8px 0 0;"><h3 style="margin:0; color:var(--gold);">📊 戰略算分稽核表 (年份: <span id="auditYear">${currentYear}</span>)</h3><button onclick="document.getElementById('auditModal').style.display='none'" style="background:none; border:none; color:#888; font-size:1.5em; cursor:pointer;">×</button></div>`; const bodyStartHTML = `<div style="padding:20px; overflow-y:auto; flex:1;"><div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:6px; margin-bottom:15px; font-size:0.9em; color:#ccc; line-height:1.6;"><strong style="color:var(--gold);">💡 達摩一掌經・核心邏輯 (主客對調版)</strong><br><ul style="margin:5px 0 0 20px; padding:0; color:#aaa;"><li><strong>主角 (我/Host)：</strong>流年總命運 (當年的本命能量)。</li><li><strong>客人 (他/Guest)：</strong>各個宮位 (事業、健康、財運...)。</li><li><strong>吉凶判斷：</strong>看「客人」對「我」做了什麼？(客生我=吉，客剋我=凶)。</li><li><strong>分數範圍：</strong>80(生我), 75(比旺), 60(我生), 35(我剋), 20(剋我)。</li></ul></div><div style="overflow-x:auto;"><table style="width:100%; border-collapse: collapse; font-size:0.9em; color:#ddd;"><thead style="background:#252f3a; color:var(--cyan);"><tr><th style="padding:10px; text-align:left;">客 (宮位)</th><th style="padding:10px; text-align:left;">互動關係 (客 vs 我)</th><th style="padding:10px; text-align:right; color:#bbb;">運氣(L1)</th><th style="padding:10px; text-align:right; color:#bbb;">宮位(L2)</th><th style="padding:10px; text-align:right; color:#bbb;">人和(L3)</th><th style="padding:10px; text-align:right; border-left:1px solid #444; color:var(--gold);">原始</th><th style="padding:10px; text-align:right; color:var(--cyan);">最終</th></tr></thead><tbody id="auditTableBody">`; let rowsHTML = ''; let dataIndex = -1; if (globalTrendData.target_index !== undefined) { dataIndex = globalTrendData.target_index; } else if (globalTrendData.axis_labels.length > 0) { dataIndex = Math.floor(globalTrendData.axis_labels.length/2); } if (dataIndex === -1) { rowsHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">無法取得此年份數據</td></tr>'; } else { const renheObj = globalTrendData.renhe_scores[dataIndex]; const renheScore = renheObj ? renheObj.score : 0; const renheStar = renheObj ? renheObj.star : "-"; globalLastResult.aspects.forEach(aspect => { const name = aspect.name; const baseScore = globalTrendData.datasets[name][dataIndex]; const gradeAndRoot = globalTrendData.adjustments[name][dataIndex]; const rawSum = baseScore + gradeAndRoot + renheScore; const finalScore = Math.max(5, Math.min(95, rawSum)); const details = getInteractionDetails(aspect.element, baseScore); let gradeColor = gradeAndRoot > 0 ? '#ffd700' : (gradeAndRoot < 0 ? '#ff4d4d' : '#666'); let renheColor = renheScore > 0 ? '#4fd1c5' : (renheScore < 0 ? '#ff4d4d' : '#666'); rowsHTML += `<tr style="border-bottom:1px solid #333;"><td style="padding:10px;"><div style="font-weight:bold; color:var(--cyan);">${name}</div><div style="font-size:0.8em; color:#888;">${aspect.zhi}宮 ${aspect.star}</div></td><td style="padding:10px; font-family:monospace; font-size:0.9em;">${details.icon}<br><span style="color:#aaa; font-size:0.8em;">${details.desc}</span></td><td style="padding:10px; text-align:right; font-family:monospace; color:#bbb; font-size:1.1em;">${baseScore}</td><td style="padding:10px; text-align:right; font-family:monospace; color:${gradeColor}; font-size:0.9em;">${gradeAndRoot>0?'+'+gradeAndRoot:gradeAndRoot}</td><td style="padding:10px; text-align:right; font-family:monospace; color:${renheColor}; font-size:0.9em;">${renheScore>0?'+'+renheScore:renheScore}<br><span style="font-size:0.7em; color:#888;">(${renheStar})</span></td><td style="padding:10px; text-align:right; border-left:1px solid #444; color:#ddd; font-family:monospace; font-size:1.1em;">${rawSum}</td><td style="padding:10px; text-align:right;"><div style="background:${finalScore>=80?'var(--status-best)':(finalScore<=40?'var(--status-bad)':'#444')}; color:#1a2634; padding:2px 8px; border-radius:4px; font-weight:bold;">${finalScore}</div></td></tr>`; }); } const bodyEndHTML = `</tbody></table></div></div>`; contentDiv.innerHTML = headerHTML + bodyStartHTML + rowsHTML + bodyEndHTML; modal.style.display = 'flex'; }
 
-    updateFormUI(); initMap();
     // [V10.7 修復] 強制監聽頁面顯示事件，解決快取問題
     function checkAndRestore() {
         console.log("Checking for restore data...");
@@ -1112,27 +1218,21 @@
                 const item = JSON.parse(restoreDataStr);
                 console.log("Restoring:", item);
                 restoreFromHistory(item);
-                localStorage.removeItem('damo_restore_data'); // 讀取後清除，避免重複
+                localStorage.removeItem('damo_restore_data'); 
             } catch(e) {
                 console.error("Restore failed:", e);
-                localStorage.removeItem('damo_restore_data'); // 壞檔也清除
+                localStorage.removeItem('damo_restore_data');
             }
         }
     }
 
     updateFormUI(); initMap();
-    
-    // 同時綁定 onload 和 pageshow，雙重保險
     window.onload = checkAndRestore;
     window.onpageshow = function(event) {
         if (event.persisted) {
-            // 如果是從快取載入 (BFCache)，強制再檢查一次
             checkAndRestore();
         }
     };
 </script>
 </body>
 </html>
-
-
-
