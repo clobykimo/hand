@@ -3,17 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V11.5 除錯重構版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V11.6 結構重整版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    
-    <script>
-        window.onerror = function(msg, url, line, col, error) {
-            alert("⚠️ 系統發生內部錯誤，請截圖給工程師：\n\n" + msg + "\nLine: " + line);
-            return false;
-        };
-    </script>
-
     <style>
         :root {
             --bg-color: #121820; --panel-bg: #1e2732; --gold: #d4af37;
@@ -69,7 +61,6 @@
         .card-body { overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), opacity 0.4s ease-in-out, margin-top 0.4s; max-height: 2000px; opacity: 1; margin-top: 15px; }
         .card-body.collapsed { max-height: 0; opacity: 0; margin-top: 0; }
         
-        /* Map Styles */
         .twelve-palaces-map { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 130px); gap: 12px; padding: 15px; margin-top: 0; background: rgba(0,0,0,0.2); border: 1px solid #444; border-radius: 8px; grid-template-areas: "si wu wei shen" "chen . . you" "mao . . xu" "yin chou zi hai"; }
         .grid-cell { position: relative; background: #2a3544; border: 1px solid #3f4a5a; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
         .grid-cell.active { border-color: var(--gold); background: #3a4555; }
@@ -85,7 +76,6 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
-        /* HUD Capsule */
         .hud-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 15px; }
         .hud-capsule { display: flex; align-items: center; background: rgba(0, 0, 0, 0.4); border-radius: 4px; border: 1px solid #333; overflow: hidden; font-family: "Microsoft JhengHei", monospace; font-size: 0.85em; }
         .hud-capsule.solar { border-color: rgba(79, 209, 197, 0.3); }
@@ -96,7 +86,6 @@
         .hud-value { padding: 2px 8px; color: #eee; font-weight: bold; letter-spacing: 0.5px; }
         .hud-transfer-icon { color: var(--gold); font-size: 1.1em; font-weight: bold; opacity: 0.8; }
 
-        /* Pillars & Patterns */
         .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         .pillar-card { background: #252f3a; border: 1px solid #4a5568; border-radius: 6px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
         .pillar-card:hover { transform: translateY(-3px); border-color: var(--gold); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
@@ -117,7 +106,6 @@
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Chat Window */
         .chat-window { background: #0f1319; border: 1px solid #333; border-radius: 8px; height: 300px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px; }
         .chat-message { max-width: 85%; padding: 10px 14px; border-radius: 12px; line-height: 1.5; font-size: 0.95em; position: relative; word-wrap: break-word; }
         .chat-message.user { align-self: flex-end; background: linear-gradient(135deg, var(--bronze), var(--gold)); color: #1a2634; border-bottom-right-radius: 2px; font-weight: bold; }
@@ -127,7 +115,6 @@
         .chat-input-area { display: flex; gap: 10px; }
         .chat-input { flex: 1; background: #151b24; border: 1px solid #4a5568; color: white; padding: 10px; border-radius: 4px; }
 
-        /* Dashboard Components */
         .aspect-row { border-bottom: 1px solid #333; padding: 14px 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: background 0.2s; }
         .aspect-row.clickable { cursor: pointer; border-left: 3px solid transparent; }
         .aspect-row.clickable:hover { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
@@ -162,7 +149,6 @@
         input:checked + .slider:before { transform: translateX(18px); background-color: #1a2634; }
         .switch:hover .slider { border-color: #888; }
 
-        /* [V11.1] 達摩時空羅盤 (左文右圖佈局) */
         .compass-layout {
             display: flex; align-items: center; justify-content: center; gap: 20px;
             background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 20px;
@@ -175,6 +161,10 @@
         .strategy-title { color: var(--cyan); font-size: 0.9em; letter-spacing: 2px; margin-bottom: 10px; font-weight: bold; }
         .strategy-text { color: #eee; font-size: 1.1em; font-weight: bold; line-height: 1.6; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .strategy-sub { font-size: 0.85em; color: #888; margin-top: 10px; font-style: italic; }
+        .strategy-detail { margin-top: 15px; font-size: 0.9em; line-height: 1.6; }
+        .strategy-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; margin-right: 5px; font-weight: bold; font-size: 0.8em; }
+        .badge-yi { background: rgba(79, 209, 197, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+        .badge-ji { background: rgba(255, 77, 77, 0.15); color: var(--danger); border: 1px solid var(--danger); }
         
         .compass-side {
             width: 300px; height: 300px; position: relative;
@@ -207,30 +197,6 @@
             .compass-side { width: 260px; height: 260px; }
             .star-node { width: 45px; height: 45px; font-size: 0.7em; }
         }
-
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
-        .modal-content { background-color: #1e2732; border: 1px solid var(--gold); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
-        .modal h3 { color: var(--gold); margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .tag-container { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
-        .tag-chip { font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: #333; cursor: pointer; border: 1px solid #555; user-select: none; color: #ddd; }
-        .tag-chip.selected { background: var(--cyan); color: #000; border-color: var(--cyan); }
-        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-
-        @media (max-width: 950px) { 
-            .dashboard { grid-template-columns: 1fr; } 
-            .control-panel { position: static; } 
-            .header-controls { position: static; margin-bottom: 15px; }
-        }
-        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; }
-        .spinner { border: 4px solid #333; border-top: 4px solid var(--gold); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
-        .show-content { opacity: 1 !important; }
-        .input-group { display: none; }
-        .input-group.show { display: block; }
-        .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; opacity: 0.3; pointer-events: none; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
-        .ai-btn { background: var(--gpt-color); color: white; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight:bold; }
 
         #exportContainer {
             position: fixed; left: -9999px; top: 0; width: 1200px; background: #101015; color: #e0e0e0;
@@ -411,7 +377,7 @@
 
         <div class="card" style="background:#161625; border-color:var(--gpt-color);">
             <h3 class="card-header" onclick="toggleCard('aiBody')" style="color:var(--gpt-color);">
-                📜 達摩智囊．戰略參謀 <span style="font-size:0.7em; color:#888;">(V11.5)</span>
+                📜 達摩智囊．戰略參謀 <span style="font-size:0.7em; color:#888;">(V11.2)</span>
                 <span class="arrow-icon collapsed" style="margin-left:auto;">▼</span>
             </h3>
             <div id="aiBody" class="card-body collapsed">
@@ -476,7 +442,7 @@
             <div id="exportHighlights" class="highlight-content"></div>
         </div>
     </div>
-    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V11.5</div>
+    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V11.6</div>
 </div>
 
 <div id="saveModal" class="modal">
