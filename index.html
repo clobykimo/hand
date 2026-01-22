@@ -173,48 +173,64 @@
         .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; opacity: 0.3; pointer-events: none; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
         .ai-btn { background: var(--gpt-color); color: white; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight:bold; }
 
-        /* [V11.0] 達摩時空羅盤 (Time-Space Compass) */
-        .compass-container {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 20px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; position: relative;
-            min-height: 320px; overflow: hidden;
-        }
-        .orbit-ring {
-            position: absolute; border-radius: 50%;
-            border: 1px dashed rgba(212, 175, 55, 0.3);
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.5s ease-out;
-        }
-        .orbit-outer { width: 280px; height: 280px; animation: rotate-slow 60s linear infinite; }
-        .orbit-middle { width: 190px; height: 190px; animation: rotate-rev 40s linear infinite; }
-        .orbit-inner { width: 110px; height: 110px; border: 2px solid var(--gold); background: rgba(212, 175, 55, 0.05); box-shadow: 0 0 15px rgba(212, 175, 55, 0.2); }
-        .star-node {
-            position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: #1a202c; border: 1px solid var(--cyan); color: #ddd;
-            border-radius: 50%; font-size: 0.8em; font-weight: bold;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5); z-index: 2;
-            width: 60px; height: 60px; text-align: center;
-        }
-        .node-label { font-size: 0.7em; color: #888; margin-bottom: 2px; }
-        .node-star { color: var(--gold); font-size: 1.1em; }
-        .pos-top { top: -30px; } 
-        .strategy-banner {
-            margin-top: 170px;
-            width: 100%; text-align: center; z-index: 10;
-            background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(212,175,55,0.1) 50%, rgba(0,0,0,0) 100%);
-            padding: 10px 0; border-top: 1px solid rgba(212,175,55,0.3); border-bottom: 1px solid rgba(212,175,55,0.3);
-        }
-        .strategy-title { color: var(--cyan); font-size: 0.8em; letter-spacing: 2px; margin-bottom: 5px; text-transform: uppercase; }
-        .strategy-text { color: #eee; font-size: 1.1em; font-weight: bold; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-        @keyframes rotate-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes rotate-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-        @media (max-width: 400px) { .compass-container { transform: scale(0.9); } }
+/* [V11.1] 達摩時空羅盤 (左文右圖佈局) */
+    .compass-layout {
+        display: flex; align-items: center; justify-content: center; gap: 20px;
+        background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 20px;
+        min-height: 320px; position: relative;
+    }
 
-        #exportContainer {
-            position: fixed; left: -9999px; top: 0; width: 1200px; background: #101015; color: #e0e0e0;
-            padding: 40px; border: 10px double var(--gold); font-family: "Microsoft JhengHei", serif;
-            box-sizing: border-box; display: flex; flex-direction: column; gap: 25px;
-        }
+    /* 左側：戰略文字區 */
+    .strategy-side {
+        flex: 1; /* 佔用剩餘空間 */
+        display: flex; flex-direction: column; justify-content: center;
+        padding-left: 10px; border-left: 3px solid var(--gold);
+        text-align: left; z-index: 10;
+    }
+    .strategy-title { color: var(--cyan); font-size: 0.9em; letter-spacing: 2px; margin-bottom: 10px; font-weight: bold; }
+    .strategy-text { color: #eee; font-size: 1.1em; font-weight: bold; line-height: 1.6; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+    .strategy-sub { font-size: 0.85em; color: #888; margin-top: 10px; font-style: italic; }
+
+    /* 右側：羅盤動畫區 */
+    .compass-side {
+        width: 300px; height: 300px; position: relative;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; /* 防止被擠壓 */
+    }
+
+    /* 羅盤軌道 (維持原樣) */
+    .orbit-ring {
+        position: absolute; border-radius: 50%;
+        border: 1px dashed rgba(212, 175, 55, 0.3);
+        display: flex; align-items: center; justify-content: center;
+    }
+    .orbit-outer { width: 100%; height: 100%; animation: rotate-slow 60s linear infinite; }
+    .orbit-middle { width: 65%; height: 65%; animation: rotate-rev 40s linear infinite; }
+    .orbit-inner { width: 35%; height: 35%; border: 2px solid var(--gold); background: rgba(212, 175, 55, 0.05); box-shadow: 0 0 15px rgba(212, 175, 55, 0.2); }
+
+    /* 星宿節點 */
+    .star-node {
+        position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: #1a202c; border: 1px solid var(--cyan); color: #ddd;
+        border-radius: 50%; font-size: 0.75em; font-weight: bold;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5); z-index: 2;
+        width: 50px; height: 50px; text-align: center;
+    }
+    .node-label { font-size: 0.7em; color: #888; margin-bottom: 0; line-height: 1; }
+    .node-star { color: var(--gold); font-size: 1.1em; line-height: 1.2; }
+    
+    .pos-top { top: -25px; } /* 定位點修正 */
+
+    @keyframes rotate-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes rotate-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+    
+    /* 手機適配：改為上下排列 */
+    @media (max-width: 768px) {
+        .compass-layout { flex-direction: column-reverse; padding: 15px; }
+        .strategy-side { width: 100%; border-left: none; border-top: 3px solid var(--gold); padding-left: 0; padding-top: 15px; text-align: center; }
+        .compass-side { width: 260px; height: 260px; }
+        .star-node { width: 45px; height: 45px; font-size: 0.7em; }
+    }
         .export-header { border-bottom: 2px solid var(--gold); padding-bottom: 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .export-title { font-size: 2.5em; color: var(--gold); font-weight: bold; letter-spacing: 5px; text-shadow: 0 0 10px rgba(212,175,55,0.3); }
         .export-info { text-align: right; color: #aaa; font-size: 1.1em; line-height: 1.5; }
@@ -760,56 +776,73 @@
         fillLists(result, h);
     }
 
-    // [V11.0 帝王版] 時空羅盤生成器 (取代原本的純文字列表)
+ // [V11.1] 時空羅盤生成器 (修復 undefined 與 佈局問題)
     function fillLists(result, h) {
         if (result.trend_data) globalTrendData = result.trend_data;
         
-        // --- 1. 提取戰略數據 ---
-        const sYear = h.year ? { zhi: h.year.zhi, star: h.year.name, ...STAR_ROLES[h.year.name] } : null;
-        const sMonth = h.month ? { zhi: h.month.zhi, star: h.month.name, ...STAR_ROLES[h.month.name] } : null;
-        const sDay = h.day ? { zhi: h.day.zhi, star: h.day.name, ...STAR_ROLES[h.day.name] } : null;
+        // 1. 數據清洗函數 (解決 "天壽星" vs "天壽" 的匹配問題)
+        function getStarInfo(sourceObj) {
+            if (!sourceObj) return null;
+            // 移除可能存在的 "星" 字，確保能對應到 STAR_ROLES
+            const cleanName = sourceObj.name.replace('星', '');
+            const roleInfo = STAR_ROLES[cleanName] || { role: '運籌帷幄', action: '順勢而為', vibe: '吉' }; // 防呆預設值
+            return { 
+                zhi: sourceObj.zhi, 
+                star: cleanName, // 顯示時也不要帶 "星" 字，比較簡潔
+                ...roleInfo 
+            };
+        }
+
+        // 2. 提取並清洗戰略數據
+        const sYear = getStarInfo(h.year);
+        const sMonth = getStarInfo(h.month);
+        const sDay = getStarInfo(h.day);
         
-        // --- 2. 生成帝王決策金句 ---
+        // 3. 生成帝王決策金句
         let strategySentence = "運籌帷幄之中，決勝千里之外。";
-        let strategyTitle = "時空戰略指引";
+        let subSentence = "";
         
         if (sYear && sMonth) {
             // 邏輯：用 [流月手段] 來達成 [流年目標]
             strategySentence = `本月戰術：運用<span style="color:var(--cyan)">【${sMonth.action}】</span>之手段，<br>以達成今年<span style="color:var(--gold)">【${sYear.role}】</span>之戰略目標。`;
             
             if (sDay) {
-                strategySentence += `<br><span style="font-size:0.8em; color:#888; margin-top:5px; display:block;">今日行動：${sDay.action} (${sDay.star})</span>`;
+                subSentence = `今日行動指南：${sDay.action} (${sDay.star}星)`;
             }
+        } else {
+            strategySentence = "資料初始化中，請檢查排盤參數。";
         }
 
-        // --- 3. 繪製達摩時空羅盤 (HTML) ---
+        // 4. 繪製達摩時空羅盤 (左文右圖結構)
         let compassHtml = `
-        <div class="compass-container">
-            <div class="orbit-ring orbit-outer">
-                ${sDay ? `<div class="star-node pos-top" style="border-color:var(--p-day);">
-                            <span class="node-label">今日行動</span>
-                            <span class="node-star" style="color:var(--p-day)">${sDay.star}</span>
-                          </div>` : ''}
-            </div>
-            
-            <div class="orbit-ring orbit-middle">
-                ${sMonth ? `<div class="star-node pos-top" style="border-color:var(--p-month);">
-                                <span class="node-label">本月戰術</span>
-                                <span class="node-star" style="color:var(--p-month)">${sMonth.star}</span>
-                            </div>` : ''}
-            </div>
-            
-            <div class="orbit-ring orbit-inner">
-                <div class="star-node" style="border:none; background:transparent; width:100%; height:100%;">
-                    <span class="node-label" style="color:var(--gold); font-weight:bold;">年度戰略</span>
-                    <span class="node-star" style="font-size:1.4em;">${sYear ? sYear.star : '-'}</span>
-                    <span class="node-label" style="margin-top:2px;">${sYear ? sYear.role : ''}</span>
-                </div>
+        <div class="compass-layout">
+            <div class="strategy-side">
+                <div class="strategy-title">⚔️ 時空戰略指引 ⚔️</div>
+                <div class="strategy-text">${strategySentence}</div>
+                ${subSentence ? `<div class="strategy-sub">${subSentence}</div>` : ''}
             </div>
 
-            <div class="strategy-banner">
-                <div class="strategy-title">⚔️ ${strategyTitle} ⚔️</div>
-                <div class="strategy-text">${strategySentence}</div>
+            <div class="compass-side">
+                <div class="orbit-ring orbit-outer">
+                    ${sDay ? `<div class="star-node pos-top" style="border-color:var(--p-day);">
+                                <span class="node-label">日</span>
+                                <span class="node-star" style="color:var(--p-day)">${sDay.star}</span>
+                              </div>` : ''}
+                </div>
+                
+                <div class="orbit-ring orbit-middle">
+                    ${sMonth ? `<div class="star-node pos-top" style="border-color:var(--p-month);">
+                                    <span class="node-label">月</span>
+                                    <span class="node-star" style="color:var(--p-month)">${sMonth.star}</span>
+                                </div>` : ''}
+                </div>
+                
+                <div class="orbit-ring orbit-inner">
+                    <div class="star-node" style="border:none; background:transparent; width:100%; height:100%; box-shadow:none;">
+                        <span class="node-label" style="color:var(--gold); margin-bottom:5px;">年戰略</span>
+                        <span class="node-star" style="font-size:1.3em;">${sYear ? sYear.star : '-'}</span>
+                    </div>
+                </div>
             </div>
         </div>
         `;
@@ -860,6 +893,8 @@
                 if(document.getElementById('renheCheckbox').checked && globalTrendData.renhe_scores[dataIndex]) extra += (globalTrendData.renhe_scores[dataIndex].score||0);
                 if (extra !== 0) compHtml = `<span class="score-composition">(${score-extra}<span class="${extra>0?'score-bonus':'score-penalty'}">${extra>0?'+':''}${extra}</span>)</span>`;
             }
+            // 使用 getStarInfo 清洗 star 名稱，確保 getStrategicAdvice 能正確運作
+            const cleanStarName = a.star.replace('星', '');
             aHtml += `
             <div id="row-${a.name}" class="aspect-row clickable" onclick="updateTrendChart('${a.name}')">
                 <div style="width:115px;">
@@ -867,9 +902,9 @@
                         <span style="color:var(--cyan);font-weight:bold;font-size:1em;">${a.name}</span>
                         <span style="margin-left:6px; font-family:monospace;">${trendHtml}</span>
                     </div>
-                    <div style="font-size:0.75em;color:#888; margin-top:2px;">${a.zhi}|<b style="color:#ddd;">${a.star}</b></div>
+                    <div style="font-size:0.75em;color:#888; margin-top:2px;">${a.zhi}|<b style="color:#ddd;">${cleanStarName}</b></div>
                 </div>
-                <div style="flex:1;padding:0 5px;"><div style="display:flex;align-items:center;"><div style="width:70px;text-align:right;font-weight:bold;color:${barColor};">${score} ${compHtml}</div><div class="progress-container"><div class="progress-bar" style="width:${score}%;background:${barColor};"></div></div></div><div class="aspect-advice" style="font-size:0.8em;opacity:0.8;">${getStrategicAdvice(a.name, a.relation, a.star)}</div></div>
+                <div style="flex:1;padding:0 5px;"><div style="display:flex;align-items:center;"><div style="width:70px;text-align:right;font-weight:bold;color:${barColor};">${score} ${compHtml}</div><div class="progress-container"><div class="progress-bar" style="width:${score}%;background:${barColor};"></div></div></div><div class="aspect-advice" style="font-size:0.8em;opacity:0.8;">${getStrategicAdvice(a.name, a.relation, cleanStarName)}</div></div>
                 <div style="display:flex;align-items:center;gap:5px;">
                     <div class="aspect-tag" style="background:${getStatusColor(a.relation)};font-size:0.7em;">${a.relation}</div>
                     <button class="mini-ai-btn" onclick="event.stopPropagation();lastActiveAspect='${a.name}';callAIWithMode('script')">📜</button>
@@ -1236,3 +1271,4 @@
 </script>
 </body>
 </html>
+
