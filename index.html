@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V11.6 結構重整版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V11.7 急救復原版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -61,6 +61,7 @@
         .card-body { overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), opacity 0.4s ease-in-out, margin-top 0.4s; max-height: 2000px; opacity: 1; margin-top: 15px; }
         .card-body.collapsed { max-height: 0; opacity: 0; margin-top: 0; }
         
+        /* Map Styles */
         .twelve-palaces-map { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 130px); gap: 12px; padding: 15px; margin-top: 0; background: rgba(0,0,0,0.2); border: 1px solid #444; border-radius: 8px; grid-template-areas: "si wu wei shen" "chen . . you" "mao . . xu" "yin chou zi hai"; }
         .grid-cell { position: relative; background: #2a3544; border: 1px solid #3f4a5a; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
         .grid-cell.active { border-color: var(--gold); background: #3a4555; }
@@ -76,6 +77,7 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
+        /* HUD Capsule */
         .hud-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 15px; }
         .hud-capsule { display: flex; align-items: center; background: rgba(0, 0, 0, 0.4); border-radius: 4px; border: 1px solid #333; overflow: hidden; font-family: "Microsoft JhengHei", monospace; font-size: 0.85em; }
         .hud-capsule.solar { border-color: rgba(79, 209, 197, 0.3); }
@@ -149,54 +151,48 @@
         input:checked + .slider:before { transform: translateX(18px); background-color: #1a2634; }
         .switch:hover .slider { border-color: #888; }
 
-        .compass-layout {
-            display: flex; align-items: center; justify-content: center; gap: 20px;
-            background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 20px;
-            min-height: 320px; position: relative;
-        }
-        .strategy-side {
-            flex: 1; display: flex; flex-direction: column; justify-content: center;
-            padding-left: 10px; border-left: 3px solid var(--gold); text-align: left; z-index: 10;
-        }
+        /* [V11.1] 左文右圖 羅盤佈局 */
+        .compass-layout { display: flex; align-items: center; justify-content: center; gap: 20px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 20px; min-height: 320px; position: relative; }
+        .strategy-side { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-left: 10px; border-left: 3px solid var(--gold); text-align: left; z-index: 10; }
         .strategy-title { color: var(--cyan); font-size: 0.9em; letter-spacing: 2px; margin-bottom: 10px; font-weight: bold; }
         .strategy-text { color: #eee; font-size: 1.1em; font-weight: bold; line-height: 1.6; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .strategy-sub { font-size: 0.85em; color: #888; margin-top: 10px; font-style: italic; }
-        .strategy-detail { margin-top: 15px; font-size: 0.9em; line-height: 1.6; }
-        .strategy-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; margin-right: 5px; font-weight: bold; font-size: 0.8em; }
-        .badge-yi { background: rgba(79, 209, 197, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
-        .badge-ji { background: rgba(255, 77, 77, 0.15); color: var(--danger); border: 1px solid var(--danger); }
-        
-        .compass-side {
-            width: 300px; height: 300px; position: relative;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-        }
-        .orbit-ring {
-            position: absolute; border-radius: 50%;
-            border: 1px dashed rgba(212, 175, 55, 0.3);
-            display: flex; align-items: center; justify-content: center;
-        }
+        .compass-side { width: 300px; height: 300px; position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .orbit-ring { position: absolute; border-radius: 50%; border: 1px dashed rgba(212, 175, 55, 0.3); display: flex; align-items: center; justify-content: center; }
         .orbit-outer { width: 100%; height: 100%; animation: rotate-slow 60s linear infinite; }
         .orbit-middle { width: 65%; height: 65%; animation: rotate-rev 40s linear infinite; }
         .orbit-inner { width: 35%; height: 35%; border: 2px solid var(--gold); background: rgba(212, 175, 55, 0.05); box-shadow: 0 0 15px rgba(212, 175, 55, 0.2); }
-        .star-node {
-            position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: #1a202c; border: 1px solid var(--cyan); color: #ddd;
-            border-radius: 50%; font-size: 0.75em; font-weight: bold;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5); z-index: 2;
-            width: 50px; height: 50px; text-align: center;
-        }
+        .star-node { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1a202c; border: 1px solid var(--cyan); color: #ddd; border-radius: 50%; font-size: 0.75em; font-weight: bold; box-shadow: 0 0 10px rgba(0,0,0,0.5); z-index: 2; width: 50px; height: 50px; text-align: center; }
         .node-label { font-size: 0.7em; color: #888; margin-bottom: 0; line-height: 1; }
         .node-star { color: var(--gold); font-size: 1.1em; line-height: 1.2; }
         .pos-top { top: -25px; }
         @keyframes rotate-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes rotate-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-        @media (max-width: 768px) {
-            .compass-layout { flex-direction: column-reverse; padding: 15px; }
-            .strategy-side { width: 100%; border-left: none; border-top: 3px solid var(--gold); padding-left: 0; padding-top: 15px; text-align: center; }
-            .compass-side { width: 260px; height: 260px; }
-            .star-node { width: 45px; height: 45px; font-size: 0.7em; }
+        @media (max-width: 768px) { .compass-layout { flex-direction: column-reverse; padding: 15px; } .strategy-side { width: 100%; border-left: none; border-top: 3px solid var(--gold); padding-left: 0; padding-top: 15px; text-align: center; } .compass-side { width: 260px; height: 260px; } .star-node { width: 45px; height: 45px; font-size: 0.7em; } }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        .modal-content { background-color: #1e2732; border: 1px solid var(--gold); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        .modal h3 { color: var(--gold); margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .tag-container { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+        .tag-chip { font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: #333; cursor: pointer; border: 1px solid #555; user-select: none; color: #ddd; }
+        .tag-chip.selected { background: var(--cyan); color: #000; border-color: var(--cyan); }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+        @media (max-width: 950px) { 
+            .dashboard { grid-template-columns: 1fr; } 
+            .control-panel { position: static; } 
+            .header-controls { position: static; margin-bottom: 15px; }
         }
+        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; }
+        .spinner { border: 4px solid #333; border-top: 4px solid var(--gold); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+        .show-content { opacity: 1 !important; }
+        .input-group { display: none; }
+        .input-group.show { display: block; }
+        .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; opacity: 0.3; pointer-events: none; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
+        .ai-btn { background: var(--gpt-color); color: white; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight:bold; }
 
         #exportContainer {
             position: fixed; left: -9999px; top: 0; width: 1200px; background: #101015; color: #e0e0e0;
@@ -442,7 +438,7 @@
             <div id="exportHighlights" class="highlight-content"></div>
         </div>
     </div>
-    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V11.6</div>
+    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V11.7</div>
 </div>
 
 <div id="saveModal" class="modal">
@@ -459,7 +455,7 @@
 <div id="auditModal" class="modal"><div class="modal-content" style="max-width: 900px; width: 95%;"></div></div>
 
 <script>
-    // --- [核心資料庫區 (優先載入)] ---
+    // --- [核心資料庫區] ---
 
     // 1. 達摩禪機．戰略批文庫
     const PALACE_STRATEGY = {
@@ -477,7 +473,7 @@
         "錢財": { "生我": "批文: 財源廣進，資糧具足，得天時地利，輕鬆得財，富貴天成。", "比旺": "批文: 資金通暢，收支平衡，財運穩定，聚沙成塔，小富由勤。", "我生": "批文: 廣種福田，投資支出，花錢佈局，先捨後得，靠技術賺錢。", "我剋": "批文: 辛苦求財，錙銖必較，財富險中求，勞碌奔波，每一分皆血汗。", "剋我": "批文: 財庫破洞，資金周轉不靈，防詐騙與劫奪，宜保守理財，佈施消災。" }
     };
 
-    // 2. 星宿戰略情境地圖 (情境對照表)
+    // 2. 星宿戰略情境地圖
     const STAR_STRATEGY_MAP = {
         '天貴': { mood: '🌤️ 貴人相助期 (資源湧入)', yi: '連結人脈、尋求指導、整合資源', ji: '獨斷獨行、拒絕援助、傲慢自大', insight_template: (y) => `本月貴人運強，應借力使力，運用人脈來推動年度的【${y}】目標。` },
         '天厄': { mood: '⛈️ 亂流顛簸期 (風險控管)', yi: '保守防禦、低調潛伏、盤點內部', ji: '擴大投資、輕率承諾、強出頭', insight_template: (y) => `本月運勢受阻，年度目標【${y}】宜暫緩推進，首要任務是保存實力，留得青山在。` },
@@ -493,7 +489,7 @@
         '天壽': { mood: '🐢 養精蓄銳期 (長線佈局)', yi: '休養生息、長期規劃、固守根本', ji: '急於求成、短線操作、過度透支', insight_template: (y) => `本月節奏放緩，請藉此機會調整呼吸，為年度目標【${y}】的長跑儲備體力。` }
     };
 
-    // 3. 星宿戰略角色定義 (角色庫)
+    // 3. 星宿戰略角色定義
     const STAR_ROLES = {
         '天貴': { role: '資源整合', action: '連結人脈', vibe: '吉' },
         '天厄': { role: '風險控管', action: '防守避險', vibe: '凶' },
@@ -509,17 +505,15 @@
         '天壽': { role: '長期經營', action: '休養生息', vibe: '壽' }
     };
 
-    // 4. 基礎星宿對照表
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
     const ROULETTE_PATH = ['巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰'];
     
-    // 5. 全局變數
     let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
     let isAnimEnabled = false;
     let chatHistory = [];
     let currentPillarData = null; 
 
-    // --- [基礎工具函數] ---
+    // --- [工具函數] ---
     function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
     function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
     function toggleCard(bodyId) { const body = document.getElementById(bodyId); const arrow = body.previousElementSibling.querySelector('.arrow-icon'); if (body.classList.contains('collapsed')) { body.classList.remove('collapsed'); if(arrow) arrow.classList.remove('collapsed'); } else { body.classList.add('collapsed'); if(arrow) arrow.classList.add('collapsed'); } }
@@ -527,12 +521,10 @@
     function getStatusColor(relation) { if(relation==='生我'||relation==='比旺') return 'var(--status-best)'; if(relation==='我生') return 'var(--status-good)'; if(relation==='我剋') return 'var(--status-growth)'; if(relation==='剋我') return 'var(--status-bad)'; return '#888'; }
     
     function getStrategicAdvice(aspect, relation, star) { 
-        // 防呆：確保 star 不為空
-        const safeStar = star || '天貴'; 
         if (PALACE_STRATEGY[aspect] && PALACE_STRATEGY[aspect][relation]) {
             return PALACE_STRATEGY[aspect][relation];
         }
-        return `運勢：${relation} | 建議：善用${safeStar}特性`; 
+        return `運勢：${relation}`; 
     }
     
     function toggleAnim(el) { isAnimEnabled = el.checked; }
@@ -543,7 +535,8 @@
         const lunarRadio = document.querySelector('input[name="calendarType"][value="lunar"]');
         if (scope === 'year') { lunarRadio.checked = true; solarRadio.disabled = true; solarRadio.parentElement.style.opacity = '0.5'; } 
         else { solarRadio.disabled = false; solarRadio.parentElement.style.opacity = '1'; }
-        
+        const isSolar = document.querySelector('input[name="calendarType"]:checked').value === 'solar';
+        const prefix = isSolar ? '西元' : '農曆';
         document.getElementById('monthInput').className = (scope !== 'year') ? 'input-group show' : 'input-group';
         document.getElementById('dayInput').className = (scope === 'day' || scope === 'hour') ? 'input-group show' : 'input-group';
         document.getElementById('hourInput').className = (scope === 'hour') ? 'input-group show' : 'input-group';
@@ -561,38 +554,20 @@
         }
     }
 
-    // --- [核心計算函數] ---
+    // --- [核心計算] ---
     async function calculate() {
-        // 顯示 Loading
         document.getElementById('loadingOverlay').style.display='flex';
-        
         const data = { 
-            gender: parseInt(document.getElementById('gender').value), 
-            solar_date: document.getElementById('solarDate').value, 
-            hour: document.getElementById('hour').value, 
-            target_calendar: document.querySelector('input[name="calendarType"]:checked').value, 
-            target_scope: document.getElementById('targetScope').value, 
-            target_year: parseInt(document.getElementById('tYear').value)||2026, 
-            target_month: parseInt(document.getElementById('tMonth').value)||1, 
-            target_day: parseInt(document.getElementById('tDay').value)||1, 
-            target_hour: document.getElementById('tHour').value 
+            gender: parseInt(document.getElementById('gender').value), solar_date: document.getElementById('solarDate').value, hour: document.getElementById('hour').value, 
+            target_calendar: document.querySelector('input[name="calendarType"]:checked').value, target_scope: document.getElementById('targetScope').value, 
+            target_year: parseInt(document.getElementById('tYear').value)||2026, target_month: parseInt(document.getElementById('tMonth').value)||1, target_day: parseInt(document.getElementById('tDay').value)||1, target_hour: document.getElementById('tHour').value 
         };
-
         try { 
-            const res = await fetch('/api/calculate', {
-                method:'POST', 
-                headers:{'Content-Type':'application/json'}, 
-                body:JSON.stringify(data)
-            }); 
-            
+            const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); 
             if(!res.ok) throw new Error((await res.json()).detail); 
-            
             globalLastResult = await res.json(); 
             startAnimationSequence(globalLastResult); 
-        } catch(e) { 
-            alert("❌ 排盤失敗：\n"+e.message); 
-            document.getElementById('loadingOverlay').style.display='none'; 
-        }
+        } catch(e) { alert("❌ 排盤失敗：\n"+e.message); document.getElementById('loadingOverlay').style.display='none'; }
     }
 
     async function startAnimationSequence(result) {
@@ -697,13 +672,12 @@
         fillLists(result, h);
     }
 
-    // [V11.2] 時空羅盤生成器 (白話戰略版)
+    // [V11.2] 時空羅盤 (左文右圖)
     function fillLists(result, h) {
         if (result.trend_data) globalTrendData = result.trend_data;
         
         function getStarInfo(sourceObj) {
             if (!sourceObj) return null;
-            // 關鍵修復：移除 '星' 字，確保與 STAR_STRATEGY_MAP 的 key 一致
             const cleanName = sourceObj.name.replace('星', '');
             const stratInfo = STAR_STRATEGY_MAP[cleanName] || { mood: '吉凶未定', yi: '待定', ji: '待定', insight_template: (y)=>`資料分析中` };
             return { 
@@ -1039,7 +1013,7 @@
     function toggleTag(el) { el.classList.toggle('selected'); }
     function openAiNote() { const t = document.getElementById('aiResponseArea') ? document.getElementById('aiResponseArea').innerText : ''; document.getElementById('crmAiContent').value = (t.includes('請點擊')?'':t); }
     
-    // [V13.5 修復版] 完整復盤機制
+    // [V13.5] 復盤機制
     function confirmSave() {
         const selectedTags = Array.from(document.querySelectorAll('#tagList .tag-chip.selected'))
                                   .map(chip => chip.innerText);
@@ -1060,26 +1034,25 @@
         };
 
         try {
-            const res = await fetch('/api/save_record', {
+            fetch('/api/save_record', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(data)
+            }).then(res => res.json()).then(result => {
+                if(result.status === 'success') {
+                    alert("✅ 諮詢紀錄已完整儲存 (含標籤與熱點)");
+                    closeSaveModal();
+                } else {
+                    alert("❌ 儲存失敗，請檢查網路或欄位");
+                }
             });
-            const result = await res.json();
-            
-            if(result.status === 'success') {
-                alert("✅ 諮詢紀錄已完整儲存 (含標籤與熱點)");
-                closeSaveModal();
-            } else {
-                alert("❌ 儲存失敗，請檢查網路或欄位");
-            }
         } catch(e) {
             alert("❌ 系統錯誤：" + e.message);
             console.error(e);
         }
     }
 
-    async function loadHistory() { window.location.href = '/crm'; }
+    function loadHistory() { window.location.href = '/crm'; }
     function restoreFromHistory(item) {
         console.log("正在復盤客戶資料:", item);
 
@@ -1134,7 +1107,7 @@
     function getInteractionDetails(guestEl, score) { let icon = "", desc = ""; if (score >= 80) { icon = `<span style="color:#888;">客(${guestEl})</span> <span style="color:var(--status-best); font-weight:bold;">滋養➝</span> <span style="color:#fff;">我(主)</span>`; desc = "運氣好：此宮位的人事物來成就我"; } else if (score >= 75) { icon = `<span style="color:#888;">客(${guestEl})</span> <span style="color:var(--status-good); font-weight:bold;">幫扶＝</span> <span style="color:#fff;">我(主)</span>`; desc = "運氣平順：此宮位與我同心協力"; } else if (score >= 60) { icon = `<span style="color:#fff;">我(主)</span> <span style="color:#aaa;">洩氣➝</span> <span style="color:#888;">客(${guestEl})</span>`; desc = "平運(及格)：我在滋養這個宮位，才華展現"; } else if (score >= 35) { icon = `<span style="color:#fff;">我(主)</span> <span style="color:#d69e2e;">壓制⚔️</span> <span style="color:#888;">客(${guestEl})</span>`; desc = "驚濤駭浪：我要去奮鬥、掌控局面"; } else { icon = `<span style="color:#888;">客(${guestEl})</span> <span style="color:var(--status-bad);">折磨⚔️</span> <span style="color:#fff;">我(主)</span>`; desc = "有災難：此宮位的人事物來攻擊我"; } return { icon, desc }; }
     function openAuditModal() { if (!globalLastResult || !globalTrendData) { alert("請先排盤"); return; } const modal = document.getElementById('auditModal'); const contentDiv = modal.querySelector('.modal-content'); contentDiv.style.cssText = `background-color: #1e2732; border: 1px solid var(--gold); border-radius: 8px; width: 95%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; padding: 0; box-shadow: 0 0 50px rgba(0,0,0,0.9);`; const currentYear = document.getElementById('tYear').value; const headerHTML = `<div style="padding:15px 20px; border-bottom:1px solid #444; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; background:#151b24; border-radius:8px 8px 0 0;"><h3 style="margin:0; color:var(--gold);">📊 戰略算分稽核表 (年份: <span id="auditYear">${currentYear}</span>)</h3><button onclick="document.getElementById('auditModal').style.display='none'" style="background:none; border:none; color:#888; font-size:1.5em; cursor:pointer;">×</button></div>`; const bodyStartHTML = `<div style="padding:20px; overflow-y:auto; flex:1;"><div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:6px; margin-bottom:15px; font-size:0.9em; color:#ccc; line-height:1.6;"><strong style="color:var(--gold);">💡 達摩一掌經・核心邏輯 (主客對調版)</strong><br><ul style="margin:5px 0 0 20px; padding:0; color:#aaa;"><li><strong>主角 (我/Host)：</strong>流年總命運 (當年的本命能量)。</li><li><strong>客人 (他/Guest)：</strong>各個宮位 (事業、健康、財運...)。</li><li><strong>吉凶判斷：</strong>看「客人」對「我」做了什麼？(客生我=吉，客剋我=凶)。</li><li><strong>分數範圍：</strong>80(生我), 75(比旺), 60(我生), 35(我剋), 20(剋我)。</li></ul></div><div style="overflow-x:auto;"><table style="width:100%; border-collapse: collapse; font-size:0.9em; color:#ddd;"><thead style="background:#252f3a; color:var(--cyan);"><tr><th style="padding:10px; text-align:left;">客 (宮位)</th><th style="padding:10px; text-align:left;">互動關係 (客 vs 我)</th><th style="padding:10px; text-align:right; color:#bbb;">運氣(L1)</th><th style="padding:10px; text-align:right; color:#bbb;">宮位(L2)</th><th style="padding:10px; text-align:right; color:#bbb;">人和(L3)</th><th style="padding:10px; text-align:right; border-left:1px solid #444; color:var(--gold);">原始</th><th style="padding:10px; text-align:right; color:var(--cyan);">最終</th></tr></thead><tbody id="auditTableBody">`; let rowsHTML = ''; let dataIndex = -1; if (globalTrendData.target_index !== undefined) { dataIndex = globalTrendData.target_index; } else if (globalTrendData.axis_labels.length > 0) { dataIndex = Math.floor(globalTrendData.axis_labels.length/2); } if (dataIndex === -1) { rowsHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">無法取得此年份數據</td></tr>'; } else { const renheObj = globalTrendData.renhe_scores[dataIndex]; const renheScore = renheObj ? renheObj.score : 0; const renheStar = renheObj ? renheObj.star : "-"; globalLastResult.aspects.forEach(aspect => { const name = aspect.name; const baseScore = globalTrendData.datasets[name][dataIndex]; const gradeAndRoot = globalTrendData.adjustments[name][dataIndex]; const rawSum = baseScore + gradeAndRoot + renheScore; const finalScore = Math.max(5, Math.min(95, rawSum)); const details = getInteractionDetails(aspect.element, baseScore); let gradeColor = gradeAndRoot > 0 ? '#ffd700' : (gradeAndRoot < 0 ? '#ff4d4d' : '#666'); let renheColor = renheScore > 0 ? '#4fd1c5' : (renheScore < 0 ? '#ff4d4d' : '#666'); rowsHTML += `<tr style="border-bottom:1px solid #333;"><td style="padding:10px;"><div style="font-weight:bold; color:var(--cyan);">${name}</div><div style="font-size:0.8em; color:#888;">${aspect.zhi}宮 ${aspect.star}</div></td><td style="padding:10px; font-family:monospace; font-size:0.9em;">${details.icon}<br><span style="color:#aaa; font-size:0.8em;">${details.desc}</span></td><td style="padding:10px; text-align:right; font-family:monospace; color:#bbb; font-size:1.1em;">${baseScore}</td><td style="padding:10px; text-align:right; font-family:monospace; color:${gradeColor}; font-size:0.9em;">${gradeAndRoot>0?'+'+gradeAndRoot:gradeAndRoot}</td><td style="padding:10px; text-align:right; font-family:monospace; color:${renheColor}; font-size:0.9em;">${renheScore>0?'+'+renheScore:renheScore}<br><span style="font-size:0.7em; color:#888;">(${renheStar})</span></td><td style="padding:10px; text-align:right; border-left:1px solid #444; color:#ddd; font-family:monospace; font-size:1.1em;">${rawSum}</td><td style="padding:10px; text-align:right;"><div style="background:${finalScore>=80?'var(--status-best)':(finalScore<=40?'var(--status-bad)':'#444')}; color:#1a2634; padding:2px 8px; border-radius:4px; font-weight:bold;">${finalScore}</div></td></tr>`; }); } const bodyEndHTML = `</tbody></table></div></div>`; contentDiv.innerHTML = headerHTML + bodyStartHTML + rowsHTML + bodyEndHTML; modal.style.display = 'flex'; }
 
-    // [V10.7 修復] 強制監聽頁面顯示事件，解決快取問題
+    // [V10.7 修復] 強制監聽頁面顯示事件
     function checkAndRestore() {
         console.log("Checking for restore data...");
         const restoreDataStr = localStorage.getItem('damo_restore_data');
