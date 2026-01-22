@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V11.3 絕對執行版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V11.4 修復版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -467,7 +467,7 @@
             <div id="exportHighlights" class="highlight-content"></div>
         </div>
     </div>
-    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V11.3</div>
+    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V11.4</div>
 </div>
 
 <div id="saveModal" class="modal">
@@ -500,7 +500,7 @@
         "錢財": { "生我": "批文: 財源廣進，資糧具足，得天時地利，輕鬆得財，富貴天成。", "比旺": "批文: 資金通暢，收支平衡，財運穩定，聚沙成塔，小富由勤。", "我生": "批文: 廣種福田，投資支出，花錢佈局，先捨後得，靠技術賺錢。", "我剋": "批文: 辛苦求財，錙銖必較，財富險中求，勞碌奔波，每一分皆血汗。", "剋我": "批文: 財庫破洞，資金周轉不靈，防詐騙與劫奪，宜保守理財，佈施消災。" }
     };
 
-    // [V11.2] 星宿戰略情境地圖
+    // [V11.2] 星宿戰略情境地圖 (已補上)
     const STAR_STRATEGY_MAP = {
         '天貴': { mood: '🌤️ 貴人相助期 (資源湧入)', yi: '連結人脈、尋求指導、整合資源', ji: '獨斷獨行、拒絕援助、傲慢自大', insight_template: (y) => `本月貴人運強，應借力使力，運用人脈來推動年度的【${y}】目標。` },
         '天厄': { mood: '⛈️ 亂流顛簸期 (風險控管)', yi: '保守防禦、低調潛伏、盤點內部', ji: '擴大投資、輕率承諾、強出頭', insight_template: (y) => `本月運勢受阻，年度目標【${y}】宜暫緩推進，首要任務是保存實力，留得青山在。` },
@@ -546,6 +546,7 @@
     function getRealmColor(realm) { if(realm.includes('佛')) return '#ffd700'; if(realm.includes('仙')) return '#4fd1c5'; if(realm.includes('修羅')) return '#ff9f43'; if(realm.includes('鬼')) return '#a0aec0'; if(realm.includes('畜')) return '#8c7853'; return '#e0e0e0'; }
     function getStatusColor(relation) { if(relation==='生我'||relation==='比旺') return 'var(--status-best)'; if(relation==='我生') return 'var(--status-good)'; if(relation==='我剋') return 'var(--status-growth)'; if(relation==='剋我') return 'var(--status-bad)'; return '#888'; }
     
+    // [V10.5] 戰略建議查詢函數
     function getStrategicAdvice(aspect, relation, star) { 
         if (PALACE_STRATEGY[aspect] && PALACE_STRATEGY[aspect][relation]) {
             return PALACE_STRATEGY[aspect][relation];
