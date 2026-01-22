@@ -3,9 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>達摩一掌經．生命藍圖導航系統 (V11.4 修復版)</title>
+    <title>達摩一掌經．生命藍圖導航系統 (V11.5 除錯重構版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            alert("⚠️ 系統發生內部錯誤，請截圖給工程師：\n\n" + msg + "\nLine: " + line);
+            return false;
+        };
+    </script>
+
     <style>
         :root {
             --bg-color: #121820; --panel-bg: #1e2732; --gold: #d4af37;
@@ -61,6 +69,7 @@
         .card-body { overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), opacity 0.4s ease-in-out, margin-top 0.4s; max-height: 2000px; opacity: 1; margin-top: 15px; }
         .card-body.collapsed { max-height: 0; opacity: 0; margin-top: 0; }
         
+        /* Map Styles */
         .twelve-palaces-map { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 130px); gap: 12px; padding: 15px; margin-top: 0; background: rgba(0,0,0,0.2); border: 1px solid #444; border-radius: 8px; grid-template-areas: "si wu wei shen" "chen . . you" "mao . . xu" "yin chou zi hai"; }
         .grid-cell { position: relative; background: #2a3544; border: 1px solid #3f4a5a; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
         .grid-cell.active { border-color: var(--gold); background: #3a4555; }
@@ -76,6 +85,7 @@
         .pillar-badge { font-size: 0.65em; padding: 1px 5px; border-radius: 3px; color: #1a2634; font-weight: bold; opacity:0; }
         .pillar-badge.show { opacity: 1; }
         
+        /* HUD Capsule */
         .hud-container { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 15px; }
         .hud-capsule { display: flex; align-items: center; background: rgba(0, 0, 0, 0.4); border-radius: 4px; border: 1px solid #333; overflow: hidden; font-family: "Microsoft JhengHei", monospace; font-size: 0.85em; }
         .hud-capsule.solar { border-color: rgba(79, 209, 197, 0.3); }
@@ -86,6 +96,7 @@
         .hud-value { padding: 2px 8px; color: #eee; font-weight: bold; letter-spacing: 0.5px; }
         .hud-transfer-icon { color: var(--gold); font-size: 1.1em; font-weight: bold; opacity: 0.8; }
 
+        /* Pillars & Patterns */
         .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         .pillar-card { background: #252f3a; border: 1px solid #4a5568; border-radius: 6px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
         .pillar-card:hover { transform: translateY(-3px); border-color: var(--gold); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
@@ -106,6 +117,7 @@
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Chat Window */
         .chat-window { background: #0f1319; border: 1px solid #333; border-radius: 8px; height: 300px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px; }
         .chat-message { max-width: 85%; padding: 10px 14px; border-radius: 12px; line-height: 1.5; font-size: 0.95em; position: relative; word-wrap: break-word; }
         .chat-message.user { align-self: flex-end; background: linear-gradient(135deg, var(--bronze), var(--gold)); color: #1a2634; border-bottom-right-radius: 2px; font-weight: bold; }
@@ -115,6 +127,7 @@
         .chat-input-area { display: flex; gap: 10px; }
         .chat-input { flex: 1; background: #151b24; border: 1px solid #4a5568; color: white; padding: 10px; border-radius: 4px; }
 
+        /* Dashboard Components */
         .aspect-row { border-bottom: 1px solid #333; padding: 14px 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: background 0.2s; }
         .aspect-row.clickable { cursor: pointer; border-left: 3px solid transparent; }
         .aspect-row.clickable:hover { background: rgba(212, 175, 55, 0.1); border-left: 3px solid var(--gold); }
@@ -149,30 +162,6 @@
         input:checked + .slider:before { transform: translateX(18px); background-color: #1a2634; }
         .switch:hover .slider { border-color: #888; }
 
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
-        .modal-content { background-color: #1e2732; border: 1px solid var(--gold); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
-        .modal h3 { color: var(--gold); margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .tag-container { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
-        .tag-chip { font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: #333; cursor: pointer; border: 1px solid #555; user-select: none; color: #ddd; }
-        .tag-chip.selected { background: var(--cyan); color: #000; border-color: var(--cyan); }
-        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-
-        @media (max-width: 950px) { 
-            .dashboard { grid-template-columns: 1fr; } 
-            .control-panel { position: static; } 
-            .header-controls { position: static; margin-bottom: 15px; }
-        }
-        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; }
-        .spinner { border: 4px solid #333; border-top: 4px solid var(--gold); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
-        .show-content { opacity: 1 !important; }
-        .input-group { display: none; }
-        .input-group.show { display: block; }
-        .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; opacity: 0.3; pointer-events: none; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
-        .ai-btn { background: var(--gpt-color); color: white; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight:bold; }
-
         /* [V11.1] 達摩時空羅盤 (左文右圖佈局) */
         .compass-layout {
             display: flex; align-items: center; justify-content: center; gap: 20px;
@@ -186,10 +175,6 @@
         .strategy-title { color: var(--cyan); font-size: 0.9em; letter-spacing: 2px; margin-bottom: 10px; font-weight: bold; }
         .strategy-text { color: #eee; font-size: 1.1em; font-weight: bold; line-height: 1.6; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .strategy-sub { font-size: 0.85em; color: #888; margin-top: 10px; font-style: italic; }
-        .strategy-detail { margin-top: 15px; font-size: 0.9em; line-height: 1.6; }
-        .strategy-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; margin-right: 5px; font-weight: bold; font-size: 0.8em; }
-        .badge-yi { background: rgba(79, 209, 197, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
-        .badge-ji { background: rgba(255, 77, 77, 0.15); color: var(--danger); border: 1px solid var(--danger); }
         
         .compass-side {
             width: 300px; height: 300px; position: relative;
@@ -222,6 +207,30 @@
             .compass-side { width: 260px; height: 260px; }
             .star-node { width: 45px; height: 45px; font-size: 0.7em; }
         }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        .modal-content { background-color: #1e2732; border: 1px solid var(--gold); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        .modal h3 { color: var(--gold); margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .tag-container { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+        .tag-chip { font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: #333; cursor: pointer; border: 1px solid #555; user-select: none; color: #ddd; }
+        .tag-chip.selected { background: var(--cyan); color: #000; border-color: var(--cyan); }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+        @media (max-width: 950px) { 
+            .dashboard { grid-template-columns: 1fr; } 
+            .control-panel { position: static; } 
+            .header-controls { position: static; margin-bottom: 15px; }
+        }
+        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; }
+        .spinner { border: 4px solid #333; border-top: 4px solid var(--gold); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+        .show-content { opacity: 1 !important; }
+        .input-group { display: none; }
+        .input-group.show { display: block; }
+        .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .center-decoration { grid-area: 2 / 2 / 4 / 4; display: flex; justify-content: center; align-items: center; opacity: 0.3; pointer-events: none; border: 2px dashed var(--bronze); border-radius: 50%; margin: 15px; }
+        .ai-btn { background: var(--gpt-color); color: white; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight:bold; }
 
         #exportContainer {
             position: fixed; left: -9999px; top: 0; width: 1200px; background: #101015; color: #e0e0e0;
@@ -337,19 +346,19 @@
                 </div>
             </h3>
             <div class="twelve-palaces-map" id="mainMap">
-                <div class="grid-cell" id="cell-巳"><div class="pillar-badges-container"></div><span class="cell-zhi">巳</span><span class="cell-star">天文</span><span class="cell-realm">仙道</span></div>
-                <div class="grid-cell" id="cell-午"><div class="pillar-badges-container"></div><span class="cell-zhi">午</span><span class="cell-star">天福</span><span class="cell-realm">佛道</span></div>
-                <div class="grid-cell" id="cell-未"><div class="pillar-badges-container"></div><span class="cell-zhi">未</span><span class="cell-star">天驛</span><span class="cell-realm">鬼道</span></div>
-                <div class="grid-cell" id="cell-申"><div class="pillar-badges-container"></div><span class="cell-zhi">申</span><span class="cell-star">天孤</span><span class="cell-realm">人道</span></div>
-                <div class="grid-cell" id="cell-辰"><div class="pillar-badges-container"></div><span class="cell-zhi">辰</span><span class="cell-star">天奸</span><span class="cell-realm">修羅</span></div>
+                <div class="grid-cell" id="cell-巳"><div class="pillar-badges-container"></div><span class="cell-zhi">巳</span></div>
+                <div class="grid-cell" id="cell-午"><div class="pillar-badges-container"></div><span class="cell-zhi">午</span></div>
+                <div class="grid-cell" id="cell-未"><div class="pillar-badges-container"></div><span class="cell-zhi">未</span></div>
+                <div class="grid-cell" id="cell-申"><div class="pillar-badges-container"></div><span class="cell-zhi">申</span></div>
+                <div class="grid-cell" id="cell-辰"><div class="pillar-badges-container"></div><span class="cell-zhi">辰</span></div>
                 <div class="center-decoration"><span style="font-size:3em; color:var(--gold);">☯</span></div>
-                <div class="grid-cell" id="cell-酉"><div class="pillar-badges-container"></div><span class="cell-zhi">酉</span><span class="cell-star">天刃</span><span class="cell-realm">畜道</span></div>
-                <div class="grid-cell" id="cell-卯"><div class="pillar-badges-container"></div><span class="cell-zhi">卯</span><span class="cell-star">天破</span><span class="cell-realm">畜道</span></div>
-                <div class="grid-cell" id="cell-戌"><div class="pillar-badges-container"></div><span class="cell-zhi">戌</span><span class="cell-star">天藝</span><span class="cell-realm">修羅</span></div>
-                <div class="grid-cell" id="cell-寅"><div class="pillar-badges-container"></div><span class="cell-zhi">寅</span><span class="cell-star">天權</span><span class="cell-realm">人道</span></div>
-                <div class="grid-cell" id="cell-丑"><div class="pillar-badges-container"></div><span class="cell-zhi">丑</span><span class="cell-star">天厄</span><span class="cell-realm">鬼道</span></div>
-                <div class="grid-cell" id="cell-子"><div class="pillar-badges-container"></div><span class="cell-zhi">子</span><span class="cell-star">天貴</span><span class="cell-realm">佛道</span></div>
-                <div class="grid-cell" id="cell-亥"><div class="pillar-badges-container"></div><span class="cell-zhi">亥</span><span class="cell-star">天壽</span><span class="cell-realm">仙道</span></div>
+                <div class="grid-cell" id="cell-酉"><div class="pillar-badges-container"></div><span class="cell-zhi">酉</span></div>
+                <div class="grid-cell" id="cell-卯"><div class="pillar-badges-container"></div><span class="cell-zhi">卯</span></div>
+                <div class="grid-cell" id="cell-戌"><div class="pillar-badges-container"></div><span class="cell-zhi">戌</span></div>
+                <div class="grid-cell" id="cell-寅"><div class="pillar-badges-container"></div><span class="cell-zhi">寅</span></div>
+                <div class="grid-cell" id="cell-丑"><div class="pillar-badges-container"></div><span class="cell-zhi">丑</span></div>
+                <div class="grid-cell" id="cell-子"><div class="pillar-badges-container"></div><span class="cell-zhi">子</span></div>
+                <div class="grid-cell" id="cell-亥"><div class="pillar-badges-container"></div><span class="cell-zhi">亥</span></div>
             </div>
         </div>
 
@@ -402,7 +411,7 @@
 
         <div class="card" style="background:#161625; border-color:var(--gpt-color);">
             <h3 class="card-header" onclick="toggleCard('aiBody')" style="color:var(--gpt-color);">
-                📜 達摩智囊．戰略參謀 <span style="font-size:0.7em; color:#888;">(V11.2)</span>
+                📜 達摩智囊．戰略參謀 <span style="font-size:0.7em; color:#888;">(V11.5)</span>
                 <span class="arrow-icon collapsed" style="margin-left:auto;">▼</span>
             </h3>
             <div id="aiBody" class="card-body collapsed">
@@ -467,7 +476,7 @@
             <div id="exportHighlights" class="highlight-content"></div>
         </div>
     </div>
-    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V11.4</div>
+    <div class="export-footer">徐峰老師 運勢指導 | 達摩生命藍圖導航系統 V11.5</div>
 </div>
 
 <div id="saveModal" class="modal">
@@ -484,7 +493,9 @@
 <div id="auditModal" class="modal"><div class="modal-content" style="max-width: 900px; width: 95%;"></div></div>
 
 <script>
-    // 1. [V10.7] 達摩禪機．戰略批文庫
+    // --- [核心資料庫區 (優先載入)] ---
+
+    // 1. 達摩禪機．戰略批文庫
     const PALACE_STRATEGY = {
         "總命運": { "生我": "批文: 猶如天降甘霖，前世累積之善業成熟，得貴人護持，諸事順遂。", "比旺": "批文: 同氣相求，善友雲集，如入芝蘭之室，人際和諧，福慧雙修。", "我生": "批文: 慈悲喜捨，廣結善緣，燃燒自己照亮別人，雖勞心但積累無量功德。", "我剋": "批文: 歷事練心，如蓮花出淤泥，需在逆境中精進，轉煩惱為菩提。", "剋我": "批文: 業力現前，冤親債主干擾，運勢受阻，宜懺悔消業，低調潛伏。" },
         "形象": { "生我": "批文: 法相莊嚴，自帶光環，他人見之如沐春風，易得大眾愛戴。", "比旺": "批文: 平易近人，無分別心，與眾生廣結善緣，外在形象親切和藹。", "我生": "批文: 樂於奉獻，因布施而顯得高貴，雖奔波勞碌，卻贏得真實口碑。", "我剋": "批文: 風格獨特，不畏世俗眼光，如獨行俠般展現自我，雖有爭議但顯個性。", "剋我": "批文: 易招誤解，如明珠蒙塵，遭人毀謗或嫉妒，需謹言慎行以避口業。" },
@@ -500,7 +511,7 @@
         "錢財": { "生我": "批文: 財源廣進，資糧具足，得天時地利，輕鬆得財，富貴天成。", "比旺": "批文: 資金通暢，收支平衡，財運穩定，聚沙成塔，小富由勤。", "我生": "批文: 廣種福田，投資支出，花錢佈局，先捨後得，靠技術賺錢。", "我剋": "批文: 辛苦求財，錙銖必較，財富險中求，勞碌奔波，每一分皆血汗。", "剋我": "批文: 財庫破洞，資金周轉不靈，防詐騙與劫奪，宜保守理財，佈施消災。" }
     };
 
-    // [V11.2] 星宿戰略情境地圖 (已補上)
+    // 2. 星宿戰略情境地圖 (情境對照表)
     const STAR_STRATEGY_MAP = {
         '天貴': { mood: '🌤️ 貴人相助期 (資源湧入)', yi: '連結人脈、尋求指導、整合資源', ji: '獨斷獨行、拒絕援助、傲慢自大', insight_template: (y) => `本月貴人運強，應借力使力，運用人脈來推動年度的【${y}】目標。` },
         '天厄': { mood: '⛈️ 亂流顛簸期 (風險控管)', yi: '保守防禦、低調潛伏、盤點內部', ji: '擴大投資、輕率承諾、強出頭', insight_template: (y) => `本月運勢受阻，年度目標【${y}】宜暫緩推進，首要任務是保存實力，留得青山在。` },
@@ -516,7 +527,7 @@
         '天壽': { mood: '🐢 養精蓄銳期 (長線佈局)', yi: '休養生息、長期規劃、固守根本', ji: '急於求成、短線操作、過度透支', insight_template: (y) => `本月節奏放緩，請藉此機會調整呼吸，為年度目標【${y}】的長跑儲備體力。` }
     };
 
-    // [V11.0] 星宿戰略角色定義
+    // 3. 星宿戰略角色定義 (角色庫)
     const STAR_ROLES = {
         '天貴': { role: '資源整合', action: '連結人脈', vibe: '吉' },
         '天厄': { role: '風險控管', action: '防守避險', vibe: '凶' },
@@ -532,26 +543,30 @@
         '天壽': { role: '長期經營', action: '休養生息', vibe: '壽' }
     };
 
+    // 4. 基礎星宿對照表
     const DEFAULT_STARS = { '子': {name:'天貴', realm:'佛道'}, '丑': {name:'天厄', realm:'鬼道'}, '寅': {name:'天權', realm:'人道'}, '卯': {name:'天破', realm:'畜道'}, '辰': {name:'天奸', realm:'修羅'}, '巳': {name:'天文', realm:'仙道'}, '午': {name:'天福', realm:'佛道'}, '未': {name:'天驛', realm:'鬼道'}, '申': {name:'天孤', realm:'人道'}, '酉': {name:'天刃', realm:'畜道'}, '戌': {name:'天藝', realm:'修羅'}, '亥': {name:'天壽', realm:'仙道'} };
     const ROULETTE_PATH = ['巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰'];
     
+    // 5. 全局變數
     let currentLightIndex=0, globalLastResult=null, globalIsPaused=false, globalSkipAnimation=false, trendChartInstance=null, globalTrendData=null, lastActiveAspect='總命運', aspectClickCounts={};
     let isAnimEnabled = false;
     let chatHistory = [];
     let currentPillarData = null; 
 
+    // --- [基礎工具函數] ---
     function setHTML(id, html) { const el = document.getElementById(id); if(el) el.innerHTML = html; }
     function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
     function toggleCard(bodyId) { const body = document.getElementById(bodyId); const arrow = body.previousElementSibling.querySelector('.arrow-icon'); if (body.classList.contains('collapsed')) { body.classList.remove('collapsed'); if(arrow) arrow.classList.remove('collapsed'); } else { body.classList.add('collapsed'); if(arrow) arrow.classList.add('collapsed'); } }
     function getRealmColor(realm) { if(realm.includes('佛')) return '#ffd700'; if(realm.includes('仙')) return '#4fd1c5'; if(realm.includes('修羅')) return '#ff9f43'; if(realm.includes('鬼')) return '#a0aec0'; if(realm.includes('畜')) return '#8c7853'; return '#e0e0e0'; }
     function getStatusColor(relation) { if(relation==='生我'||relation==='比旺') return 'var(--status-best)'; if(relation==='我生') return 'var(--status-good)'; if(relation==='我剋') return 'var(--status-growth)'; if(relation==='剋我') return 'var(--status-bad)'; return '#888'; }
     
-    // [V10.5] 戰略建議查詢函數
     function getStrategicAdvice(aspect, relation, star) { 
+        // 防呆：確保 star 不為空
+        const safeStar = star || '天貴'; 
         if (PALACE_STRATEGY[aspect] && PALACE_STRATEGY[aspect][relation]) {
             return PALACE_STRATEGY[aspect][relation];
         }
-        return `運勢：${relation} | 建議：善用${star}特性`; 
+        return `運勢：${relation} | 建議：善用${safeStar}特性`; 
     }
     
     function toggleAnim(el) { isAnimEnabled = el.checked; }
@@ -562,8 +577,7 @@
         const lunarRadio = document.querySelector('input[name="calendarType"][value="lunar"]');
         if (scope === 'year') { lunarRadio.checked = true; solarRadio.disabled = true; solarRadio.parentElement.style.opacity = '0.5'; } 
         else { solarRadio.disabled = false; solarRadio.parentElement.style.opacity = '1'; }
-        const isSolar = document.querySelector('input[name="calendarType"]:checked').value === 'solar';
-        const prefix = isSolar ? '西元' : '農曆';
+        
         document.getElementById('monthInput').className = (scope !== 'year') ? 'input-group show' : 'input-group';
         document.getElementById('dayInput').className = (scope === 'day' || scope === 'hour') ? 'input-group show' : 'input-group';
         document.getElementById('hourInput').className = (scope === 'hour') ? 'input-group show' : 'input-group';
@@ -581,19 +595,38 @@
         }
     }
 
+    // --- [核心計算函數] ---
     async function calculate() {
+        // 顯示 Loading
         document.getElementById('loadingOverlay').style.display='flex';
+        
         const data = { 
-            gender: parseInt(document.getElementById('gender').value), solar_date: document.getElementById('solarDate').value, hour: document.getElementById('hour').value, 
-            target_calendar: document.querySelector('input[name="calendarType"]:checked').value, target_scope: document.getElementById('targetScope').value, 
-            target_year: parseInt(document.getElementById('tYear').value)||2026, target_month: parseInt(document.getElementById('tMonth').value)||1, target_day: parseInt(document.getElementById('tDay').value)||1, target_hour: document.getElementById('tHour').value 
+            gender: parseInt(document.getElementById('gender').value), 
+            solar_date: document.getElementById('solarDate').value, 
+            hour: document.getElementById('hour').value, 
+            target_calendar: document.querySelector('input[name="calendarType"]:checked').value, 
+            target_scope: document.getElementById('targetScope').value, 
+            target_year: parseInt(document.getElementById('tYear').value)||2026, 
+            target_month: parseInt(document.getElementById('tMonth').value)||1, 
+            target_day: parseInt(document.getElementById('tDay').value)||1, 
+            target_hour: document.getElementById('tHour').value 
         };
+
         try { 
-            const res = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); 
+            const res = await fetch('/api/calculate', {
+                method:'POST', 
+                headers:{'Content-Type':'application/json'}, 
+                body:JSON.stringify(data)
+            }); 
+            
             if(!res.ok) throw new Error((await res.json()).detail); 
+            
             globalLastResult = await res.json(); 
             startAnimationSequence(globalLastResult); 
-        } catch(e) { alert("❌ 排盤失敗：\n"+e.message); document.getElementById('loadingOverlay').style.display='none'; }
+        } catch(e) { 
+            alert("❌ 排盤失敗：\n"+e.message); 
+            document.getElementById('loadingOverlay').style.display='none'; 
+        }
     }
 
     async function startAnimationSequence(result) {
@@ -643,7 +676,6 @@
     }
 
     function analyzePillarWithAI() {
-        console.log("正在啟動 AI 分析程序...");
         if (!currentPillarData) { alert("❌ 錯誤：找不到當前選中的柱位資料"); return; }
         if (!globalLastResult || !globalLastResult.base_chart) { alert("❌ 錯誤：找不到命盤資料，請重新排盤"); return; }
 
@@ -663,27 +695,9 @@
             const getPillarInfo = (key) => p[key] ? `${p[key].name}(${p[key].zhi})` : "未知";
             const fullChartContext = `年柱:${getPillarInfo('年柱')}, 月柱:${getPillarInfo('月柱')}, 日柱:${getPillarInfo('日柱')}, 時柱:${getPillarInfo('時柱')}`;
 
-            const prompt = `請以專通達摩一掌經及八字命理『徐峰老師』的口吻，
-參考案主的完整命盤架構：【${fullChartContext}】，
-針對目前點選的【${currentPillarData.title}】進行深度戰略點評。
+            const prompt = `請以專通達摩一掌經及八字命理『徐峰老師』的口吻，參考案主的完整命盤架構：【${fullChartContext}】，針對目前點選的【${currentPillarData.title}】進行深度戰略點評。\n\n【點選位置資訊】：\n- 星宿：${currentPillarData.star} (${currentPillarData.zhi}宮)\n- 核心特質：${currentPillarData.slogan || '無'}\n- 古籍詩訣：${currentPillarData.poem || '無'}\n- 基礎定義：${currentPillarData.desc || '無'}\n\n【回答要求】：\n1. 請先【引用古籍詩訣】。\n2. 將詩訣翻譯為【現代白話戰略建議】。\n3. 指出該位置對案主影響的【優勢與劣勢】。\n4. 結合全盤氣場，給出一個具體的【改運建議或注意事項】。`;
 
-【點選位置資訊】：
-- 星宿：${currentPillarData.star} (${currentPillarData.zhi}宮)
-- 核心特質：${currentPillarData.slogan || '無'}
-- 古籍詩訣：${currentPillarData.poem || '無'}
-- 基礎定義：${currentPillarData.desc || '無'}
-
-【回答要求】：
-1. 請先【引用古籍詩訣】。
-2. 將詩訣翻譯為【現代白話戰略建議】。
-3. 指出該位置對案主影響的【優勢與劣勢】。
-4. 結合全盤氣場，給出一個具體的【改運建議或注意事項】。`;
-
-            if (typeof sendToAI === 'function') {
-                sendToAI(prompt);
-            } else {
-                alert("❌ 嚴重錯誤：找不到 sendToAI 函式。");
-            }
+            sendToAI(prompt);
         } catch (error) {
             alert("❌ 程式執行發生意外錯誤：\n" + error.message);
             console.error(error);
@@ -723,6 +737,7 @@
         
         function getStarInfo(sourceObj) {
             if (!sourceObj) return null;
+            // 關鍵修復：移除 '星' 字，確保與 STAR_STRATEGY_MAP 的 key 一致
             const cleanName = sourceObj.name.replace('星', '');
             const stratInfo = STAR_STRATEGY_MAP[cleanName] || { mood: '吉凶未定', yi: '待定', ji: '待定', insight_template: (y)=>`資料分析中` };
             return { 
